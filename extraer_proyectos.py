@@ -719,10 +719,15 @@ async def main():
  
         print("\n📡 Cargando portal SIL...")
         await page.goto(URL, wait_until="domcontentloaded", timeout=60_000)
-        await page.wait_for_timeout(6_000)  # esperar carga inicial de iframes
+        # Esperar a que exista al menos un iframe o contenido dinámico
+        await page.wait_for_load_state("networkidle")
+        await page.wait_for_timeout(5000)
+
+        # Esperar explícitamente algo del DOM
+        await page.wait_for_selector("iframe, frame, img, input", timeout=30000)
  
         frame_activo = await encontrar_frame_con_proyectos(page)
-        if not frame_activo:
+        if not frame_activo: 
             print("❌ No se encontró el frame con proyectos. Abortando.")
             await browser.close()
             return
