@@ -1,0 +1,45 @@
+# .github/workflows/scraper.yml
+
+name: Scraper Asamblea Legislativa
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # 2am costa rica
+  workflow_dispatch:        # permite correrlo manualmente desde GitHub
+    inputs:
+      max_paginas:
+        description: 'Límite de páginas (0 = todas)'
+        required: false
+        default: '1'        # por defecto corre solo 1 página al disparar manual
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60     # corta si algo se cuelga
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache de dependencias pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Instalar dependencias Python
+        run: pip install -r requirements.txt
+
+      - name: Instalar Chromium (Playwright)
+        run: playwright install chromium --with-deps
+
+      - name: Correr scraper
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '0' }}
+        run: python extractor.py
