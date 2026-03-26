@@ -710,20 +710,33 @@ async def main():
     todos_los_proyectos = []
  
     async with async_playwright() as p:
-        IS_CI = os.getenv("CI", "false").lower() == "true"
         browser = await p.chromium.launch(
-            headless=IS_CI,
-            args=["--no-sandbox", "--disable-dev-shm-usage"] if IS_CI else []
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled",
+            ]
         )
-        page    = await browser.new_page()
- 
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+        )
+        page = await context.new_page()
+
         print("\n📡 Cargando portal SIL...")
         await page.goto(URL, wait_until="domcontentloaded", timeout=60_000)
-        await page.wait_for_timeout(6_000)  # esperar carga inicial de iframes
+        await page.wait_for_timeout(8_000)  # un poco más que 6s para CI
  
         frame_activo = await encontrar_frame_con_proyectos(page)
-        if not frame_activo: 
-            print("❌ No se encontró el frame con proyectos. Abortando.")
+        if not frame_activo:
+            # Guardar screenshot para ver qué está recibiendo el browser
+            await page.screenshot(path="debug_sin_frame.png", full_page=True)
+            print("❌ No se encontró el frame con proyectos. Screenshot guardado.")
             await browser.close()
             return
  

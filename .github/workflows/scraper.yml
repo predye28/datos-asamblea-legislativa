@@ -5,17 +5,17 @@ name: Scraper Asamblea Legislativa
 on:
   schedule:
     - cron: '0 8 * * *'  # 2am costa rica
-  workflow_dispatch:        # permite correrlo manualmente desde GitHub
+  workflow_dispatch:
     inputs:
       max_paginas:
         description: 'Límite de páginas (0 = todas)'
         required: false
-        default: '1'        # por defecto corre solo 1 página al disparar manual
+        default: '1'
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60     # corta si algo se cuelga
+    timeout-minutes: 60
 
     steps:
       - name: Checkout código
@@ -43,3 +43,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '50' }}
         run: python extraer_proyectos.py
+
+      - name: Subir artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-output-${{ github.run_number }}
+          path: |
+            *.json
+            *.xlsx
+            *.png
+          retention-days: 7
