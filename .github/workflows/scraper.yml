@@ -41,5 +41,5 @@ jobs:
       - name: Correr scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '0' }}
+          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '50' }}
         run: python extractor.py
