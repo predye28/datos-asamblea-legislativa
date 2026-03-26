@@ -1,5 +1,5 @@
 """
-extractor.py
+extraer_proyectos.py
 ══════════════════════════════════════════════════════════════════════
 Scraper de proyectos de ley de la Asamblea Legislativa de Costa Rica.
  
@@ -719,12 +719,7 @@ async def main():
  
         print("\n📡 Cargando portal SIL...")
         await page.goto(URL, wait_until="domcontentloaded", timeout=60_000)
-        # Esperar a que exista al menos un iframe o contenido dinámico
-        await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(5000)
-
-        # Esperar explícitamente algo del DOM
-        await page.wait_for_selector("iframe, frame, img, input", timeout=30000)
+        await page.wait_for_timeout(6_000)  # esperar carga inicial de iframes
  
         frame_activo = await encontrar_frame_con_proyectos(page)
         if not frame_activo: 
