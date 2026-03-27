@@ -1,0 +1,353 @@
+"""
+routers/proyectos.py
+──────────────────────────────────────────────────────────────────────
+Endpoints para listar, buscar y obtener detalle de proyectos de ley.
+
+Endpoints
+─────────
+  GET /api/v1/proyectos                    → listado paginado con filtros
+  GET /api/v1/proyectos/{numero_expediente} → detalle completo
+  GET /api/v1/proyectos/buscar             → búsqueda por texto o diputado
+"""
+
+from fastapi import APIRouter, HTTPException, Query
+from typing import Optional
+
+from database import fetchall, fetchone, fetchval
+from models import (
+    ProyectosResponse,
+    ProyectoResumen,
+    ProyectoDetalle,
+    Proponente,
+    TramiteItem,
+    DocumentoItem,
+    Paginacion,
+)
+
+router = APIRouter()
+
+MESES_ES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo",  6: "Junio",   7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+}
+
+
+# ══════════════════════════════════════════════════════════════════════
+# HELPERS INTERNOS
+# ══════════════════════════════════════════════════════════════════════
+
+def _enriquecer(row: dict) -> ProyectoResumen:
+    """Convierte una fila cruda de BD en un ProyectoResumen enriquecido."""
+    return ProyectoResumen(
+        **row,
+        es_ley=bool(row.get("numero_ley")),
+        estado_actual=row.get("estado_actual"),
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# LISTADO CON FILTROS Y PAGINACIÓN
+# ══════════════════════════════════════════════════════════════════════
+
+@router.get("/proyectos", response_model=ProyectosResponse, summary="Listar proyectos")
+def listar_proyectos(
+    pagina:     int = Query(1,    ge=1,   description="Número de página"),
+    por_pagina: int = Query(20,   ge=1, le=100, description="Resultados por página"),
+    tipo:       Optional[str] = Query(None, description="Filtrar por tipo de expediente"),
+    anio:       Optional[int] = Query(None, description="Filtrar por año de inicio"),
+    solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
+    orden:      str           = Query("reciente", description="reciente | antiguo | expediente"),
+):
+    """
+    Devuelve proyectos paginados.
+
+    - **pagina**: página actual (empieza en 1)
+    - **por_pagina**: cuántos resultados por página (máximo 100)
+    - **tipo**: filtra por tipo de expediente (ej: "Proyecto de Ley")
+    - **anio**: filtra proyectos iniciados en ese año
+    - **solo_leyes**: si `true`, muestra solo los que tienen número de ley
+    - **orden**: `reciente` (más nuevo primero), `antiguo`, `expediente`
+    """
+    # Construir cláusulas WHERE dinámicamente
+    condiciones = []
+    params: list = []
+
+    if tipo:
+        condiciones.append("p.tipo_expediente ILIKE %s")
+        params.append(f"%{tipo}%")
+
+    if anio:
+        condiciones.append("EXTRACT(YEAR FROM p.fecha_inicio) = %s")
+        params.append(anio)
+
+    if solo_leyes:
+        condiciones.append("p.numero_ley IS NOT NULL")
+
+    where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
+
+    # Orden
+    orden_sql = {
+        "reciente":   "p.fecha_inicio DESC NULLS LAST",
+        "antiguo":    "p.fecha_inicio ASC NULLS LAST",
+        "expediente": "p.numero_expediente DESC",
+    }.get(orden, "p.fecha_inicio DESC NULLS LAST")
+
+    # Total de registros (para paginación)
+    total = fetchval(f"SELECT COUNT(*) FROM proyectos p {where}", tuple(params))
+
+    # Query principal con conteos y último órgano
+    offset = (pagina - 1) * por_pagina
+    params_paginado = params + [por_pagina, offset]
+
+    sql = f"""
+        SELECT
+            p.id,
+            p.numero_expediente,
+            p.titulo,
+            p.tipo_expediente,
+            p.fecha_inicio,
+            p.vencimiento_cuatrienal,
+            p.fecha_publicacion,
+            p.numero_gaceta,
+            p.numero_ley,
+            p.creado_en,
+            COUNT(DISTINCT pr.id)   AS total_proponentes,
+            COUNT(DISTINCT tr.id)   AS total_tramites,
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
+            (
+                SELECT t2.organo
+                FROM tramitacion t2
+                WHERE t2.proyecto_id = p.id
+                ORDER BY t2.fecha_inicio DESC NULLS LAST
+                LIMIT 1
+            ) AS estado_actual
+        FROM proyectos p
+        LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
+        LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
+        LEFT JOIN documentos  doc ON doc.proyecto_id = p.id
+        {where}
+        GROUP BY p.id
+        ORDER BY {orden_sql}
+        LIMIT %s OFFSET %s
+    """
+
+    rows = fetchall(sql, tuple(params_paginado))
+    datos = [_enriquecer(r) for r in rows]
+
+    import math
+    total_paginas = math.ceil(total / por_pagina) if total else 1
+
+    return ProyectosResponse(
+        datos=datos,
+        paginacion=Paginacion(
+            total=total,
+            pagina=pagina,
+            por_pagina=por_pagina,
+            total_paginas=total_paginas,
+        ),
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# BÚSQUEDA
+# ══════════════════════════════════════════════════════════════════════
+
+@router.get("/proyectos/buscar", response_model=ProyectosResponse, summary="Buscar proyectos")
+def buscar_proyectos(
+    q:          str = Query(..., min_length=2, description="Texto libre: título, diputado, órgano"),
+    pagina:     int = Query(1,  ge=1),
+    por_pagina: int = Query(20, ge=1, le=100),
+):
+    """
+    Búsqueda de texto completo sobre:
+    - Título del proyecto
+    - Nombre o apellidos de proponentes
+    - Órgano de tramitación
+
+    Retorna los proyectos que coincidan con **cualquiera** de esos campos.
+    """
+    termino = f"%{q}%"
+    params = [termino, termino, termino]
+
+    base_sql = """
+        FROM proyectos p
+        WHERE
+            p.titulo ILIKE %s
+            OR EXISTS (
+                SELECT 1 FROM proponentes pr
+                WHERE pr.proyecto_id = p.id
+                  AND (pr.apellidos ILIKE %s OR pr.nombre ILIKE %s)
+            )
+            OR EXISTS (
+                SELECT 1 FROM tramitacion tr
+                WHERE tr.proyecto_id = p.id
+                  AND tr.organo ILIKE %s
+            )
+    """
+    params_total = [termino, termino, termino, termino]
+    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {base_sql}", tuple(params_total))
+
+    offset = (pagina - 1) * por_pagina
+    params_query = [termino, termino, termino, termino, por_pagina, offset]
+
+    sql = f"""
+        SELECT
+            p.id,
+            p.numero_expediente,
+            p.titulo,
+            p.tipo_expediente,
+            p.fecha_inicio,
+            p.vencimiento_cuatrienal,
+            p.fecha_publicacion,
+            p.numero_gaceta,
+            p.numero_ley,
+            p.creado_en,
+            COUNT(DISTINCT pr2.id)   AS total_proponentes,
+            COUNT(DISTINCT tr2.id)   AS total_tramites,
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
+            (
+                SELECT t2.organo
+                FROM tramitacion t2
+                WHERE t2.proyecto_id = p.id
+                ORDER BY t2.fecha_inicio DESC NULLS LAST
+                LIMIT 1
+            ) AS estado_actual
+        {base_sql}
+        LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
+        LEFT JOIN tramitacion  tr2 ON tr2.proyecto_id = p.id
+        LEFT JOIN documentos   doc ON doc.proyecto_id = p.id
+        GROUP BY p.id
+        ORDER BY p.fecha_inicio DESC NULLS LAST
+        LIMIT %s OFFSET %s
+    """
+
+    rows = fetchall(sql, tuple(params_query))
+    datos = [_enriquecer(r) for r in rows]
+
+    import math
+    total_paginas = math.ceil(total / por_pagina) if total else 1
+
+    return ProyectosResponse(
+        datos=datos,
+        paginacion=Paginacion(
+            total=total,
+            pagina=pagina,
+            por_pagina=por_pagina,
+            total_paginas=total_paginas,
+        ),
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# DETALLE DE UN PROYECTO
+# ══════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/proyectos/{numero_expediente}",
+    response_model=ProyectoDetalle,
+    summary="Detalle de un proyecto",
+)
+def detalle_proyecto(numero_expediente: int):
+    """
+    Devuelve el detalle completo de un proyecto:
+    - Datos maestros
+    - Lista de proponentes (diputados firmantes)
+    - Historial de tramitación (órganos y fechas)
+    - Documentos adjuntos (PDF / DOCX)
+    """
+    # Datos maestros
+    row = fetchone(
+        """
+        SELECT
+            p.id,
+            p.numero_expediente,
+            p.titulo,
+            p.tipo_expediente,
+            p.fecha_inicio,
+            p.vencimiento_cuatrienal,
+            p.fecha_publicacion,
+            p.numero_gaceta,
+            p.numero_ley,
+            p.creado_en,
+            COUNT(DISTINCT pr.id)  AS total_proponentes,
+            COUNT(DISTINCT tr.id)  AS total_tramites,
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
+            (
+                SELECT t2.organo
+                FROM tramitacion t2
+                WHERE t2.proyecto_id = p.id
+                ORDER BY t2.fecha_inicio DESC NULLS LAST
+                LIMIT 1
+            ) AS estado_actual
+        FROM proyectos p
+        LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
+        LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
+        LEFT JOIN documentos  doc ON doc.proyecto_id = p.id
+        WHERE p.numero_expediente = %s
+        GROUP BY p.id
+        """,
+        (numero_expediente,),
+    )
+
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Proyecto con expediente {numero_expediente} no encontrado.",
+        )
+
+    # Proponentes
+    prop_rows = fetchall(
+        "SELECT secuencia, apellidos, nombre FROM proponentes WHERE proyecto_id = %s ORDER BY secuencia",
+        (row["id"],),
+    )
+    proponentes = [Proponente(**p) for p in prop_rows]
+
+    # Tramitación
+    tram_rows = fetchall(
+        """
+        SELECT organo, fecha_inicio, fecha_termino, tipo_tramite
+        FROM tramitacion
+        WHERE proyecto_id = %s
+        ORDER BY fecha_inicio ASC NULLS LAST
+        """,
+        (row["id"],),
+    )
+    tramitacion = [TramiteItem(**t) for t in tram_rows]
+
+    # Documentos
+    doc_rows = fetchall(
+        "SELECT tipo, ruta_archivo FROM documentos WHERE proyecto_id = %s",
+        (row["id"],),
+    )
+    documentos = [DocumentoItem(**d) for d in doc_rows]
+
+    return ProyectoDetalle(
+        **row,
+        es_ley=bool(row.get("numero_ley")),
+        proponentes=proponentes,
+        tramitacion=tramitacion,
+        documentos=documentos,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# TIPOS DE EXPEDIENTE (para filtros del front)
+# ══════════════════════════════════════════════════════════════════════
+
+@router.get("/proyectos-tipos", summary="Tipos de expediente disponibles")
+def tipos_expediente():
+    """
+    Devuelve la lista de tipos de expediente únicos en la base de datos.
+    Útil para poblar los filtros del front.
+    """
+    rows = fetchall(
+        """
+        SELECT tipo_expediente, COUNT(*) AS total
+        FROM proyectos
+        WHERE tipo_expediente IS NOT NULL
+        GROUP BY tipo_expediente
+        ORDER BY total DESC
+        """
+    )
+    return rows
