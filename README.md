@@ -48,3 +48,10 @@ Muchos proyectos pasan años en la misma comisión. Mostrar qué comisiones tien
 ¿Hay más actividad antes de elecciones? ¿En ciertos meses? El ciudadano puede ver patrones que los medios no reportan.
 6. Buscador por tema o diputado
 Para que cualquier persona pueda preguntar: "¿qué ha hecho el diputado X?" o "¿hay algún proyecto sobre agua?"
+
+
+frondend:
+
+cd asamblea-portal-frontend
+npm install
+npm run dev

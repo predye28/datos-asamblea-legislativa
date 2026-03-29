@@ -1,0 +1,54 @@
+/* src/components/sections/StatCards.module.css */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin-bottom: 8px;
+}
+
+.card {
+  background: var(--paper-card);
+  padding: 24px 20px;
+  cursor: default;
+  transition: background 0.15s;
+}
+.card:hover { background: var(--paper-warm); }
+
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+}
+
+.value {
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.value.blue     { color: var(--blue); }
+.value.positive { color: var(--positive); }
+.value.accent   { color: var(--accent); }
+
+.sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .value { font-size: 32px; }
+}

@@ -1,0 +1,70 @@
+/* src/components/sections/RankingDiputados.module.css */
+.block {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  padding: 28px;
+  margin-bottom: 8px;
+}
+
+.header { margin-bottom: 24px; }
+
+.title {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.list { display: flex; flex-direction: column; }
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.1s, padding 0.1s;
+}
+
+.item:last-child { border-bottom: none; }
+.item:hover { background: var(--paper-warm); padding-left: 12px; margin: 0 -28px; padding-right: 28px; }
+
+.num {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--rule);
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.numAccent { color: var(--accent); }
+
+.name {
+  flex: 1;
+  font-size: 14px;
+}
+
+.name strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  border: 1px solid var(--rule);
+  padding: 3px 10px;
+  background: var(--paper-warm);
+  flex-shrink: 0;
+}

@@ -1,0 +1,64 @@
+/* src/components/layout/Footer.module.css */
+.footer {
+  border-top: 3px solid var(--ink);
+  margin-top: 80px;
+  background: var(--paper-card);
+}
+
+.inner {
+  display: flex;
+  gap: 60px;
+  padding: 40px 40px 32px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.left { flex: 2; }
+.right { flex: 1; }
+
+.logo {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.tagline {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.7;
+  max-width: 420px;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-bottom: 4px;
+}
+
+.sourceLink {
+  font-size: 13px;
+  color: var(--ink-muted);
+  display: block;
+}
+
+a.sourceLink:hover { color: var(--accent); }
+
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 40px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 640px) {
+  .inner { flex-direction: column; gap: 24px; padding: 24px 20px; }
+  .bottom { flex-direction: column; gap: 6px; padding: 14px 20px; }
+}

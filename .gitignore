@@ -1,0 +1,29 @@
+# ── Python / Backend ──────────────────────────
+.env
+.env.local
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.DS_Store
+
+# ── Next.js / Frontend ────────────────────────
+.next/
+out/
+node_modules/
+
+# ── Scraper outputs ───────────────────────────
+*.json
+*.xlsx
+*.png
+documentos/
+
+# ── IDEs ──────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.user

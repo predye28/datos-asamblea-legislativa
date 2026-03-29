@@ -33,14 +33,14 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
 
       - name: Instalar dependencias Python
-        working-directory: extraer_proyectos
+        working-directory: extractor_proyectos
         run: pip install -r requirements.txt
 
       - name: Instalar Chromium (Playwright)
         run: playwright install chromium --with-deps
 
       - name: Correr scraper
-        working-directory: extraer_proyectos
+        working-directory: extractor_proyectos
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '50' }}
