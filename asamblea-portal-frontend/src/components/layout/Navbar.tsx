@@ -2,6 +2,7 @@
 // src/components/layout/Navbar.tsx
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import styles from './Navbar.module.css'
 
 const links = [
@@ -14,6 +15,18 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname()
+  const [menuAbierto, setMenuAbierto] = useState(false)
+
+  // Cierra el menú cuando se navega a otra página
+  useEffect(() => {
+    setMenuAbierto(false)
+  }, [pathname])
+
+  // Bloquea el scroll del body cuando el menú está abierto
+  useEffect(() => {
+    document.body.style.overflow = menuAbierto ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [menuAbierto])
 
   return (
     <header className={styles.header}>
@@ -22,11 +35,27 @@ export default function Navbar() {
         <Link href="/" className={styles.title}>
           La <span>Asamblea</span><br />al día
         </Link>
+
+        {/* Botón hamburguesa — solo visible en móvil */}
+        <button
+          className={styles.hamburger}
+          onClick={() => setMenuAbierto(!menuAbierto)}
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuAbierto}
+        >
+          <span className={`${styles.hamburgerLine} ${menuAbierto ? styles.open1 : ''}`} />
+          <span className={`${styles.hamburgerLine} ${menuAbierto ? styles.open2 : ''}`} />
+          <span className={`${styles.hamburgerLine} ${menuAbierto ? styles.open3 : ''}`} />
+        </button>
+
+        {/* Meta derecha — solo desktop */}
         <span className={styles.meta} suppressHydrationWarning>
           {new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })}
         </span>
       </div>
-      <nav className={styles.nav}>
+
+      {/* Nav desktop — barra horizontal */}
+      <nav className={styles.nav} aria-label="Navegación principal">
         {links.map(l => (
           <Link
             key={l.href}
@@ -34,6 +63,32 @@ export default function Navbar() {
             className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
           >
             {l.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Overlay oscuro detrás del menú móvil */}
+      {menuAbierto && (
+        <div
+          className={styles.overlay}
+          onClick={() => setMenuAbierto(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Menú móvil desplegable */}
+      <nav
+        className={`${styles.mobileMenu} ${menuAbierto ? styles.mobileMenuOpen : ''}`}
+        aria-label="Menú móvil"
+      >
+        {links.map(l => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
+          >
+            {l.label}
+            {pathname === l.href && <span className={styles.activeDot} />}
           </Link>
         ))}
       </nav>

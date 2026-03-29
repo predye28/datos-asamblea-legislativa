@@ -7,7 +7,7 @@ export default function AcercaPage() {
       <Hero
         kicker="Acerca de este proyecto"
         headline={<>Un portal ciudadano hecho<br />por preocupación, no por política</>}
-        deck="Este portal nació de una preocupación simple: la Asamblea Legislativa de Costa Rica tiene un sistema de información público donde está todo, pero está diseñado para técnicos. Nuestra misión es traducir esos datos para vos."
+        deck="La Asamblea Legislativa tiene toda su información en línea, pero en un formato que pocos pueden leer. Este portal toma esos datos oficiales y los explica en lenguaje sencillo, para que cualquier costarricense pueda entender qué hace su gobierno."
       />
 
       <div className="container">
@@ -19,21 +19,23 @@ export default function AcercaPage() {
             {/* Por qué existe */}
             <section className={styles.section}>
               <div className={styles.pullQuote}>
-                "La Asamblea publica sus datos. El problema es que nadie los entiende."
+                "La información pública existe. El problema es que está escrita para abogados."
               </div>
               <p>
-                Este portal nació de una preocupación simple: la Asamblea Legislativa de Costa Rica
-                tiene un sistema de información público (el SIL) donde está todo — proyectos, diputados,
-                tramitaciones, leyes aprobadas. Pero está diseñado para abogados y técnicos, no para el
-                ciudadano común.
+                La Asamblea Legislativa publica todo lo que hace: cada proyecto de ley,
+                cada diputado que lo firma, cada comisión por donde pasa. Eso es parte de su
+                obligación como institución pública.
               </p>
               <p>
-                ¿Cuántas personas saben que la tasa de aprobación de proyectos ronda el 6%?
-                ¿Que hay proyectos que mueren solos después de 4 años sin ser votados?
-                ¿Que podés buscar qué ha propuesto tu diputado?
+                El problema es cómo lo publica. El sistema oficial está pensado para
+                especialistas en derecho, no para el ciudadano común. Buscar un proyecto,
+                entender su estado, o saber qué hizo tu diputado requiere conocimiento técnico
+                que la mayoría de personas no tiene — ni tiene por qué tener.
               </p>
               <p>
-                La información existe. Solo faltaba traducirla.
+                Este portal existe para cerrar esa brecha. Tomamos los mismos datos oficiales
+                y los presentamos de forma que cualquier persona, sin importar su nivel educativo,
+                pueda entender qué está pasando en su Asamblea.
               </p>
             </section>
 
@@ -158,16 +160,14 @@ export default function AcercaPage() {
           {/* Sidebar */}
           <aside className={styles.sidebar}>
             <div className={styles.sideCard}>
-              <div className={styles.sideTitle}>Stack tecnológico</div>
+              <div className={styles.sideTitle}>Tecnologías usadas</div>
               <ul className={styles.stackList}>
                 {[
-                  ['Python + Playwright', 'Scraper del SIL'],
-                  ['PostgreSQL / Neon', 'Base de datos'],
-                  ['FastAPI', 'API REST'],
-                  ['Next.js 14', 'Portal web'],
-                  ['GitHub Actions', 'Automatización'],
-                  ['Railway', 'Deploy de la API'],
-                  ['Vercel', 'Deploy del portal'],
+                  ['Python', 'Extrae los datos del SIL cada noche'],
+                  ['PostgreSQL', 'Base de datos donde se guarda todo'],
+                  ['FastAPI', 'API que conecta los datos con el portal'],
+                  ['Next.js', 'El portal web que estás viendo'],
+                  ['GitHub Actions', 'Se actualiza solo, sin intervención manual'],
                 ].map(([tech, role]) => (
                   <li key={tech} className={styles.stackItem}>
                     <span className={styles.stackTech}>{tech}</span>
@@ -184,7 +184,7 @@ export default function AcercaPage() {
                 Asamblea Legislativa de Costa Rica, que es de acceso público.
               </p>
               <a
-                href="https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL"
+                href="https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/ConsultaProyectos.aspx"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.sideLink}

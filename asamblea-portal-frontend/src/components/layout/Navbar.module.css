@@ -1,13 +1,14 @@
 /* src/components/layout/Navbar.module.css */
 .header {
-  border-bottom: 3px solid var(--accent); /* azul institución en lugar de negro */
+  border-bottom: 3px solid var(--accent);
   position: sticky;
   top: 0;
   background: var(--paper-card);
-  z-index: 100;
+  z-index: 200;
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Barra superior con logo y meta ── */
 .top {
   display: flex;
   align-items: center;
@@ -20,7 +21,7 @@
 
 .meta {
   font-family: var(--mono);
-  font-size: 11px;        /* era 10px */
+  font-size: 11px;
   color: var(--ink-faint);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -31,7 +32,7 @@
 
 .title {
   font-family: var(--serif);
-  font-size: clamp(22px, 3.5vw, 38px);
+  font-size: clamp(20px, 3.5vw, 38px);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -44,26 +45,25 @@
 
 .title span { color: var(--accent); }
 
-/* Navegación más legible y táctil */
+/* ── Navegación desktop — barra horizontal ── */
 .nav {
   display: flex;
-  gap: 0;
   padding: 0 40px;
-  overflow-x: auto;
   max-width: var(--max-w);
   margin: 0 auto;
-  scrollbar-width: none; /* Oculta scrollbar horizontal en Firefox */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 .nav::-webkit-scrollbar { display: none; }
 
 .link {
   font-family: var(--mono);
-  font-size: 12px;        /* era 10px — era imposible de leer */
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-muted);
   text-decoration: none;
-  padding: 14px 18px;     /* era 10px 16px — ahora zona táctil mínima ~44px */
+  padding: 14px 18px;
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -75,7 +75,6 @@
 .link:first-child { border-left: 1px solid var(--rule); }
 .link:hover { color: var(--accent); background: var(--paper-warm); }
 
-/* Indicador activo más claro — borde izquierdo en lugar de solo color */
 .link.active {
   color: var(--accent);
   font-weight: 500;
@@ -83,13 +82,124 @@
   border-bottom: 2px solid var(--accent);
 }
 
+/* ── Botón hamburguesa — solo en móvil ── */
+.hamburger {
+  display: none;          /* Oculto en desktop */
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.hamburgerLine {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.25s;
+  transform-origin: center;
+}
+
+/* Animación al abrir — X */
+.open1 { transform: translateY(7px) rotate(45deg); }
+.open2 { opacity: 0; transform: scaleX(0); }
+.open3 { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Overlay oscuro ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 150;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Menú móvil desplegable ── */
+.mobileMenu {
+  position: fixed;
+  top: 0;
+  right: -100%;           /* Fuera de pantalla por defecto */
+  width: min(320px, 85vw);
+  height: 100dvh;
+  background: var(--paper-card);
+  border-left: 3px solid var(--accent);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  padding: 80px 0 40px;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+}
+
+.mobileMenuOpen {
+  right: 0;               /* Desliza hacia adentro */
+}
+
+/* Links del menú móvil */
+.mobileLink {
+  font-family: var(--mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mobileLink:hover { background: var(--paper-warm); color: var(--accent); }
+
+.mobileLinkActive {
+  color: var(--accent);
+  font-weight: 500;
+  background: var(--paper-warm);
+}
+
+.activeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
 @media (max-width: 640px) {
-  .top { padding: 12px 20px; flex-wrap: wrap; gap: 6px; }
-  .meta { display: none; }
-  .title { flex: 1; padding: 0; text-align: left; }
-  .nav { padding: 0 16px; }
-  .link {
-    padding: 12px 14px;
-    font-size: 11px;      /* era 9px — prácticamente ilegible */
+  .top {
+    padding: 12px 20px;
   }
+
+  /* En móvil: logo a la izquierda, hamburguesa a la derecha */
+  .meta { display: none; }  /* Ocultar textos meta */
+  .title {
+    flex: 1;
+    text-align: left;
+    padding: 0;
+    font-size: 22px;
+  }
+
+  /* Mostrar el hamburger */
+  .hamburger { display: flex; }
+
+  /* Ocultar la nav horizontal en móvil */
+  .nav { display: none; }
 }
