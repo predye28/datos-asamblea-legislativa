@@ -1,9 +1,13 @@
 /* src/components/sections/AprobacionBar.module.css */
+
+/* Tarjeta principal — con borde superior de acento para jerarquía */
 .block {
   background: var(--paper-card);
   border: 1px solid var(--rule);
+  border-top: 3px solid var(--positive); /* verde = dato positivo (leyes aprobadas) */
   padding: 28px;
   margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
 .header {
@@ -12,48 +16,72 @@
   align-items: flex-start;
   margin-bottom: 20px;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
+.textBlock { flex: 1; min-width: 0; }
+
+/* Título del bloque */
 .title {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 20px;          /* era 18px */
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  color: var(--ink);
 }
 
+/* Conteo de leyes vs total */
 .counts {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;          /* era 11px */
   color: var(--ink-faint);
   letter-spacing: 0.04em;
+  line-height: 1.5;
 }
 
+/* Porcentaje grande — valor principal */
 .pct {
   font-family: var(--serif);
-  font-size: 44px;
+  font-size: 52px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--positive);   /* era accent (azul) — verde comunica "aprobado" */
   line-height: 1;
   flex-shrink: 0;
 }
 
+/* Sub-etiqueta bajo el porcentaje */
+.pctLabel {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  text-align: right;
+  margin-top: 2px;
+}
+
+/* Barra de progreso */
 .barBg {
-  height: 8px;
+  height: 10px;             /* era 8px — más visible */
   background: var(--paper-warm);
+  border-radius: 4px;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .barFill {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--positive), #22C55E);
+  border-radius: 4px;
   width: 0%;
   transition: width 1.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Texto explicativo — más grande para 10-60 años */
 .explanation {
-  font-size: 14px;
+  font-size: 15px;          /* era 14px */
   color: var(--ink-muted);
   font-style: italic;
-  line-height: 1.7;
+  line-height: 1.75;
   max-width: 720px;
 }

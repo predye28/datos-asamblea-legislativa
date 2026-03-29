@@ -1,15 +1,17 @@
 /* src/components/layout/Footer.module.css */
 .footer {
-  border-top: 3px solid var(--ink);
-  margin-top: 80px;
+  border-top: 3px solid var(--accent); /* azul — coherencia con Navbar */
+  margin-top: 96px;
   background: var(--paper-card);
 }
 
 .inner {
   display: flex;
   gap: 60px;
-  padding: 40px 40px 32px;
+  padding: 44px 40px 32px;
   border-bottom: 1px solid var(--rule);
+  max-width: var(--max-w);
+  margin: 0 auto;
 }
 
 .left { flex: 2; }
@@ -17,48 +19,70 @@
 
 .logo {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   display: block;
   margin-bottom: 12px;
+  color: var(--ink);
 }
 
+.logo span { color: var(--accent); }
+
 .tagline {
-  font-size: 13px;
+  font-size: 15px;          /* era 13px */
   color: var(--ink-muted);
-  line-height: 1.7;
+  line-height: 1.75;
   max-width: 420px;
 }
 
+/* Label encima del link — era 9px, ilegible */
 .label {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;          /* era 9px */
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--ink-faint);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .sourceLink {
-  font-size: 13px;
+  font-size: 14px;          /* era 13px */
   color: var(--ink-muted);
   display: block;
+  transition: color 0.15s;
 }
 
-a.sourceLink:hover { color: var(--accent); }
+a.sourceLink:hover { color: var(--accent); text-decoration: underline; }
 
+/* Pie de página */
 .bottom {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 14px 40px;
+  max-width: var(--max-w);
+  margin: 0 auto;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;          /* era 9px — invisible */
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
+/* Branding de fuente de datos */
+.sourceNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sourceNote::before {
+  content: '●';
+  color: var(--positive);
+  font-size: 8px;
+}
+
 @media (max-width: 640px) {
-  .inner { flex-direction: column; gap: 24px; padding: 24px 20px; }
-  .bottom { flex-direction: column; gap: 6px; padding: 14px 20px; }
+  .inner { flex-direction: column; gap: 28px; padding: 28px 20px; }
+  .bottom { flex-direction: column; gap: 4px; padding: 14px 20px; font-size: 10px; }
 }

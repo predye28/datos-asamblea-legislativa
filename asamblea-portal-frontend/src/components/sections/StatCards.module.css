@@ -2,53 +2,64 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--rule);
-  border: 1px solid var(--rule);
+  gap: 12px;              /* era 1px gap — ahora cards separadas con espacio */
   margin-bottom: 8px;
 }
 
 .card {
   background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--rule); /* borde superior para indicar categoría */
   padding: 24px 20px;
   cursor: default;
-  transition: background 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  box-shadow: var(--shadow-sm);
 }
-.card:hover { background: var(--paper-warm); }
 
+.card:hover {
+  border-top-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Etiqueta de la tarjeta — más grande */
 .label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;        /* era 10px */
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--ink-faint);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  line-height: 1.4;
 }
 
+/* Valor principal — grande y llamativo */
 .value {
   font-family: var(--serif);
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: var(--ink);
 }
 
 .value.blue     { color: var(--blue); }
 .value.positive { color: var(--positive); }
 .value.accent   { color: var(--accent); }
+.value.neutral  { color: var(--ink-muted); }
 
+/* Sub-texto explicativo */
 .sub {
-  font-size: 12px;
+  font-size: 13px;        /* era 12px */
   color: var(--ink-muted);
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 @media (max-width: 900px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 480px) {
-  .grid { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; gap: 8px; }
   .value { font-size: 32px; }
 }

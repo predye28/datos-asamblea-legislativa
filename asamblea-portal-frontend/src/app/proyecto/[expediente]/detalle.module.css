@@ -1,18 +1,21 @@
-/* src/app/proyecto/[expediente]/detalle.module.css */
 .backBar {
   background: var(--paper-warm);
   border-bottom: 1px solid var(--rule);
-  padding: 10px 0;
+  padding: 12px 0;
 }
 
 .back {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;        /* era 11px */
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-muted);
   text-decoration: none;
   transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;       /* zona táctil */
 }
 
 .back:hover {
@@ -20,13 +23,13 @@
 }
 
 .pageHero {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 44px 0 36px;
+  background: #0F172A;    /* azul marino — consistente con el Hero global */
+  color: #F8FAFC;
+  padding: 48px 0 40px;
 }
 
 .pageHeroLey {
-  background: #0f3d21;
+  background: #14532D;    /* verde oscuro más legible que el anterior */
 }
 
 .heroMeta {
@@ -39,27 +42,27 @@
 
 .expNum {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;        /* era 11px */
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(245, 242, 234, 0.5);
+  color: rgba(248, 250, 252, 0.55);
 }
 
 .badgeLey {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;        /* era 10px */
   background: var(--positive);
   color: #fff;
-  padding: 3px 10px;
+  padding: 5px 12px;
   letter-spacing: 0.06em;
 }
 
 .badgeActivo {
   font-family: var(--mono);
-  font-size: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(245, 242, 234, 0.8);
-  padding: 3px 10px;
+  font-size: 12px;        /* era 10px */
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(248, 250, 252, 0.85);
+  padding: 5px 12px;
   letter-spacing: 0.04em;
   max-width: 300px;
   overflow: hidden;
@@ -69,19 +72,19 @@
 
 .heroTitle {
   font-family: var(--serif);
-  font-size: clamp(20px, 3vw, 34px);
+  font-size: clamp(22px, 3.2vw, 36px);
   font-weight: 700;
   line-height: 1.2;
   color: inherit;
-  max-width: 75%;
+  max-width: 78%;
   margin-bottom: 12px;
 }
 
 .heroType {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;        /* era 11px */
   color: inherit;
-  opacity: 0.5;
+  opacity: 0.55;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }

@@ -2,74 +2,107 @@
 .block {
   background: var(--paper-card);
   border: 1px solid var(--rule);
+  border-top: 3px solid var(--accent); /* acento azul para guiar la atención */
   padding: 28px;
+  box-shadow: var(--shadow-sm);
 }
 
+/* Label más grande — era 10px */
 .label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-faint);
-  margin-bottom: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  margin-bottom: 12px;
+  font-weight: 500;
 }
 
 .inputWrap {
   display: flex;
-  border: 1.5px solid var(--ink);
+  border: 2px solid var(--rule);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  border-radius: 2px;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .input {
   flex: 1;
-  padding: 12px 16px;
-  font-size: 15px;
+  padding: 14px 18px;     /* era 12px 16px — más táctil */
+  font-size: 16px;        /* evita zoom en iOS */
   border: none;
-  background: var(--paper);
+  background: var(--paper-card);
   color: var(--ink);
   outline: none;
   font-family: var(--body);
+  min-height: 52px;       /* zona táctil generosa */
 }
 
-.input::placeholder { color: var(--ink-faint); font-style: italic; }
+.input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
 
+/* Botón de búsqueda — más grande, azul claro */
 .btn {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;        /* era 11px */
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 12px 20px;
-  background: var(--ink);
-  color: var(--paper);
+  letter-spacing: 0.06em;
+  padding: 14px 24px;
+  background: var(--accent);
+  color: #fff;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.btn:hover { background: var(--accent); }
+.btn:hover { background: var(--accent-dark); }
 
+/* Sugerencias rápidas */
 .tags {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 14px;
+  align-items: center;
+}
+
+.tagsLabel {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .tag {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;        /* era 10px */
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--ink-muted);
   border: 1px solid var(--rule);
-  padding: 5px 12px;
+  padding: 6px 14px;      /* más alto para táctil */
+  min-height: 32px;
   background: transparent;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
 }
 
 .tag:hover {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }

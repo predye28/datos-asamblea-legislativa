@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.left}>
-          <span className={styles.logo}>La Asamblea en Números</span>
+          <span className={styles.logo}>La Asamblea al Día</span>
           <p className={styles.tagline}>
             Portal ciudadano independiente. Los datos son oficiales y provienen
             del Sistema de Información Legislativa (SIL) de la Asamblea

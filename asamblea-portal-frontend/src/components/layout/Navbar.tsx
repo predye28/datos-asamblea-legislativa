@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation'
 import styles from './Navbar.module.css'
 
 const links = [
-  { href: '/',             label: 'Inicio' },
-  { href: '/proyectos',    label: 'Proyectos' },
-  { href: '/diputados',    label: 'Diputados' },
+  { href: '/', label: 'Inicio' },
+  { href: '/proyectos', label: 'Proyectos' },
+  { href: '/diputados', label: 'Diputados' },
   { href: '/estadisticas', label: 'Estadísticas' },
-  { href: '/acerca',       label: 'Acerca de' },
+  { href: '/acerca', label: 'Acerca de' },
 ]
 
 export default function Navbar() {
@@ -20,7 +20,7 @@ export default function Navbar() {
       <div className={styles.top}>
         <span className={styles.meta}>Costa Rica · Datos oficiales · Actualizado diariamente</span>
         <Link href="/" className={styles.title}>
-          La <span>Asamblea</span><br />en números
+          La <span>Asamblea</span><br />al día
         </Link>
         <span className={styles.meta} suppressHydrationWarning>
           {new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })}

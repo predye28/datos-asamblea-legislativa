@@ -1,27 +1,28 @@
 /* src/components/layout/Navbar.module.css */
 .header {
-  border-bottom: 3px solid var(--ink);
+  border-bottom: 3px solid var(--accent); /* azul institución en lugar de negro */
   position: sticky;
   top: 0;
-  background: var(--paper);
+  background: var(--paper-card);
   z-index: 100;
+  box-shadow: var(--shadow-sm);
 }
 
 .top {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  padding: 20px 40px 12px;
+  padding: 16px 40px;
   border-bottom: 1px solid var(--rule);
-  max-width: var(--max-w); 
+  max-width: var(--max-w);
   margin: 0 auto;
 }
 
 .meta {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;        /* era 10px */
   color: var(--ink-faint);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   flex: 1;
 }
@@ -30,7 +31,7 @@
 
 .title {
   font-family: var(--serif);
-  font-size: clamp(24px, 4vw, 44px);
+  font-size: clamp(22px, 3.5vw, 38px);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -43,23 +44,29 @@
 
 .title span { color: var(--accent); }
 
+/* Navegación más legible y táctil */
 .nav {
   display: flex;
   gap: 0;
   padding: 0 40px;
   overflow-x: auto;
-  max-width: var(--max-w); 
+  max-width: var(--max-w);
   margin: 0 auto;
+  scrollbar-width: none; /* Oculta scrollbar horizontal en Firefox */
 }
+.nav::-webkit-scrollbar { display: none; }
 
 .link {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;        /* era 10px — era imposible de leer */
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--ink-muted);
   text-decoration: none;
-  padding: 10px 16px;
+  padding: 14px 18px;     /* era 10px 16px — ahora zona táctil mínima ~44px */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   border-right: 1px solid var(--rule);
   transition: color 0.15s, background 0.15s;
   white-space: nowrap;
@@ -67,12 +74,22 @@
 
 .link:first-child { border-left: 1px solid var(--rule); }
 .link:hover { color: var(--accent); background: var(--paper-warm); }
-.link.active { color: var(--accent); font-weight: 500; }
+
+/* Indicador activo más claro — borde izquierdo en lugar de solo color */
+.link.active {
+  color: var(--accent);
+  font-weight: 500;
+  background: var(--paper-warm);
+  border-bottom: 2px solid var(--accent);
+}
 
 @media (max-width: 640px) {
-  .top { padding: 16px 20px 10px; flex-wrap: wrap; gap: 8px; }
+  .top { padding: 12px 20px; flex-wrap: wrap; gap: 6px; }
   .meta { display: none; }
-  .title { flex: 1; padding: 0; font-size: 28px; text-align: left; }
-  .nav { padding: 0 20px; }
-  .link { padding: 10px 12px; font-size: 9px; }
+  .title { flex: 1; padding: 0; text-align: left; }
+  .nav { padding: 0 16px; }
+  .link {
+    padding: 12px 14px;
+    font-size: 11px;      /* era 9px — prácticamente ilegible */
+  }
 }

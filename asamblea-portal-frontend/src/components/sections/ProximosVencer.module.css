@@ -1,85 +1,99 @@
 /* src/components/sections/ProximosVencer.module.css */
+
+/* Borde ámbar — señal de advertencia, no urgencia extrema */
 .block {
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--accent-warm);
   border-top: 1px solid var(--rule);
   border-right: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
   padding: 24px 28px;
   background: var(--paper-card);
   margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
+/* Kicker */
 .kicker {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;          /* era 10px */
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--accent);
+  color: var(--accent-warm);
   margin-bottom: 6px;
 }
 
+/* Título */
 .title {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 20px;          /* era 18px */
   font-weight: 700;
   margin-bottom: 8px;
+  color: var(--ink);
 }
 
+/* Descripción */
 .explanation {
-  font-size: 13px;
+  font-size: 15px;          /* era 13px */
   color: var(--ink-muted);
   font-style: italic;
   margin-bottom: 20px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-.list { display: flex; flex-direction: column; gap: 2px; }
+.list { display: flex; flex-direction: column; }
 
+/* Item de la lista */
 .item {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 0;
+  padding: 14px 4px;        /* más espacio vertical */
   border-bottom: 1px solid var(--rule);
   text-decoration: none;
   color: var(--ink);
-  transition: background 0.12s;
+  transition: background 0.12s, padding-left 0.15s;
   cursor: pointer;
+  min-height: 56px;
 }
 
 .item:last-child { border-bottom: none; }
-.item:hover { background: var(--paper-warm); padding-left: 8px; margin: 0 -8px; padding-right: 8px; }
+.item:hover { background: var(--paper-warm); padding-left: 12px; margin: 0 -12px; padding-right: 12px; }
 
+/* Badge de días restantes */
 .dias {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;          /* era 11px */
   font-weight: 500;
   color: #fff;
-  padding: 3px 8px;
+  padding: 5px 10px;        /* más grande */
   flex-shrink: 0;
-  min-width: 40px;
+  min-width: 48px;
   text-align: center;
+  border-radius: 2px;
 }
 
 .info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
 
+/* Número de expediente */
 .expNum {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;          /* era 10px */
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
+/* Título del proyecto */
 .expTitle {
-  font-size: 14px;
+  font-size: 15px;          /* era 14px */
   color: var(--ink);
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,7 +104,7 @@
   font-size: 14px;
   color: var(--ink-faint);
   flex-shrink: 0;
-  transition: transform 0.15s;
+  transition: transform 0.15s, color 0.15s;
 }
 
 .item:hover .arrow { transform: translateX(4px); color: var(--accent); }

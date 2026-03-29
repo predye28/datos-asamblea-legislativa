@@ -5,10 +5,10 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
-  title: 'La Asamblea en Números — Portal Ciudadano CR',
+  title: 'La Asamblea al Día — Portal Ciudadano CR',
   description: 'Los datos de la Asamblea Legislativa de Costa Rica, traducidos para todos los costarricenses.',
   openGraph: {
-    title: 'La Asamblea en Números',
+    title: 'La Asamblea al Día',
     description: 'Transparencia legislativa para todos los costarricenses.',
     locale: 'es_CR',
     type: 'website',

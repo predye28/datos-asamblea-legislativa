@@ -1,18 +1,19 @@
 /* src/components/sections/Hero.module.css */
 .hero {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 64px 0;
+  background: #0F172A;    /* azul marino oscuro — más institucional */
+  color: #F8FAFC;
+  padding: 72px 0;
   position: relative;
   overflow: hidden;
 }
 
+/* Detalle decorativo sutil — círculos que no distraen */
 .hero::before {
   content: '';
   position: absolute;
-  top: -60px; right: -60px;
-  width: 340px; height: 340px;
-  border: 1px solid rgba(255,255,255,0.05);
+  top: -80px; right: -60px;
+  width: 360px; height: 360px;
+  border: 1px solid rgba(59, 130, 246, 0.12);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -20,9 +21,9 @@
 .hero::after {
   content: '';
   position: absolute;
-  bottom: -100px; right: 80px;
-  width: 220px; height: 220px;
-  border: 1px solid rgba(255,255,255,0.03);
+  bottom: -80px; right: 100px;
+  width: 240px; height: 240px;
+  border: 1px solid rgba(59, 130, 246, 0.06);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -31,41 +32,57 @@
   max-width: var(--max-w);
   margin: 0 auto;
   padding: 0 40px;
+  position: relative;
 }
 
+/* Kicker — texto guía antes del título */
 .kicker {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;        /* era 11px — ahora legible */
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--accent);
+  color: #60A5FA;         /* azul claro sobre fondo oscuro — buen contraste */
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Línea decorativa antes del kicker */
+.kicker::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: #3B82F6;
+  flex-shrink: 0;
 }
 
 .headline {
   font-family: var(--serif);
-  font-size: clamp(28px, 6vw, 48px);
+  font-size: clamp(28px, 5.5vw, 52px);
   font-weight: 700;
   line-height: 1.1;
-  color: inherit; /* Seguirá var(--paper) */
-  max-width: 75%; /* Ajuste al 75% pedido */
+  color: inherit;
+  max-width: 78%;
   margin-bottom: 24px;
 }
 
 .deck {
-  font-size: 16px;
-  color: inherit;
-  opacity: 0.75;
-  max-width: 600px;
-  line-height: 1.7;
+  font-size: 17px;        /* era 16px */
+  color: #CBD5E1;         /* gris azulado claro para mejor contraste sobre marino */
+  max-width: 580px;
+  line-height: 1.75;
   font-weight: 400;
 }
 
 @media (max-width: 768px) {
   .headline { max-width: 100%; }
+  .deck { font-size: 16px; }
 }
 
 @media (max-width: 640px) {
-  .hero { padding: 48px 0; }
+  .hero { padding: 52px 0; }
   .inner { padding: 0 20px; }
+  .kicker { font-size: 11px; }
 }

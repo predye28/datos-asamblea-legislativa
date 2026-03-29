@@ -1,39 +1,6 @@
 /* src/app/proyectos/proyectos.module.css */
-.pageHero {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 44px 0 36px;
-  margin-bottom: 0;
-}
 
-.heroKicker {
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-
-.heroTitle {
-  font-family: var(--serif);
-  font-size: clamp(22px, 3vw, 36px);
-  font-weight: 700;
-  color: inherit;
-  max-width: 75%;
-  margin-bottom: 12px;
-}
-
-.heroDeck {
-  font-size: 14px;
-  color: inherit;
-  opacity: 0.7;
-  max-width: 500px;
-  line-height: 1.7;
-  font-weight: 300;
-}
-
-/* Filters */
+/* Filtros */
 .filters {
   background: var(--paper-card);
   border: 1px solid var(--rule);
@@ -46,13 +13,19 @@
 
 .searchRow {
   display: flex;
-  border: 1.5px solid var(--ink);
+  border: 2px solid var(--rule);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchRow:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .searchInput {
   flex: 1;
-  padding: 10px 14px;
-  font-size: 14px;
+  padding: 13px 16px;
+  font-size: 16px;          /* era 14px — evita zoom en iOS */
   border: none;
   background: var(--paper);
   color: var(--ink);
@@ -64,19 +37,20 @@
 
 .searchBtn {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;          /* era 11px */
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 10px 18px;
-  background: var(--ink);
-  color: var(--paper);
+  padding: 13px 20px;       /* zona táctil */
+  background: var(--accent); /* azul — más institucional */
+  color: #fff;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  min-height: 48px;
 }
 
-.searchBtn:hover { background: var(--accent); }
+.searchBtn:hover { background: var(--accent-dark); }
 
 .filterRow {
   display: flex;
@@ -105,24 +79,28 @@
   align-items: center;
   gap: 6px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;          /* era 11px */
   color: var(--ink-muted);
   cursor: pointer;
   white-space: nowrap;
+  min-height: 44px;
 }
 
 .clearBtn {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;          /* era 10px */
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 8px 14px;
+  padding: 10px 16px;       /* zona táctil */
+  min-height: 40px;
   border: 1px solid var(--rule);
   background: transparent;
   color: var(--ink-faint);
   cursor: pointer;
   transition: all 0.15s;
   margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .clearBtn:hover { color: var(--accent); border-color: var(--accent); }
@@ -161,7 +139,7 @@
 
 .expNum {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;          /* era 10px */
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -169,15 +147,15 @@
 
 .badge {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;          /* era 9px — absolutamente ilegible */
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
   border: 1px solid var(--rule);
   color: var(--ink-muted);
   background: var(--paper-warm);
   white-space: nowrap;
-  max-width: 200px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -215,7 +193,7 @@
 
 .cardStat {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;          /* era 10px */
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -223,7 +201,7 @@
 
 .cardType {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;          /* era 10px */
   color: var(--ink-muted);
   margin-left: auto;
   text-transform: uppercase;
@@ -265,31 +243,36 @@
 /* Pagination */
 .pager {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
-  margin-top: 32px;
+  margin-top: 36px;
   flex-wrap: wrap;
 }
 
 .pageBtn {
   font-family: var(--mono);
-  font-size: 11px;
-  padding: 8px 12px;
+  font-size: 12px;          /* era 11px */
+  padding: 10px 16px;       /* zona táctil */
+  min-height: 44px;
+  min-width: 44px;
   border: 1px solid var(--rule);
   background: var(--paper-card);
   color: var(--ink-muted);
   cursor: pointer;
   transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pageBtn:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.pageBtn:disabled { opacity: 0.3; cursor: default; }
-.pageBtnActive { background: var(--ink) !important; color: var(--paper) !important; border-color: var(--ink) !important; }
+.pageBtn:hover:not(:disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pageBtn:disabled { opacity: 0.35; cursor: default; }
+.pageBtnActive { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
 
 .pageDots {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-faint);
   padding: 0 8px;
 }
