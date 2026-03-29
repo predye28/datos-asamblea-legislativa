@@ -62,3 +62,4 @@ ahora para desplegarlo la idea es usar:
 para el frontend vercel:
 
 y el backend render:
+https://dashboard.render.com/web/srv-d74ol094tr6s73cth550
