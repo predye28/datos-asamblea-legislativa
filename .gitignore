@@ -18,6 +18,10 @@ node_modules/
 
 # ── Scraper outputs ───────────────────────────
 *.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!components.json
 *.xlsx
 *.png
 documentos/
