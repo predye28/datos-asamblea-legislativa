@@ -60,6 +60,8 @@ npm run dev
 ahora para desplegarlo la idea es usar:
 
 para el frontend vercel:
-
+https://vercel.com/predyes-projects/datos-asamblea-legislativa/deployments
+link:
+https://datos-asamblea-legislativa-2mb2n1cnb-predyes-projects.vercel.app/
 y el backend render:
 https://dashboard.render.com/web/srv-d74ol094tr6s73cth550
