@@ -1,6 +1,6 @@
 'use client'
 // src/app/proyectos/page.tsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion } from '@/lib/api'
 import SectionRule from '@/components/ui/SectionRule'
@@ -66,7 +66,7 @@ function Pager({ pag, onPage }: { pag: Paginacion; onPage: (p: number) => void }
   )
 }
 
-export default function ProyectosPage() {
+function ProyectosContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -200,5 +200,13 @@ export default function ProyectosPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ProyectosPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}>Cargando datos...</div>}>
+      <ProyectosContent />
+    </Suspense>
   )
 }

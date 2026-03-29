@@ -1,6 +1,6 @@
 'use client'
 // src/app/diputados/page.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { api, DiputadoRanking } from '@/lib/api'
@@ -8,7 +8,7 @@ import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import styles from './diputados.module.css'
 
-export default function DiputadosPage() {
+function DiputadosContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [query, setQuery] = useState(searchParams.get('q') || '')
@@ -95,5 +95,13 @@ export default function DiputadosPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DiputadosPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}>Cargando datos...</div>}>
+      <DiputadosContent />
+    </Suspense>
   )
 }
