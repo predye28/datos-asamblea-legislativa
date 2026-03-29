@@ -149,7 +149,12 @@ export const api = {
   },
 
   metricas: {
-    general: () => apiFetch<MetricasResponse>('/metricas'),
+    general: (params: { desde?: string; hasta?: string } = {}) => {
+      const qs = new URLSearchParams()
+      if (params.desde) qs.set('desde', params.desde)
+      if (params.hasta) qs.set('hasta', params.hasta)
+      return apiFetch<MetricasResponse>(`/metricas?${qs}`)
+    },
     actividadSemanal: () => apiFetch<{ datos: unknown[]; total: number }>('/metricas/actividad-semanal'),
     proximosVencer: () => apiFetch<{ datos: ProximoVencer[]; total: number }>('/metricas/proximos-vencer'),
     lineaTiempo: () => apiFetch<{ datos: { anio: number; leyes_aprobadas: number }[] }>('/metricas/linea-tiempo'),

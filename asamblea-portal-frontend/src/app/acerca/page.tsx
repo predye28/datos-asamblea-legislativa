@@ -1,18 +1,14 @@
-// src/app/acerca/page.tsx
+import Hero from '@/components/sections/Hero'
 import styles from './acerca.module.css'
 
 export default function AcercaPage() {
   return (
     <div style={{ paddingBottom: 80 }}>
-      {/* Hero */}
-      <div className={styles.pageHero}>
-        <div className="container">
-          <div className={styles.heroKicker}>Acerca de este proyecto</div>
-          <h1 className={styles.heroTitle}>
-            Un portal ciudadano hecho<br />por preocupación, no por política
-          </h1>
-        </div>
-      </div>
+      <Hero
+        kicker="Acerca de este proyecto"
+        headline={<>Un portal ciudadano hecho<br />por preocupación, no por política</>}
+        deck="Este portal nació de una preocupación simple: la Asamblea Legislativa de Costa Rica tiene un sistema de información público donde está todo, pero está diseñado para técnicos. Nuestra misión es traducir esos datos para vos."
+      />
 
       <div className="container">
         <div className={styles.layout}>

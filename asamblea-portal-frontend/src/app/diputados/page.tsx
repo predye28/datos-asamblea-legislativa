@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { api, DiputadoRanking } from '@/lib/api'
 import SectionRule from '@/components/ui/SectionRule'
+import Hero from '@/components/sections/Hero'
 import styles from './diputados.module.css'
 
 export default function DiputadosPage() {
@@ -27,17 +28,11 @@ export default function DiputadosPage() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <div className={styles.pageHero}>
-        <div className="container">
-          <div className={styles.heroKicker}>Actividad legislativa</div>
-          <h1 className={styles.heroTitle}>Diputados más activos</h1>
-          <p className={styles.heroDeck}>
-            Diputados ordenados por cantidad de proyectos presentados. La actividad no
-            mide la calidad ni si sus propuestas fueron aprobadas — solo cuántos proyectos
-            pusieron sobre la mesa.
-          </p>
-        </div>
-      </div>
+      <Hero
+        kicker="Actividad legislativa"
+        headline="Diputados más activos"
+        deck="Diputados ordenados por cantidad de proyectos presentados. La actividad no mide la calidad ni si sus propuestas fueron aprobadas — solo cuántos proyectos pusieron sobre la mesa."
+      />
 
       <div className="container">
         <SectionRule label="Buscar diputado" />

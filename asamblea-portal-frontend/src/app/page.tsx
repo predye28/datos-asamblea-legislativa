@@ -19,7 +19,11 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero />
+      <Hero
+        kicker="¿Para qué sirve esto?"
+        headline={<>Los datos de la Asamblea Legislativa,<br />traducidos para todos los costarricenses</>}
+        deck="La Asamblea publica su información, pero de una forma que pocos entienden. Este portal toma esos mismos datos oficiales y los convierte en algo que cualquier ciudadano puede leer, comparar y cuestionar. Porque la transparencia solo funciona si se entiende."
+      />
 
       <div className="container" style={{ paddingTop: 0, paddingBottom: 60 }}>
         <SectionRule label="Resumen general" />

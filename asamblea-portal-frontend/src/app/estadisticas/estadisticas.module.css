@@ -1,9 +1,4 @@
 /* src/app/estadisticas/estadisticas.module.css */
-.pageHero { background: var(--ink); color: var(--paper); padding: 44px 0 36px; }
-.heroKicker { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px; }
-.heroTitle { font-family: var(--serif); font-size: clamp(22px, 3vw, 36px); font-weight: 700; color: inherit; max-width: 75%; margin-bottom: 12px; }
-.heroDeck { font-size: 14px; color: inherit; opacity: 0.7; max-width: 500px; line-height: 1.7; font-weight: 300; }
-
 .loading { display: flex; align-items: center; justify-content: center; min-height: 300px; }
 .loadingText { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
 
@@ -100,4 +95,62 @@
 @media (max-width: 700px) {
   .kpiGrid { grid-template-columns: repeat(2, 1fr); }
   .organoName { width: 140px; font-size: 11px; }
+  .dateFilters { flex-direction: column; align-items: flex-start; }
+}
+
+.dateFilters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.dateInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dateInputGroup label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.dateInput {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  outline: none;
+}
+
+.dateRangeMeta {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-left: auto;
+}
+
+.clearBtn {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-faint);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.clearBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }

@@ -39,11 +39,9 @@ MESES_ES = {
 
 def _enriquecer(row: dict) -> ProyectoResumen:
     """Convierte una fila cruda de BD en un ProyectoResumen enriquecido."""
-    return ProyectoResumen(
-        **row,
-        es_ley=bool(row.get("numero_ley")),
-        estado_actual=row.get("estado_actual"),
-    )
+    data = dict(row)
+    data["es_ley"] = bool(data.get("numero_ley"))
+    return ProyectoResumen(**data)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -170,8 +168,13 @@ def buscar_proyectos(
     termino = f"%{q}%"
     params = [termino, termino, termino]
 
-    base_sql = """
-        FROM proyectos p
+    from_sql = "FROM proyectos p"
+    join_sql = """
+        LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
+        LEFT JOIN tramitacion tr2  ON tr2.proyecto_id = p.id
+        LEFT JOIN documentos  doc  ON doc.proyecto_id = p.id
+    """
+    where_sql = """
         WHERE
             p.titulo ILIKE %s
             OR EXISTS (
@@ -185,8 +188,9 @@ def buscar_proyectos(
                   AND tr.organo ILIKE %s
             )
     """
+
     params_total = [termino, termino, termino, termino]
-    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {base_sql}", tuple(params_total))
+    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {from_sql} {where_sql}", tuple(params_total))
 
     offset = (pagina - 1) * por_pagina
     params_query = [termino, termino, termino, termino, por_pagina, offset]
@@ -213,10 +217,9 @@ def buscar_proyectos(
                 ORDER BY t2.fecha_inicio DESC NULLS LAST
                 LIMIT 1
             ) AS estado_actual
-        {base_sql}
-        LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
-        LEFT JOIN tramitacion  tr2 ON tr2.proyecto_id = p.id
-        LEFT JOIN documentos   doc ON doc.proyecto_id = p.id
+        {from_sql}
+        {join_sql}
+        {where_sql}
         GROUP BY p.id
         ORDER BY p.fecha_inicio DESC NULLS LAST
         LIMIT %s OFFSET %s
@@ -322,13 +325,14 @@ def detalle_proyecto(numero_expediente: int):
     )
     documentos = [DocumentoItem(**d) for d in doc_rows]
 
-    return ProyectoDetalle(
-        **row,
-        es_ley=bool(row.get("numero_ley")),
-        proponentes=proponentes,
-        tramitacion=tramitacion,
-        documentos=documentos,
-    )
+    # Construir el objeto de detalle
+    data = dict(row)
+    data["es_ley"] = bool(data.get("numero_ley"))
+    data["proponentes"] = proponentes
+    data["tramitacion"] = tramitacion
+    data["documentos"] = documentos
+    
+    return ProyectoDetalle(**data)
 
 
 # ══════════════════════════════════════════════════════════════════════

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion } from '@/lib/api'
 import SectionRule from '@/components/ui/SectionRule'
+import Hero from '@/components/sections/Hero'
 import styles from './proyectos.module.css'
 
 function ProyectoCard({ p }: { p: ProyectoResumen }) {
@@ -125,17 +126,11 @@ export default function ProyectosPage() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      {/* Hero */}
-      <div className={styles.pageHero}>
-        <div className="container">
-          <div className={styles.heroKicker}>Proyectos de ley</div>
-          <h1 className={styles.heroTitle}>Todos los proyectos de la Asamblea</h1>
-          <p className={styles.heroDeck}>
-            Explorá, filtrá y buscá entre todos los proyectos registrados.
-            Cada uno es una propuesta que alguien presentó para convertirse en ley.
-          </p>
-        </div>
-      </div>
+      <Hero
+        kicker="Proyectos de ley"
+        headline="Todos los proyectos de la Asamblea"
+        deck="Explorá, filtrá y buscá entre todos los proyectos registrados. Cada uno es una propuesta que alguien presentó para convertirse en ley."
+      />
 
       <div className="container">
         {/* Filtros */}

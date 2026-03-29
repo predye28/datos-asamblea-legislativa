@@ -30,20 +30,31 @@ MESES_ES = {
 
 
 @router.get("/metricas", response_model=MetricasResponse, summary="Métricas ciudadanas")
-def metricas():
+def metricas(
+    desde: str = None, # formato YYYY-MM-DD
+    hasta: str = None,
+):
     """
     Devuelve un conjunto de métricas diseñadas para que cualquier
-    ciudadano entienda qué está pasando en la Asamblea Legislativa:
-
-    - **general**: totales clave (proyectos, leyes aprobadas, tasa de aprobación…)
-    - **por_tipo**: distribución de tipos de expediente
-    - **por_mes**: proyectos presentados en los últimos 12 meses
-    - **top_diputados**: los 10 diputados más activos por proyectos presentados
-    - **organos_activos**: los 10 órganos con más actividad de tramitación
+    ciudadano entienda qué está pasando en la Asamblea Legislativa.
+    
+    Permite filtrar por un rango de fechas de inicio del proyecto.
     """
+    
+    # Construir WHERE para el rango de fechas
+    condiciones = ["fecha_inicio IS NOT NULL"]
+    params = []
+    if desde:
+        condiciones.append("fecha_inicio >= %s")
+        params.append(desde)
+    if hasta:
+        condiciones.append("fecha_inicio <= %s")
+        params.append(hasta)
+        
+    where = "WHERE " + " AND ".join(condiciones)
 
     # ── 1. Métricas generales ─────────────────────────────────────────
-    gen = fetchone("""
+    gen = fetchone(f"""
         SELECT
             COUNT(*)                                        AS total_proyectos,
             COUNT(*) FILTER (WHERE numero_ley IS NOT NULL)  AS total_leyes_aprobadas,
@@ -54,25 +65,31 @@ def metricas():
                 WHERE DATE_TRUNC('year', fecha_inicio) = DATE_TRUNC('year', NOW())
             )                                               AS proyectos_este_anio
         FROM proyectos
-    """) or {}
+        {where}
+    """, tuple(params)) or {}
 
     total           = gen.get("total_proyectos")    or 0
     total_leyes     = gen.get("total_leyes_aprobadas") or 0
     tasa_aprobacion = round((total_leyes / total * 100), 1) if total else 0.0
 
-    diputados_activos = fetchval(
-        "SELECT COUNT(DISTINCT CONCAT(apellidos, nombre)) FROM proponentes"
-    ) or 0
+    diputados_activos = fetchval(f"""
+        SELECT COUNT(DISTINCT CONCAT(pr.apellidos, pr.nombre)) 
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+    """, tuple(params)) or 0
 
-    avg_tramites = fetchval(
-        """
+    avg_tramites = fetchval(f"""
         SELECT ROUND(AVG(cnt)::numeric, 1)
         FROM (
-            SELECT COUNT(*) AS cnt FROM tramitacion GROUP BY proyecto_id
+            SELECT COUNT(*) AS cnt 
+            FROM tramitacion tr
+            JOIN proyectos p ON p.id = tr.proyecto_id
+            {where.replace('fecha_inicio', 'p.fecha_inicio')}
+            GROUP BY tr.proyecto_id
         ) sub
-        """
-    ) or 0.0
-
+    """, tuple(params)) or 0.0
+    
     general = MetricaGeneral(
         total_proyectos=total,
         total_leyes_aprobadas=total_leyes,
@@ -84,15 +101,16 @@ def metricas():
     )
 
     # ── 2. Por tipo de expediente ─────────────────────────────────────
-    tipo_rows = fetchall("""
+    tipo_rows = fetchall(f"""
         SELECT
             COALESCE(tipo_expediente, 'Sin clasificar') AS tipo,
             COUNT(*) AS total
         FROM proyectos
+        {where}
         GROUP BY tipo_expediente
         ORDER BY total DESC
         LIMIT 10
-    """)
+    """, tuple(params))
 
     por_tipo = [
         ProyectosPorTipo(
@@ -103,18 +121,21 @@ def metricas():
         for r in tipo_rows
     ]
 
-    # ── 3. Por mes (últimos 12 meses) ─────────────────────────────────
-    mes_rows = fetchall("""
+    # ── 3. Por mes (últimos 12 meses o según rango) ────────────────────
+    sql_mes_where = where
+    if not (desde or hasta):
+        sql_mes_where = "WHERE fecha_inicio >= NOW() - INTERVAL '12 months'"
+    
+    mes_rows = fetchall(f"""
         SELECT
             EXTRACT(YEAR  FROM fecha_inicio)::int AS anio,
             EXTRACT(MONTH FROM fecha_inicio)::int AS mes,
             COUNT(*) AS total
         FROM proyectos
-        WHERE fecha_inicio >= NOW() - INTERVAL '12 months'
-          AND fecha_inicio IS NOT NULL
+        {sql_mes_where}
         GROUP BY anio, mes
         ORDER BY anio, mes
-    """)
+    """, tuple(params) if (desde or hasta) else ())
 
     por_mes = [
         ProyectosPorMes(
@@ -127,17 +148,19 @@ def metricas():
     ]
 
     # ── 4. Top 10 diputados más activos ───────────────────────────────
-    diputado_rows = fetchall("""
+    diputado_rows = fetchall(f"""
         SELECT
-            apellidos,
-            nombre,
-            COUNT(DISTINCT proyecto_id) AS total_proyectos
-        FROM proponentes
-        WHERE apellidos IS NOT NULL AND nombre IS NOT NULL
-        GROUP BY apellidos, nombre
+            pr.apellidos,
+            pr.nombre,
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND pr.apellidos IS NOT NULL AND pr.nombre IS NOT NULL
+        GROUP BY pr.apellidos, pr.nombre
         ORDER BY total_proyectos DESC
         LIMIT 10
-    """)
+    """, tuple(params))
 
     top_diputados = [
         DiputadoRanking(
@@ -150,16 +173,67 @@ def metricas():
     ]
 
     # ── 5. Órganos más activos ────────────────────────────────────────
-    organo_rows = fetchall("""
+    organo_rows = fetchall(f"""
         SELECT
-            organo,
+            tr.organo,
             COUNT(*) AS total_tramites
-        FROM tramitacion
-        WHERE organo IS NOT NULL
-        GROUP BY organo
+        FROM tramitacion tr
+        JOIN proyectos p ON p.id = tr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND tr.organo IS NOT NULL
+        GROUP BY tr.organo
         ORDER BY total_tramites DESC
         LIMIT 10
-    """)
+    """, tuple(params))
+
+    por_mes = [
+        ProyectosPorMes(
+            anio=r["anio"],
+            mes=r["mes"],
+            mes_nombre=MESES_ES.get(r["mes"], str(r["mes"])),
+            total=r["total"],
+        )
+        for r in mes_rows
+    ]
+
+    # ── 4. Top 10 diputados más activos ───────────────────────────────
+    diputado_rows = fetchall(f"""
+        SELECT
+            pr.apellidos,
+            pr.nombre,
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND pr.apellidos IS NOT NULL AND pr.nombre IS NOT NULL
+        GROUP BY pr.apellidos, pr.nombre
+        ORDER BY total_proyectos DESC
+        LIMIT 10
+    """, tuple(params))
+
+    top_diputados = [
+        DiputadoRanking(
+            apellidos=r["apellidos"],
+            nombre=r["nombre"],
+            nombre_completo=f"{r['apellidos']} {r['nombre']}".strip(),
+            total_proyectos=r["total_proyectos"],
+        )
+        for r in diputado_rows
+    ]
+
+    # ── 5. Órganos más activos ────────────────────────────────────────
+    organo_rows = fetchall(f"""
+        SELECT
+            tr.organo,
+            COUNT(*) AS total_tramites
+        FROM tramitacion tr
+        JOIN proyectos p ON p.id = tr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND tr.organo IS NOT NULL
+        GROUP BY tr.organo
+        ORDER BY total_tramites DESC
+        LIMIT 10
+    """, tuple(params))
 
     organos_activos = [
         OrganoActividad(

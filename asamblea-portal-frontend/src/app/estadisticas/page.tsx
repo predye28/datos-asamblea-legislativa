@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { api, MetricasResponse } from '@/lib/api'
 import SectionRule from '@/components/ui/SectionRule'
+import Hero from '@/components/sections/Hero'
 import styles from './estadisticas.module.css'
 
 const COLORS = ['#1a1814','#c0392b','#1a4b8c','#1a6b3c','#e67e22','#5c5a54','#9c9a92']
@@ -14,9 +15,15 @@ const COLORS = ['#1a1814','#c0392b','#1a4b8c','#1a6b3c','#e67e22','#5c5a54','#9c
 export default function EstadisticasPage() {
   const [data, setData] = useState<MetricasResponse | null>(null)
   const [linea, setLinea] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
+  
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
 
   useEffect(() => {
-    api.metricas.general().then(setData)
+    api.metricas.general({ desde, hasta }).then(setData)
+  }, [desde, hasta])
+
+  useEffect(() => {
     api.metricas.lineaTiempo().then(d => setLinea(d.datos))
   }, [])
 
@@ -30,18 +37,37 @@ export default function EstadisticasPage() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <div className={styles.pageHero}>
-        <div className="container">
-          <div className={styles.heroKicker}>Análisis de datos</div>
-          <h1 className={styles.heroTitle}>Estadísticas legislativas</h1>
-          <p className={styles.heroDeck}>
-            Una mirada profunda a los patrones y tendencias de la Asamblea Legislativa.
-            Todos los datos son oficiales.
-          </p>
-        </div>
-      </div>
+      <Hero
+        kicker="Análisis de datos"
+        headline="Estadísticas legislativas"
+        deck="Una mirada profunda a los patrones y tendencias de la Asamblea Legislativa. Todos los datos son oficiales."
+      />
 
       <div className="container">
+        
+        {/* Filtros de Fecha */}
+        <SectionRule label="Rango de fecha de los proyectos" />
+        <div className={styles.dateFilters}>
+          <div className={styles.dateInputGroup}>
+            <label>Desde:</label>
+            <input type="date" value={desde} onChange={e => setDesde(e.target.value)} className={styles.dateInput} />
+          </div>
+          <div className={styles.dateInputGroup}>
+            <label>Hasta:</label>
+            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className={styles.dateInput} />
+          </div>
+          {(desde || hasta) && (
+            <button className={styles.clearBtn} onClick={() => { setDesde(''); setHasta(''); }}>
+              Limpiar filtro
+            </button>
+          )}
+          <span className={styles.dateRangeMeta}>
+            Mostrando proyectos iniciados entre 
+            <strong> {desde || 'el inicio'} </strong> 
+            y 
+            <strong> {hasta || 'hoy'} </strong>
+          </span>
+        </div>
 
         {/* KPIs */}
         <SectionRule label="Números clave" />
