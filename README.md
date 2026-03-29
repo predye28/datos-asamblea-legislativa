@@ -55,3 +55,10 @@ frondend:
 cd asamblea-portal-frontend
 npm install
 npm run dev
+
+
+ahora para desplegarlo la idea es usar:
+
+para el frontend vercel:
+
+y el backend render:
