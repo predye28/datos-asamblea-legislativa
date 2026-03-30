@@ -138,19 +138,9 @@ MESES = {
  
 def parsear_fecha(texto: str) -> date | None:
     """
-    Convierte una cadena con formato costarricense al tipo date de Python.
+    Convierte una cadena de fecha al tipo date de Python.
  
-    Ejemplo de entrada → salida:
-        "25-mar.-2026"  →  date(2026, 3, 25)
-        "01-ene.-2025"  →  date(2025, 1,  1)
-        ""              →  None
-        "N/A"           →  None
- 
-    Proceso:
-        1. Normaliza a minúsculas y elimina los puntos de la abreviación.
-        2. Divide por "-" y toma día, mes (3 primeras letras) y año.
-        3. Busca el mes en el diccionario MESES.
-        4. Devuelve None en cualquier error de parseo.
+    Soporta formato viejo ("25-mar.-2026") y formato nuevo ("26/03/2026").
  
     Args:
         texto: Cadena de fecha cruda proveniente del scraper.
@@ -158,19 +148,30 @@ def parsear_fecha(texto: str) -> date | None:
     Returns:
         Objeto date o None si no es posible convertir.
     """
-    if not texto or not texto.strip():
+    if not texto or not isinstance(texto, str) or not texto.strip():
         return None
+    
+    texto_limpio = texto.strip().lower()
+    
+    # Soporte formato nuevo: "26/03/2026"
+    if "/" in texto_limpio:
+        try:
+            partes = texto_limpio.split("/")
+            return date(int(partes[2]), int(partes[1]), int(partes[0]))
+        except Exception:
+            pass
+
+    # Soporte formato viejo: "25-mar.-2026"
     try:
-        # Elimina puntos de abreviación, convierte a minúsculas y parte por "-"
-        partes = texto.strip().lower().replace(".", "").split("-")
+        partes = texto_limpio.replace(".", "").split("-")
         dia  = int(partes[0])
         mes  = MESES.get(partes[1][:3])   # solo los 3 primeros caracteres
         anio = int(partes[2])
         if mes:
             return date(anio, mes, dia)
     except Exception:
-        # Silencioso: el caller puede loguear el texto original si lo necesita
         pass
+
     return None
  
  
@@ -227,8 +228,14 @@ def sync_proyectos(proyectos: list) -> dict:
                     continue
  
                 try:
-                    det = proy.get("detalle", {})
- 
+                    # Soporte para la estructura vieja ("detalle") y nueva ("general")
+                    det = proy.get("general") or proy.get("detalle") or {}
+
+                    num_gaceta = det.get("Número de gaceta") or det.get("Número de Gaceta")
+                    num_ley = det.get("Número de ley que generó") or det.get("Número de Ley")
+                    num_gaceta = None if num_gaceta == "NO" else num_gaceta
+                    num_ley = None if num_ley == "NO" else num_ley
+
                     # ── INSERT principal (idempotente) ─────────────────
                     cur.execute(
                         """
@@ -242,12 +249,12 @@ def sync_proyectos(proyectos: list) -> dict:
                         (
                             int(num_exp),
                             proy.get("titulo"),
-                            det.get("Tipo de Expediente"),
-                            parsear_fecha(det.get("Fecha de Inicio", "")),
-                            parsear_fecha(det.get("Vencimiento Cuatrienal", "")),
-                            parsear_fecha(det.get("Fecha de Publicación", "")),
-                            det.get("Número de Gaceta") or None,
-                            det.get("Número de Ley") or None,
+                            det.get("Tipo de expediente") or det.get("Tipo de Expediente"),
+                            parsear_fecha(det.get("Fecha de iniciación") or det.get("Fecha de Inicio", "")),
+                            parsear_fecha(det.get("Fecha de vencimiento cuatrienal") or det.get("Vencimiento Cuatrienal", "")),
+                            parsear_fecha(det.get("Fecha de publicación") or det.get("Fecha de Publicación", "")),
+                            num_gaceta,
+                            num_ley,
                         ),
                     )
  
@@ -277,7 +284,7 @@ def sync_proyectos(proyectos: list) -> dict:
                             """,
                             (
                                 proyecto_id,
-                                int(prop.get("Secuencia", 0) or 0),
+                                int(prop.get("Firma") or prop.get("Secuencia", 0) or 0),
                                 prop.get("Apellidos"),
                                 prop.get("Nombre"),
                             ),
@@ -298,7 +305,7 @@ def sync_proyectos(proyectos: list) -> dict:
                                 tram.get("Órgano"),
                                 parsear_fecha(tram.get("Fecha Inicio", "")),
                                 parsear_fecha(tram.get("Fecha Término", "")),
-                                tram.get("Tipo de Trámite"),
+                                tram.get("Descripción") or tram.get("Tipo de Trámite"),
                             ),
                         )
  

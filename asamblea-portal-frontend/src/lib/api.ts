@@ -130,10 +130,13 @@ export interface DetallesMes {
 // ── Fetch helper ────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+  const isDev = process.env.NODE_ENV === 'development'
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...opts?.headers },
-    next: { revalidate: 300 }, // caché de 5 min en Next.js
+    // En desarrollo NO guardamos caché para ver los cambios de base de datos de inmediato.
+    // En producción caché de 5 minutos (300 req) para que sea veloz.
+    next: { revalidate: isDev ? 0 : 300 }, 
   })
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
   return res.json()

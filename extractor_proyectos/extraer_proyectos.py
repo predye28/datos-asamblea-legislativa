@@ -149,12 +149,16 @@ async def cambiar_mostrar_registros(frame, page: Page, cantidad: str = "10"):
 async def obtener_info_filas(frame) -> list:
     """
     Devuelve lista de {expediente, titulo, row_index}.
-    Usa el ÍNDICE de fila, no el handle, para poder re-seleccionar
-    después de que jqxGrid regenere el DOM.
+    FIX: Solo lee filas de la grilla SUPERIOR (excluye panel inferior).
     """
     info = []
     try:
-        rows = await frame.query_selector_all("div[role='row']")
+        # Buscamos la grilla principal (la primera que aparece en el DOM)
+        grilla_principal = await frame.query_selector("div[role='grid']")
+        if not grilla_principal:
+            return info
+        
+        rows = await grilla_principal.query_selector_all("div[role='row']")
         for idx, row in enumerate(rows):
             try:
                 celdas = await row.query_selector_all("div[role='gridcell']")
@@ -162,7 +166,8 @@ async def obtener_info_filas(frame) -> list:
                     continue
                 num    = (await celdas[0].inner_text()).strip()
                 titulo = (await celdas[1].inner_text()).strip()
-                if num and re.match(r'^\d+$', num.replace(" ", "")):
+                # Solo filas con número de expediente válido (4-5 dígitos)
+                if num and re.match(r'^\d{4,6}$', num.replace(" ", "")):
                     info.append({
                         "expediente": num,
                         "titulo":     titulo,
@@ -385,19 +390,28 @@ async def volver_tab_general(frame, page: Page):
 # PROCESAR UNA PÁGINA COMPLETA
 # ══════════════════════════════════════════════════════════════════════
 
-async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: list):
+async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: list, expedientes_vistos: set) -> bool:
     """
-    Procesa los expedientes de la página actual.
+    FIX: Lee las filas DESPUÉS de asegurarse de que el panel inferior
+    está en tab General (estado limpio).
+    """
+    # Aseguramos estado limpio antes de leer la grilla
+    await clic_tab(frame, page, "General")
+    await page.wait_for_timeout(500)
 
-    FIX CLAVE: guarda solo los metadatos (expediente, titulo, row_index)
-    de cada fila, NO los handles. Antes de cada clic re-busca el handle
-    fresco por índice, evitando 'Element is not attached to the DOM'.
-    """
     filas_info = await obtener_info_filas(frame)
 
     if not filas_info:
         print(f"  ⚠️  Sin filas en página {num_pagina}.")
-        return
+        return False
+        
+    # Detectar loop comprobando si el primer expediente ya fue procesado como inicio de página
+    primer_exp = filas_info[0]["expediente"]
+    if primer_exp in expedientes_vistos:
+        print(f"\n🛑 Bucle detectado: El primer expediente ({primer_exp}) ya fue listado antes. ¡Llegamos al final verdadero!")
+        return False
+        
+    expedientes_vistos.add(primer_exp)
 
     total = len(filas_info)
     print(f"\n{'═'*62}")
@@ -412,7 +426,6 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
 
         print(f"\n  [{i+1:>2}/{total}] Exp. {num_exp} — {titulo_corto}")
 
-        # Clic fresco por índice (re-busca el handle en el DOM actual)
         ok = await clicar_fila_por_indice(frame, page, row_index)
         if not ok:
             continue
@@ -421,7 +434,9 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
         tramitacion = await extraer_tab_tramitacion(frame, page)
         proponentes = await extraer_tab_proponentes(frame, page)
 
+        # FIX: Volvemos a General SIEMPRE al final de cada expediente
         await volver_tab_general(frame, page)
+        await page.wait_for_timeout(300)
 
         acumulado.append({
             "pagina":            num_pagina,
@@ -443,13 +458,22 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
                 path=f"debug_p{num_pagina}_exp{i+1}.png",
                 full_page=False
             )
-
+            
+    return True
 
 # ══════════════════════════════════════════════════════════════════════
 # PAGINACIÓN
 # ══════════════════════════════════════════════════════════════════════
 
 async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
+    """
+    FIX: Verifica que la página realmente cambió comparando
+    el primer expediente antes y después del clic.
+    """
+    # Capturamos el primer expediente visible ANTES del clic
+    filas_antes = await obtener_info_filas(frame)
+    primer_exp_antes = filas_antes[0]["expediente"] if filas_antes else None
+
     selectores = [
         "div[title='Siguiente página']",
         "input[title='Siguiente página']",
@@ -457,6 +481,7 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
         "input[title='Next Page']",
         ".jqx-icon-arrow-right:not(.jqx-icon-arrow-right-selected)",
     ]
+    clic_exitoso = False
     for sel in selectores:
         try:
             btns = await frame.query_selector_all(sel)
@@ -471,29 +496,51 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
                 if "ltima" in title or "last" in title:
                     continue
                 await btn.click()
-                await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
-                print(f"   ✓ Avanzado a página {pagina_actual + 1}")
-                return True
+                clic_exitoso = True
+                break
         except Exception:
             continue
+        if clic_exitoso:
+            break
 
-    try:
-        for btn in await frame.query_selector_all("div, button, a, input[type='button']"):
-            try:
-                texto = (await btn.inner_text()).strip()
-                title = (await btn.get_attribute("title") or "").lower()
-                clase = (await btn.get_attribute("class") or "").lower()
-                if (texto in [">", "»", "›"] or "siguiente" in title or "next" in title):
-                    if "disabled" not in clase and not await btn.get_attribute("disabled"):
-                        await btn.click()
-                        await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
-                        return True
-            except Exception:
-                continue
-    except Exception:
-        pass
+    if not clic_exitoso:
+        # Fallback con texto
+        try:
+            for btn in await frame.query_selector_all("div, button, a, input[type='button']"):
+                try:
+                    texto = (await btn.inner_text()).strip()
+                    title = (await btn.get_attribute("title") or "").lower()
+                    clase = (await btn.get_attribute("class") or "").lower()
+                    if (texto in [">", "»", "›"] or "siguiente" in title or "next" in title):
+                        if "disabled" not in clase and not await btn.get_attribute("disabled"):
+                            await btn.click()
+                            clic_exitoso = True
+                            break
+                except Exception:
+                    continue
+        except Exception:
+            pass
 
-    print("   ✗ No se encontró botón de siguiente (última página).")
+    if not clic_exitoso:
+        print("   ✗ No se encontró botón de siguiente (última página).")
+        return False
+
+    # Esperamos y verificamos que el contenido cambió
+    await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
+
+    for intento in range(10):
+        filas_despues = await obtener_info_filas(frame)
+        primer_exp_despues = filas_despues[0]["expediente"] if filas_despues else None
+
+        if primer_exp_despues and primer_exp_despues != primer_exp_antes:
+            print(f"   ✓ Avanzado a página {pagina_actual + 1} "
+                  f"(primer exp: {primer_exp_antes} → {primer_exp_despues})")
+            return True
+
+        print(f"   ⏳ Esperando cambio de página... intento {intento + 1}/10")
+        await page.wait_for_timeout(800)
+
+    print("   ✗ La grilla no cambió tras el clic — posible última página.")
     return False
 
 
@@ -598,8 +645,9 @@ async def main():
     proyectos = []
 
     async with async_playwright() as p:
+        is_ci = os.getenv("CI", "false").lower() == "true"
         browser = await p.chromium.launch(
-            headless=False,
+            headless=is_ci,  # En GitHub Actions será True, en local False
             args=["--no-sandbox", "--disable-dev-shm-usage",
                   "--disable-blink-features=AutomationControlled"]
         )
@@ -639,19 +687,19 @@ async def main():
         await page.wait_for_timeout(6_000)
 
         pagina_actual = 1
-        ya_procesadas = set()
+        paginas_procesadas = 0
+        expedientes_vistos = set()
 
         while True:
             if MAX_PAGINAS and pagina_actual > MAX_PAGINAS:
                 print(f"\n🛑 Límite de {MAX_PAGINAS} página(s) alcanzado.")
                 break
 
-            if pagina_actual in ya_procesadas:
-                print(f"\n⚠️  Página {pagina_actual} ya procesada (posible loop).")
+            continuar = await procesar_pagina_grilla(page, frame, pagina_actual, proyectos, expedientes_vistos)
+            if not continuar:
                 break
-
-            await procesar_pagina_grilla(page, frame, pagina_actual, proyectos)
-            ya_procesadas.add(pagina_actual)
+                
+            paginas_procesadas += 1
 
             print(f"\n🔄 Intentando avanzar a página {pagina_actual + 1}...")
             if not await ir_siguiente_pagina(frame, page, pagina_actual):
@@ -669,8 +717,8 @@ async def main():
     print("\n" + "═" * 60)
     print("  SINCRONIZANDO BASE DE DATOS")
     print("═" * 60)
-    #crear_tablas()
-    #stats = sync_proyectos(proyectos)
+    crear_tablas()
+    stats = sync_proyectos(proyectos)
 
     ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_file  = f"proyectos_{ts}.json"
@@ -687,10 +735,10 @@ async def main():
     print("║   RESUMEN FINAL                                          ║")
     print("╠" + "═" * 58 + "╣")
     print(f"║  Proyectos extraídos : {len(proyectos):<33}║")
-    print(f"║  Páginas procesadas  : {len(ya_procesadas):<33}║")
-    #print(f"║  DB — nuevos         : {stats.get('nuevos', 0):<33}║")
-    #print(f"║  DB — duplicados     : {stats.get('duplicados', 0):<33}║")
-    #print(f"║  DB — errores        : {stats.get('errores', 0):<33}║")
+    print(f"║  Páginas procesadas  : {paginas_procesadas:<33}║")
+    print(f"║  DB — nuevos         : {stats.get('nuevos', 0):<33}║")
+    print(f"║  DB — duplicados     : {stats.get('duplicados', 0):<33}║")
+    print(f"║  DB — errores        : {stats.get('errores', 0):<33}║")
     print(f"║  JSON                : {json_file:<33}║")
     print(f"║  Excel               : {excel_file:<33}║")
     print(f"║  Duración total      : {str(duracion).split('.')[0]:<33}║")

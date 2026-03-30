@@ -30,7 +30,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('extractor_proyectos/requirements.txt') }}
 
       - name: Instalar dependencias Python
         working-directory: extractor_proyectos
@@ -52,7 +52,7 @@ jobs:
         with:
           name: scraper-output-${{ github.run_number }}
           path: |
-            *.json
-            *.xlsx
-            *.png
+            extractor_proyectos/*.json
+            extractor_proyectos/*.xlsx
+            extractor_proyectos/*.png
           retention-days: 7
