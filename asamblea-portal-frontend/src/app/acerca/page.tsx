@@ -184,7 +184,7 @@ export default function AcercaPage() {
                 Asamblea Legislativa de Costa Rica, que es de acceso público.
               </p>
               <a
-                href="https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/ConsultaProyectos.aspx"
+                href="https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/SIL.aspx"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.sideLink}

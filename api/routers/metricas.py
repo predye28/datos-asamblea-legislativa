@@ -279,26 +279,39 @@ def actividad_semanal():
 
 
 @router.get("/metricas/proximos-vencer", summary="Proyectos próximos a vencer")
-def proximos_vencer():
+def proximos_vencer(dias: int = 90):
     """
-    Proyectos cuyo vencimiento cuatrienal ocurre en los próximos 90 días.
+    Proyectos cuyo vencimiento cuatrienal ocurre en los próximos N días (default: 90).
     Si un proyecto vence sin convertirse en ley, muere en la Asamblea.
     """
     rows = fetchall("""
         SELECT
-            numero_expediente,
-            titulo,
-            tipo_expediente,
-            vencimiento_cuatrienal,
-            (vencimiento_cuatrienal - CURRENT_DATE) AS dias_restantes
-        FROM proyectos
+            p.numero_expediente,
+            p.titulo,
+            p.tipo_expediente,
+            p.vencimiento_cuatrienal,
+            (p.vencimiento_cuatrienal - CURRENT_DATE) AS dias_restantes,
+            (
+                SELECT t2.organo
+                FROM tramitacion t2
+                WHERE t2.proyecto_id = p.id
+                ORDER BY t2.fecha_inicio DESC NULLS LAST
+                LIMIT 1
+            ) AS estado_actual,
+            (
+                SELECT STRING_AGG(pr.apellidos || ' ' || pr.nombre, ', ')
+                FROM proponentes pr
+                WHERE pr.proyecto_id = p.id
+                LIMIT 3
+            ) AS proponentes_resumen
+        FROM proyectos p
         WHERE
-            vencimiento_cuatrienal BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '90 days'
-            AND numero_ley IS NULL
-        ORDER BY vencimiento_cuatrienal ASC
-        LIMIT 30
-    """)
-    return {"datos": rows, "total": len(rows)}
+            p.vencimiento_cuatrienal BETWEEN CURRENT_DATE AND CURRENT_DATE + (%(dias)s || ' days')::INTERVAL
+            AND p.numero_ley IS NULL
+        ORDER BY p.vencimiento_cuatrienal ASC
+        LIMIT 50
+    """, {"dias": dias})
+    return {"datos": rows, "total": len(rows), "dias_consultados": dias}
 
 
 @router.get("/metricas/linea-tiempo", summary="Proyectos aprobados como ley por año")
@@ -318,3 +331,69 @@ def linea_tiempo():
         ORDER BY anio
     """)
     return {"datos": rows}
+
+
+@router.get("/metricas/detalle-mes", summary="Detalle de proyectos de un mes específico")
+def detalle_mes(anio: int, mes: int):
+    """
+    Estadísticas y lista de proyectos presentados en un mes y año específico.
+    Incluye: totales, cuántos se convirtieron en ley, top proponentes del mes,
+    y lista paginada de proyectos.
+    """
+    # Resumen del mes
+    resumen = fetchone("""
+        SELECT
+            COUNT(*) AS total_proyectos,
+            COUNT(*) FILTER (WHERE numero_ley IS NOT NULL) AS total_leyes,
+            COUNT(DISTINCT tipo_expediente) AS tipos_distintos
+        FROM proyectos
+        WHERE EXTRACT(YEAR FROM fecha_inicio) = %(anio)s
+          AND EXTRACT(MONTH FROM fecha_inicio) = %(mes)s
+    """, {"anio": anio, "mes": mes}) or {}
+
+    # Top proponentes del mes
+    top_proponentes = fetchall("""
+        SELECT
+            pr.apellidos || ' ' || pr.nombre AS nombre_completo,
+            COUNT(*) AS proyectos
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        WHERE EXTRACT(YEAR FROM p.fecha_inicio) = %(anio)s
+          AND EXTRACT(MONTH FROM p.fecha_inicio) = %(mes)s
+          AND pr.apellidos IS NOT NULL
+        GROUP BY pr.apellidos, pr.nombre
+        ORDER BY proyectos DESC
+        LIMIT 5
+    """, {"anio": anio, "mes": mes})
+
+    # Proyectos del mes (máx. 20)
+    proyectos = fetchall("""
+        SELECT
+            p.numero_expediente,
+            p.titulo,
+            p.tipo_expediente,
+            p.fecha_inicio,
+            p.numero_ley,
+            p.vencimiento_cuatrienal,
+            (
+                SELECT t2.organo
+                FROM tramitacion t2
+                WHERE t2.proyecto_id = p.id
+                ORDER BY t2.fecha_inicio DESC NULLS LAST
+                LIMIT 1
+            ) AS estado_actual
+        FROM proyectos p
+        WHERE EXTRACT(YEAR FROM p.fecha_inicio) = %(anio)s
+          AND EXTRACT(MONTH FROM p.fecha_inicio) = %(mes)s
+        ORDER BY p.numero_expediente DESC
+        LIMIT 20
+    """, {"anio": anio, "mes": mes})
+
+    return {
+        "anio": anio,
+        "mes": mes,
+        "mes_nombre": MESES_ES.get(mes, str(mes)),
+        "resumen": resumen,
+        "top_proponentes": top_proponentes,
+        "proyectos": proyectos,
+    }

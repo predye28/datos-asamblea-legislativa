@@ -8,6 +8,8 @@ import {
 import { api, MetricasResponse } from '@/lib/api'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
+import ProximosVencer from '@/components/sections/ProximosVencer'
+import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
 import styles from './estadisticas.module.css'
 
 const COLORS = ['#1a1814','#c0392b','#1a4b8c','#1a6b3c','#e67e22','#5c5a54','#9c9a92']
@@ -18,6 +20,8 @@ export default function EstadisticasPage() {
   
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
+
+
 
   useEffect(() => {
     api.metricas.general({ desde, hasta }).then(setData)
@@ -87,25 +91,11 @@ export default function EstadisticasPage() {
           ))}
         </div>
 
-        {/* Por mes */}
-        <SectionRule label="Proyectos presentados por mes — últimos 12 meses" />
-        <div className={styles.chartCard}>
-          <div className={styles.chartExplain}>
-            ¿Hay meses en que la Asamblea es más activa? Este gráfico muestra cuántos proyectos
-            se presentaron cada mes en el último año.
-          </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={por_mes.map(m => ({ name: `${m.mes_nombre} ${String(m.anio).slice(2)}`, total: m.total }))}
-              margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fontFamily: 'IBM Plex Mono', fontSize: 10, fill: '#9c9a92' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontFamily: 'IBM Plex Mono', fontSize: 10, fill: '#9c9a92' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontFamily: 'IBM Plex Mono', fontSize: 11, border: '1px solid #d4cfc4', borderRadius: 0 }} />
-              <Bar dataKey="total" radius={[2,2,0,0]}>
-                {por_mes.map((_, i) => <Cell key={i} fill={i === por_mes.length - 1 ? '#c0392b' : '#1a1814'} opacity={0.3 + (i / por_mes.length) * 0.7} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Próximos a Vencer */}
+        <SectionRule label="Proyectos próximos a vencer" />
+        <ProximosVencer clientMode={true} />
+
+        <TimelineInteractiva datosIniciales={por_mes} />
 
         {/* Por tipo */}
         <SectionRule label="Distribución por tipo de expediente" />

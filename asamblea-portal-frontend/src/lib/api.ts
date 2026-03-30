@@ -102,6 +102,29 @@ export interface ProximoVencer {
   tipo_expediente: string | null
   vencimiento_cuatrienal: string | null
   dias_restantes: number
+  estado_actual: string | null
+  proponentes_resumen: string | null
+}
+
+export interface DetallesMes {
+  anio: number
+  mes: number
+  mes_nombre: string
+  resumen: {
+    total_proyectos: number
+    total_leyes: number
+    tipos_distintos: number
+  }
+  top_proponentes: { nombre_completo: string; proyectos: number }[]
+  proyectos: {
+    numero_expediente: number
+    titulo: string | null
+    tipo_expediente: string | null
+    fecha_inicio: string | null
+    numero_ley: string | null
+    vencimiento_cuatrienal: string | null
+    estado_actual: string | null
+  }[]
 }
 
 // ── Fetch helper ────────────────────────────────────────────────────────
@@ -156,7 +179,8 @@ export const api = {
       return apiFetch<MetricasResponse>(`/metricas?${qs}`)
     },
     actividadSemanal: () => apiFetch<{ datos: unknown[]; total: number }>('/metricas/actividad-semanal'),
-    proximosVencer: () => apiFetch<{ datos: ProximoVencer[]; total: number }>('/metricas/proximos-vencer'),
+    proximosVencer: (dias = 90) => apiFetch<{ datos: ProximoVencer[]; total: number; dias_consultados: number }>(`/metricas/proximos-vencer?dias=${dias}`),
     lineaTiempo: () => apiFetch<{ datos: { anio: number; leyes_aprobadas: number }[] }>('/metricas/linea-tiempo'),
+    detalleMes: (anio: number, mes: number) => apiFetch<DetallesMes>(`/metricas/detalle-mes?anio=${anio}&mes=${mes}`),
   },
 }

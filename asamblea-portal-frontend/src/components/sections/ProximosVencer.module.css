@@ -1,6 +1,5 @@
 /* src/components/sections/ProximosVencer.module.css */
 
-/* Borde ámbar — señal de advertencia, no urgencia extrema */
 .block {
   border-left: 4px solid var(--accent-warm);
   border-top: 1px solid var(--rule);
@@ -12,32 +11,70 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Kicker */
+.blockHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
 .kicker {
   font-family: var(--mono);
-  font-size: 12px;          /* era 10px */
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent-warm);
   margin-bottom: 6px;
 }
 
-/* Título */
 .title {
   font-family: var(--serif);
-  font-size: 20px;          /* era 18px */
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 8px;
   color: var(--ink);
 }
 
-/* Descripción */
 .explanation {
-  font-size: 15px;          /* era 13px */
+  font-size: 15px;
   color: var(--ink-muted);
   font-style: italic;
-  margin-bottom: 20px;
   line-height: 1.7;
+  margin: 0;
+}
+
+/* Selector de días */
+.filtrosDias {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.filtroDia {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filtroDia:hover {
+  border-color: var(--accent-warm);
+  color: var(--accent-warm);
+}
+
+.filtroDiaActive {
+  background: var(--accent-warm);
+  color: #fff;
+  border-color: var(--accent-warm);
 }
 
 .list { display: flex; flex-direction: column; }
@@ -47,7 +84,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 4px;        /* más espacio vertical */
+  padding: 14px 4px;
   border-bottom: 1px solid var(--rule);
   text-decoration: none;
   color: var(--ink);
@@ -59,17 +96,33 @@
 .item:last-child { border-bottom: none; }
 .item:hover { background: var(--paper-warm); padding-left: 12px; margin: 0 -12px; padding-right: 12px; }
 
-/* Badge de días restantes */
+/* Columna izquierda: días + label */
+.diasWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
 .dias {
   font-family: var(--mono);
-  font-size: 12px;          /* era 11px */
+  font-size: 12px;
   font-weight: 500;
   color: #fff;
-  padding: 5px 10px;        /* más grande */
-  flex-shrink: 0;
-  min-width: 48px;
+  padding: 5px 10px;
+  width: 100%;
   text-align: center;
   border-radius: 2px;
+}
+
+.urgencyLabel {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
 .info {
@@ -80,23 +133,39 @@
   min-width: 0;
 }
 
-/* Número de expediente */
 .expNum {
   font-family: var(--mono);
-  font-size: 11px;          /* era 10px */
+  font-size: 11px;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-/* Título del proyecto */
 .expTitle {
-  font-size: 15px;          /* era 14px */
+  font-size: 15px;
   color: var(--ink);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Metadata: estado y proponente */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.metaItem {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
 }
 
 .arrow {
@@ -108,3 +177,20 @@
 }
 
 .item:hover .arrow { transform: translateX(4px); color: var(--accent); }
+
+/* Estados */
+.loadingMsg, .emptyMsg {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 24px 0;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .blockHeader { flex-direction: column; }
+  .filtrosDias { width: 100%; }
+  .metaItem { max-width: 200px; }
+}

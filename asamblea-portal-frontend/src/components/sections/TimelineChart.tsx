@@ -6,7 +6,10 @@ import {
 import type { ProyectosPorMes } from '@/lib/api'
 import styles from './TimelineChart.module.css'
 
-interface Props { data: ProyectosPorMes[] }
+interface Props {
+  data: ProyectosPorMes[]
+  onClickBar?: (anio: number, mes: number) => void
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
@@ -18,10 +21,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   )
 }
 
-export default function TimelineChart({ data }: Props) {
+export default function TimelineChart({ data, onClickBar }: Props) {
   const chartData = data.map(d => ({
     name: `${d.mes_nombre} ${String(d.anio).slice(2)}`,
     total: d.total,
+    anio: d.anio,
+    mes: d.mes,
   }))
 
   const max = Math.max(...chartData.map(d => d.total))
@@ -46,7 +51,12 @@ export default function TimelineChart({ data }: Props) {
             tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--paper-warm)' }} />
-          <Bar dataKey="total" radius={[2, 2, 0, 0]}>
+          <Bar
+            dataKey="total"
+            radius={[2, 2, 0, 0]}
+            onClick={(d) => onClickBar && onClickBar(d.anio, d.mes)}
+            style={{ cursor: onClickBar ? 'pointer' : 'default' }}
+          >
             {chartData.map((entry, i) => (
               <Cell
                 key={i}

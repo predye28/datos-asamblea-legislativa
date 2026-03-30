@@ -3,7 +3,7 @@ import { api } from '@/lib/api'
 import Hero from '@/components/sections/Hero'
 import StatCards from '@/components/sections/StatCards'
 import AprobacionBar from '@/components/sections/AprobacionBar'
-import TimelineChart from '@/components/sections/TimelineChart'
+import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import RankingDiputados from '@/components/sections/RankingDiputados'
 import BuscadorHome from '@/components/sections/BuscadorHome'
@@ -21,7 +21,7 @@ export default async function HomePage() {
     <>
       <Hero
         kicker="¿Para qué sirve esto?"
-        headline={<>Los datos de la Asamblea Legislativa,<br />traducidos para todos los costarricenses</>}
+        headline={<>Los datos de la Asamblea Legislativa,<br />para que cualquier persona los entienda</>}
         deck="La Asamblea publica su información, pero de una forma que pocos entienden. Este portal toma esos mismos datos oficiales y los convierte en algo que cualquier ciudadano puede leer, comparar y cuestionar. Porque la transparencia solo funciona si se entiende."
       />
 
@@ -36,15 +36,12 @@ export default async function HomePage() {
           leyes={metricas.general.total_leyes_aprobadas}
         />
 
-        <SectionRule label="Actividad legislativa — últimos 12 meses" />
-        <TimelineChart data={metricas.por_mes} />
 
-        {vencer.datos.length > 0 && (
-          <>
-            <SectionRule label="Proyectos en riesgo de vencer" />
-            <ProximosVencer datos={vencer.datos} />
-          </>
-        )}
+        <SectionRule label="Proyectos en riesgo de vencer" />
+        <ProximosVencer datos={vencer.datos} clientMode={true} />
+
+        <TimelineInteractiva datosIniciales={metricas.por_mes} />
+
 
         <SectionRule label="Diputados más activos" />
         <RankingDiputados diputados={metricas.top_diputados} />
