@@ -36,6 +36,11 @@ jobs:
         working-directory: extractor_proyectos
         run: pip install -r requirements.txt
 
+      - name: Workaround DNS Asamblea Costa Rica
+        run: |
+          sudo echo "196.40.23.181 www.asamblea.go.cr" | sudo tee -a /etc/hosts
+          sudo echo "196.40.23.181 asamblea.go.cr" | sudo tee -a /etc/hosts
+
       - name: Instalar Chromium (Playwright)
         run: playwright install chromium --with-deps
 
