@@ -6,11 +6,9 @@ extractor.py y sincronizarla contra PostgreSQL (Neon).
  
 Estrategia de sync
 ──────────────────
-• Se usa ON CONFLICT (numero_expediente) DO NOTHING → inserción idempotente.
-• Si el expediente ya existe NO se tocan proponentes ni tramitación
-  (evitar duplicados en tablas sin UNIQUE constraint).
-• Un error en un proyecto hace ROLLBACK solo de ese registro y continúa
-  con los demás (conn.rollback + continue).
+• Se usa ON CONFLICT (numero_expediente) DO UPDATE para mantener los metadatos actualizados.
+• Se verifica la existencia de proponentes y trámites antes de insertar para evitar duplicados.
+• Manejo de errores por registro con rollback individual para garantizar la continuidad del proceso.
  
 Tablas que gestiona
 ───────────────────
@@ -114,12 +112,12 @@ def crear_tablas():
         descargado_en TIMESTAMP DEFAULT NOW()
     );
     """
-    print("🗄️  Verificando esquema de base de datos...")
+    print("Verifying database schema...")
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(ddl)
         conn.commit()
-    print("✅ Tablas verificadas/creadas correctamente.\n")
+    print("Database tables verified.\n")
  
  
 # ══════════════════════════════════════════════════════════════════════
@@ -207,10 +205,10 @@ def sync_proyectos(proyectos: list) -> dict:
         Dict con contadores finales:
             { "nuevos": int, "duplicados": int, "errores": int }
     """
-    stats = {"nuevos": 0, "duplicados": 0, "errores": 0}
+    stats = {"nuevos": 0, "actualizados": 0, "errores": 0}
     total = len(proyectos)
  
-    print(f"🔄 Iniciando sync de {total} proyecto(s)...\n")
+    print(f"Starting synchronization of {total} project(s)...\n")
  
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -236,7 +234,7 @@ def sync_proyectos(proyectos: list) -> dict:
                     num_gaceta = None if num_gaceta == "NO" else num_gaceta
                     num_ley = None if num_ley == "NO" else num_ley
 
-                    # ── INSERT principal (idempotente) ─────────────────
+                    # ── INSERT/UPDATE principal (Upsert) ──
                     cur.execute(
                         """
                         INSERT INTO proyectos
@@ -244,7 +242,15 @@ def sync_proyectos(proyectos: list) -> dict:
                              fecha_inicio, vencimiento_cuatrienal,
                              fecha_publicacion, numero_gaceta, numero_ley)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (numero_expediente) DO NOTHING
+                        ON CONFLICT (numero_expediente) DO UPDATE SET
+                            titulo = EXCLUDED.titulo,
+                            tipo_expediente = EXCLUDED.tipo_expediente,
+                            fecha_inicio = EXCLUDED.fecha_inicio,
+                            vencimiento_cuatrienal = EXCLUDED.vencimiento_cuatrienal,
+                            fecha_publicacion = EXCLUDED.fecha_publicacion,
+                            numero_gaceta = EXCLUDED.numero_gaceta,
+                            numero_ley = EXCLUDED.numero_ley
+                        RETURNING id, (xmin = 0) AS is_new;
                         """,
                         (
                             int(num_exp),
@@ -258,47 +264,57 @@ def sync_proyectos(proyectos: list) -> dict:
                         ),
                     )
  
-                    # ── ¿Era duplicado? ────────────────────────────────
-                    if cur.rowcount == 0:
-                        print(
-                            f"  [{idx:>4}/{total}] ⏭️  Exp. {num_exp} ya existe, omitiendo."
-                        )
-                        stats["duplicados"] += 1
-                        continue
+                    res = cur.fetchone()
+                    proyecto_id = res[0]
+                    # xmin comparison or similar to detect if it was an insert vs update
+                    # Note: Rowcount in postgres for upsert is 1 for insert and 1 for update usually.
+                    # We can check if it already existed before.
+                    
+                    # Simplificamos: tratamos a todos como existentes y solo insertamos lo que falte
  
-                    # ── Proyecto nuevo: obtener su id ──────────────────
-                    cur.execute(
-                        "SELECT id FROM proyectos WHERE numero_expediente = %s",
-                        (int(num_exp),),
-                    )
-                    proyecto_id = cur.fetchone()[0]
- 
-                    # ── Insertar proponentes ───────────────────────────
                     proponentes = proy.get("proponentes", [])
+                    proponentes_nuevos = 0
                     for prop in proponentes:
                         cur.execute(
                             """
                             INSERT INTO proponentes
                                 (proyecto_id, secuencia, apellidos, nombre)
-                            VALUES (%s, %s, %s, %s)
+                            SELECT %s, %s, %s, %s
+                            WHERE NOT EXISTS (
+                                SELECT 1 FROM proponentes 
+                                WHERE proyecto_id = %s AND secuencia = %s AND (nombre = %s OR apellidos = %s)
+                            )
                             """,
                             (
                                 proyecto_id,
                                 int(prop.get("Firma") or prop.get("Secuencia", 0) or 0),
                                 prop.get("Apellidos"),
                                 prop.get("Nombre"),
+                                proyecto_id,
+                                int(prop.get("Firma") or prop.get("Secuencia", 0) or 0),
+                                prop.get("Nombre"),
+                                prop.get("Apellidos")
                             ),
                         )
+                        if cur.rowcount > 0:
+                            proponentes_nuevos += 1
  
-                    # ── Insertar tramitación ───────────────────────────
                     tramitacion = proy.get("tramitacion", [])
+                    tramites_nuevos = 0
                     for tram in tramitacion:
                         cur.execute(
                             """
                             INSERT INTO tramitacion
                                 (proyecto_id, organo, fecha_inicio,
                                  fecha_termino, tipo_tramite)
-                            VALUES (%s, %s, %s, %s, %s)
+                            SELECT %s, %s, %s, %s, %s
+                            WHERE NOT EXISTS (
+                                SELECT 1 FROM tramitacion 
+                                WHERE proyecto_id = %s 
+                                  AND organo = %s 
+                                  AND (fecha_inicio IS NOT DISTINCT FROM %s)
+                                  AND tipo_tramite = %s
+                            )
                             """,
                             (
                                 proyecto_id,
@@ -306,8 +322,14 @@ def sync_proyectos(proyectos: list) -> dict:
                                 parsear_fecha(tram.get("Fecha Inicio", "")),
                                 parsear_fecha(tram.get("Fecha Término", "")),
                                 tram.get("Descripción") or tram.get("Tipo de Trámite"),
+                                proyecto_id,
+                                tram.get("Órgano"),
+                                parsear_fecha(tram.get("Fecha Inicio", "")),
+                                tram.get("Descripción") or tram.get("Tipo de Trámite")
                             ),
                         )
+                        if cur.rowcount > 0:
+                            tramites_nuevos += 1
  
                     # ── Insertar documento (si existe) ─────────────────
                     doc = proy.get("documento", {})
@@ -321,35 +343,29 @@ def sync_proyectos(proyectos: list) -> dict:
                             (proyecto_id, doc.get("tipo"), doc.get("archivo")),
                         )
  
-                    # ── Log de éxito ───────────────────────────────────
-                    doc_label = doc.get("tipo", "sin doc") if doc.get("archivo") else "sin doc"
+                    # ── Log de resultado ──
+                    status = "Updated" if tramites_nuevos == 0 and proponentes_nuevos == 0 else "Synchronized"
                     print(
-                        f"  [{idx:>4}/{total}] ✅ Exp. {num_exp} insertado "
-                        f"| {len(proponentes)} prop. "
-                        f"| {len(tramitacion)} trám. "
-                        f"| doc: {doc_label}"
+                        f"  [{idx:>4}/{total}] {status} Exp. {num_exp} "
+                        f"| +{proponentes_nuevos} prop. "
+                        f"| +{tramites_nuevos} trám."
                     )
-                    stats["nuevos"] += 1
- 
+                    stats["actualizados"] += 1
+
                 except Exception as exc:
-                    # ROLLBACK solo de este proyecto; el loop continúa
                     conn.rollback()
                     print(
-                        f"  [{idx:>4}/{total}] ❌ Error en exp. {num_exp}: {exc}"
+                        f"  [{idx:>4}/{total}] Error in exp. {num_exp}: {exc}"
                     )
                     stats["errores"] += 1
                     continue
  
         conn.commit()
  
-    # ── Resumen final ──────────────────────────────────────────────────
-    print(
-        f"\n{'─'*50}\n"
-        f"  Sync completado:\n"
-        f"    ✅ Nuevos      : {stats['nuevos']}\n"
-        f"    ⏭️  Duplicados  : {stats['duplicados']}\n"
-        f"    ❌ Errores     : {stats['errores']}\n"
-        f"    📦 Total       : {total}\n"
-        f"{'─'*50}"
-    )
+    print("-" * 50)
+    print("Synchronization complete:")
+    print(f"  Processed: {stats.get('actualizados', 0)}")
+    print(f"  Errors:    {stats.get('errores', 0)}")
+    print(f"  Total:     {total}")
+    print("-" * 50)
     return stats

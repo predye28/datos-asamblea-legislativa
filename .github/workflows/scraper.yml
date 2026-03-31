@@ -48,7 +48,7 @@ jobs:
         working-directory: extractor_proyectos
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '50' }}
+          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '0' }}
         run: python extraer_proyectos.py
 
       - name: Subir artifacts
