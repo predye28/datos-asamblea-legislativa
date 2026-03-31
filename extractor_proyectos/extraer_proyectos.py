@@ -406,21 +406,55 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
     return todas_las_filas
 
 async def extraer_tab_tramitacion(frame, page) -> list:
-    """
-    Extracts data from the 'Tramitación' tab.
-    """
     await clic_tab(frame, page, "Tramitación")
-    filas = await _leer_grilla_panel_inferior(
-        frame, page, columnas_esperadas=4, skip_first=True
-    )
+    await page.wait_for_timeout(800)
+
     tramitacion = []
-    for fila in filas:
-        tramitacion.append({
-            "Órgano":        limpiar(fila[0] if len(fila) > 0 else ""),
-            "Descripción":   limpiar(fila[1] if len(fila) > 1 else ""),
-            "Fecha Inicio":  limpiar(fila[2] if len(fila) > 2 else ""),
-            "Fecha Término": limpiar(fila[3] if len(fila) > 3 else ""),
-        })
+    try:
+        resultado = await frame.evaluate("""() => {
+            const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
+            if (!contenedor) return null;
+
+            const panelVisible = [...contenedor.querySelectorAll(
+                '.jqx-tabs-content-element'
+            )].find(p => p.offsetParent !== null);
+            if (!panelVisible) return null;
+
+            const grilla = panelVisible.querySelector("div[role='grid']");
+            if (!grilla) return null;
+
+            const $ = window.$ || window.jQuery;
+            if (!$ || !$(grilla).jqxGrid) return null;
+
+            const rowCount = $(grilla).jqxGrid('getdatainformation').rowscount;
+            if (rowCount === 0) return [];
+
+            const filas = [];
+            for (let i = 0; i < rowCount; i++) {
+                const row = $(grilla).jqxGrid('getrowdata', i);
+                if (!row) continue;
+                filas.push({
+                    organo:        String(row.Nombre_Corto       ?? ''),
+                    descripcion:   String(row.Descripcion_Tramite ?? ''),
+                    fecha_inicio:  String(row.Fecha_Inicio        ?? '').split(' ')[0],
+                    fecha_termino: String(row.Fecha_Termino       ?? '').split(' ')[0],
+                });
+            }
+            return filas;
+        }""")
+
+        if resultado:
+            for fila in resultado:
+                tramitacion.append({
+                    "Órgano":        limpiar(fila["organo"]),
+                    "Descripción":   limpiar(fila["descripcion"]),
+                    "Fecha Inicio":  limpiar(fila["fecha_inicio"]),
+                    "Fecha Término": limpiar(fila["fecha_termino"]),
+                })
+
+    except Exception as e:
+        print(f"Error extracting tramitacion: {e}")
+
     return tramitacion
 
 async def extraer_tab_proponentes(frame, page) -> list:
@@ -548,7 +582,50 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
 # ----------------------------------------------------------------------
 # PAGINATION
 # ----------------------------------------------------------------------
+async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
+    """
+    Navega directamente a una página escribiendo el número en el input 'ctrl-tabla-ira'.
+    """
+    try:
+        # Buscar el input de página actual
+        input_pagina = await frame.query_selector("input.ctrl-tabla-ira")
+        if not input_pagina:
+            input_pagina = await frame.query_selector("input[title='Página actual']")
+        
+        if not input_pagina:
+            print(f"Input de página no encontrado. Usando navegación secuencial.")
+            return False
 
+        # Leer el número de página actual antes de cambiar
+        filas_antes = await obtener_info_filas(frame)
+        primer_exp_antes = filas_antes[0]["expediente"] if filas_antes else None
+
+        # Limpiar, escribir el número y presionar Enter
+        await input_pagina.click(click_count=3)
+        await input_pagina.fill(str(numero_pagina))
+        await input_pagina.press("Enter")
+        
+        print(f"Navegando directamente a página {numero_pagina}...")
+        await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
+
+        # Verificar que la página cambió
+        for intento in range(10):
+            filas_despues = await obtener_info_filas(frame)
+            primer_exp_despues = filas_despues[0]["expediente"] if filas_despues else None
+
+            if primer_exp_despues and primer_exp_despues != primer_exp_antes:
+                print(f"Página {numero_pagina} cargada correctamente.")
+                return True
+
+            print(f"Esperando cambio de página... intento {intento + 1}/10")
+            await page.wait_for_timeout(800)
+
+        print(f"La grilla no cambió al ir a página {numero_pagina}.")
+        return False
+
+    except Exception as e:
+        print(f"Error navegando a página {numero_pagina}: {e}")
+        return False
 async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
     """
     Clicks the next page button and verifies the content has changed.
@@ -772,13 +849,12 @@ async def main():
 
         # Avanzar hasta la página de inicio si no es la 1
         if pagina_inicio > 1:
-            print(f"Advancing to starting page {pagina_inicio}...")
-            for n in range(pagina_inicio - 1):
-                if not await ir_siguiente_pagina(frame, page, n + 1):
-                    print(f"Could not reach page {pagina_inicio}. Aborting.")
-                    await browser.close()
-                    return
-            print(f"Ready. Starting from page {pagina_inicio}.")
+            print(f"Saltando directamente a página {pagina_inicio}...")
+            if not await ir_a_pagina_directa(frame, page, pagina_inicio):
+                print(f"No se pudo llegar a la página {pagina_inicio}. Abortando.")
+                await browser.close()
+                return
+            print(f"Listo. Iniciando desde página {pagina_inicio}.")
 
         pagina_actual      = pagina_inicio
         paginas_procesadas = 0
@@ -792,7 +868,7 @@ async def main():
                 ciclo_finalizado = True
                 break
 
-            if MAX_PAGINAS and pagina_actual > MAX_PAGINAS:
+            if MAX_PAGINAS and paginas_procesadas >= MAX_PAGINAS:
                 print(f"Limit of {MAX_PAGINAS} pages reached.")
                 break
 
