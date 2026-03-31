@@ -1,25 +1,35 @@
-# .github/workflows/scraper.yml
-
 name: Scraper Asamblea Legislativa
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # 2am costa rica
+    - cron: '0 8 * * *'  # 2am costa rica (UTC-6 = 08:00 UTC)
   workflow_dispatch:
     inputs:
       max_paginas:
         description: 'Límite de páginas (0 = todas)'
         required: false
-        default: '1'
+        default: '0'
+      reset_checkpoint:
+        description: 'Reiniciar checkpoint a página 1 (true/false)'
+        required: false
+        default: 'false'
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 170  # ~2h50m — margen antes del límite de 6h de Actions
 
     steps:
-      - name: Checkout código
+      - name: Checkout Código (Main)
         uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Obtener Checkpoint Actual (Rama Schedule)
+        run: |
+          git fetch origin schedule:schedule || echo "Rama schedule no existe todavía, se creará al final."
+          git checkout schedule -- extractor_proyectos/checkpoint.json || echo "No hay checkpoint previo en schedule."
 
       - name: Instalar Python 3.11
         uses: actions/setup-python@v5
@@ -44,12 +54,46 @@ jobs:
       - name: Instalar Chromium (Playwright)
         run: playwright install chromium --with-deps
 
+      - name: Resetear checkpoint si se solicitó
+        if: ${{ github.event.inputs.reset_checkpoint == 'true' }}
+        working-directory: extractor_proyectos
+        run: |
+          echo '{"pagina_actual": 1, "primera_pasada_completa": false, "ultima_ejecucion": null}' > checkpoint.json
+          echo "Checkpoint reset to page 1 and Phase 1."
+
+      - name: Mostrar checkpoint actual
+        working-directory: extractor_proyectos
+        run: |
+          echo "Current checkpoint:"
+          cat checkpoint.json || echo "No checkpoint file yet."
+
       - name: Correr scraper
         working-directory: extractor_proyectos
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '0' }}
+          CI: "true"
         run: python extraer_proyectos.py
+
+      - name: Persistir Checkpoint (a Rama Schedule)
+        working-directory: extractor_proyectos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Guardar el nuevo checkpoint en una ubicación temporal
+          cp checkpoint.json /tmp/checkpoint_new.json
+          
+          # Cambiar a la rama schedule (crearla si no existe)
+          git fetch origin schedule:schedule || git branch schedule
+          git checkout schedule
+          
+          # Actualizar el archivo con el nuevo valor
+          cp /tmp/checkpoint_new.json checkpoint.json
+          git add checkpoint.json
+          
+          # Hacer commit y subir cambios solo si hay diferencias
+          git diff --staged --quiet || (git commit -m "chore: update checkpoint [skip ci]" && git push origin schedule)
 
       - name: Subir artifacts
         if: always()

@@ -9,6 +9,7 @@ Applied fixes:
   - Extracts processing steps and proponents from the correct containers.
 """
 
+import argparse
 import asyncio
 import json
 import os
@@ -40,6 +41,61 @@ ESPERA_CLIC_FILA    = 2_500
 ESPERA_CLIC_TAB     = 1_800
 ESPERA_CLIC_PAGINA  = 3_000
 
+# ----------------------------------------------------------------------
+# ARGUMENT PARSING (para rangos de páginas / checkpoint)
+# ----------------------------------------------------------------------
+
+_parser = argparse.ArgumentParser(add_help=False)
+_parser.add_argument("--pagina-inicio", type=int, default=None)
+_parser.add_argument("--pagina-fin",    type=int, default=None)
+_args, _ = _parser.parse_known_args()
+
+PAGINA_INICIO = _args.pagina_inicio  # None = leer desde checkpoint.json
+PAGINA_FIN    = _args.pagina_fin     # None = sin límite de fin
+
+# ----------------------------------------------------------------------
+# CHECKPOINT
+# ----------------------------------------------------------------------
+
+CHECKPOINT_FILE = "checkpoint.json"
+PAGINAS_POR_RUN = 100
+LIMITE_MONITOREO = 1200  # Después de la 1era pasada, solo monitoreamos hasta aquí.
+
+
+def leer_checkpoint():
+    """
+    Reads the starting page and pass status from checkpoint.json.
+    """
+    try:
+        with open(CHECKPOINT_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        pagina = int(data.get("pagina_actual", 1))
+        completa = data.get("primera_pasada_completa", False)
+        print(f"Checkpoint loaded: page {pagina}, first pass complete: {completa}.")
+        return pagina, completa
+    except Exception:
+        print("No checkpoint found. Starting fresh.")
+        return 1, False
+
+
+def guardar_checkpoint(pagina_siguiente: int, ciclo_completado: bool = False, primera_pasada_completa: bool = False):
+    """
+    Saves the next starting page to checkpoint.json.
+    """
+    if ciclo_completado:
+        pagina_siguiente = 1
+        primera_pasada_completa = True  # Al completar cualquier ciclo, asumimos que la 1era ya pasó
+        print("Cycle complete. Redirecting to page 1 for next run.")
+    
+    data = {
+        "pagina_actual":           pagina_siguiente,
+        "primera_pasada_completa": primera_pasada_completa,
+        "ultima_ejecucion":        datetime.utcnow().isoformat(),
+    }
+    with open(CHECKPOINT_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    print(f"Checkpoint saved: page {pagina_siguiente}.")
+
 
 # ----------------------------------------------------------------------
 # UTILITIES
@@ -65,19 +121,25 @@ async def navegar_a_expedientes(page: Page) -> bool:
     Locates and clicks the button to enter the legislative files module.
     """
     print(f"Searching for button '{TEXTO_BOTON_ENTRADA}'...")
-    for ctx in [page] + list(page.frames):
-        try:
-            for boton in await ctx.query_selector_all("a[role='button'], button, a"):
-                texto = (await boton.inner_text()).strip()
-                if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
-                    print("Button found. Navigating...")
-                    await boton.click()
-                    await page.wait_for_load_state("domcontentloaded")
-                    await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
-                    return True
-        except Exception:
-            continue
-    print("Button not found.")
+    
+    for intento in range(3):
+        for ctx in [page] + list(page.frames):
+            try:
+                for boton in await ctx.query_selector_all("a[role='button'], button, a"):
+                    texto = (await boton.inner_text()).strip()
+                    if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
+                        print(f"Button found (attempt {intento + 1}). Navigating...")
+                        await boton.click()
+                        await page.wait_for_load_state("domcontentloaded")
+                        await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
+                        return True
+            except Exception:
+                continue
+        
+        print(f"Button not found in attempt {intento + 1}. Waiting 5s before retry...")
+        await page.wait_for_timeout(5000)
+
+    print("Button not found after 3 attempts.")
     await page.screenshot(path="debug_boton_no_encontrado.png", full_page=True)
     return False
 
@@ -605,13 +667,23 @@ def exportar_excel(proyectos: list, nombre: str):
 # ----------------------------------------------------------------------
 
 async def main():
+    # Determinar página de inicio: argumento CLI tiene prioridad, luego checkpoint
+    if PAGINA_INICIO is not None:
+        pagina_inicio = PAGINA_INICIO
+        primera_pasada_completa = False
+    else:
+        pagina_inicio, primera_pasada_completa = leer_checkpoint()
+    
+    pagina_fin = PAGINA_FIN if PAGINA_FIN is not None else pagina_inicio + PAGINAS_POR_RUN - 1
+
     inicio = datetime.now()
 
     print("-" * 60)
     print("SIL Extractor - Legislative Assembly of Costa Rica")
     print("-" * 60)
-    print(f"Started at:  {inicio:%Y-%m-%d %H:%M:%S}")
-    print(f"Scope:       {'ALL PAGES' if not MAX_PAGINAS else f'first {MAX_PAGINAS} pages'}")
+    print(f"Started at:    {inicio:%Y-%m-%d %H:%M:%S}")
+    print(f"Page range:    {pagina_inicio} → {pagina_fin}")
+    print(f"Scope:         {'ALL PAGES' if not MAX_PAGINAS else f'first {MAX_PAGINAS} pages'}")
     print("-" * 60)
 
     os.makedirs(CARPETA_DOCS, exist_ok=True)
@@ -651,33 +723,63 @@ async def main():
             print("Grid not found. Aborting.")
             await browser.close()
             return
-        
+
         await cambiar_mostrar_registros(frame, page, "10")
         await page.wait_for_timeout(6_000)
 
-        pagina_actual = 1
+        # Avanzar hasta la página de inicio si no es la 1
+        if pagina_inicio > 1:
+            print(f"Advancing to starting page {pagina_inicio}...")
+            for n in range(pagina_inicio - 1):
+                if not await ir_siguiente_pagina(frame, page, n + 1):
+                    print(f"Could not reach page {pagina_inicio}. Aborting.")
+                    await browser.close()
+                    return
+            print(f"Ready. Starting from page {pagina_inicio}.")
+
+        pagina_actual      = pagina_inicio
         paginas_procesadas = 0
         expedientes_vistos = set()
+        ciclo_finalizado   = False
 
         while True:
+            # 1. Límite de fase de monitoreo (si ya se hizo la 1era pasada)
+            if primera_pasada_completa and pagina_actual > LIMITE_MONITOREO:
+                print(f"Monitoring limit reached ({LIMITE_MONITOREO}). Resetting cycle.")
+                ciclo_finalizado = True
+                break
+
             if MAX_PAGINAS and pagina_actual > MAX_PAGINAS:
                 print(f"Limit of {MAX_PAGINAS} pages reached.")
                 break
 
+            if pagina_actual > pagina_fin:
+                print(f"Batch complete: pages {pagina_inicio}-{pagina_fin}.")
+                break
+
             continuar = await procesar_pagina_grilla(page, frame, pagina_actual, proyectos, expedientes_vistos)
             if not continuar:
+                ciclo_finalizado = True
                 break
-                
+
             paginas_procesadas += 1
 
             print(f"Attempting to advance to page {pagina_actual + 1}...")
             if not await ir_siguiente_pagina(frame, page, pagina_actual):
-                print("Extraction completed.")
+                print("No more pages available. Full sync complete.")
+                ciclo_finalizado = True
                 break
 
             pagina_actual += 1
 
         await browser.close()
+
+    # Guardar checkpoint para el próximo run
+    guardar_checkpoint(
+        pagina_actual, 
+        ciclo_completado=ciclo_finalizado, 
+        primera_pasada_completa=primera_pasada_completa
+    )
 
     if not proyectos:
         print("No projects were extracted.")
@@ -690,8 +792,9 @@ async def main():
     stats = sync_proyectos(proyectos)
 
     ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_file  = f"proyectos_{ts}.json"
-    excel_file = f"proyectos_{ts}.xlsx"
+    rango      = f"p{pagina_inicio}-{pagina_fin}"
+    json_file  = f"proyectos_{ts}_{rango}.json"
+    excel_file = f"proyectos_{ts}_{rango}.xlsx"
 
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(proyectos, f, ensure_ascii=False, indent=2)
@@ -700,12 +803,13 @@ async def main():
     exportar_excel(proyectos, excel_file)
 
     duracion = datetime.now() - inicio
-    
+
     print("-" * 60)
     print("FINAL SUMMARY")
     print("-" * 60)
     print(f"Projects extracted:   {len(proyectos)}")
     print(f"Pages processed:      {paginas_procesadas}")
+    print(f"Page range:           {pagina_inicio}-{pagina_fin}")
     print(f"Database - Sync:      {stats.get('actualizados', 0)}")
     print(f"Database - Errors:    {stats.get('errores', 0)}")
     print(f"JSON Output:          {json_file}")
