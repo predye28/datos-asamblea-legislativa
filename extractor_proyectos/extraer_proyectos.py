@@ -345,14 +345,14 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
                                        skip_first: bool = True,
                                        timeout_ms: int = 5000) -> list:
     """
-    Internal helper to read the grid inside the details panel.
+    Internal helper to read ALL rows from the grid inside the details panel,
+    scrolling through it to bypass jqxGrid's row virtualization.
     """
-    intervalo = 300
-    intentos = timeout_ms // intervalo
-    slice_js = "celdas.slice(1)" if skip_first else "celdas"
+    todas_las_filas = []
+    filas_vistas = set()
 
-    for _ in range(intentos):
-        resultado = await frame.evaluate(f"""() => {{
+    for scroll_top in range(0, 5000, 150):  # scroll en pasos de 150px hasta 5000px
+        resultado = await frame.evaluate(f"""(scrollTop) => {{
             const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
             if (!contenedor) return null;
 
@@ -364,36 +364,46 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
             const grilla = panelVisible.querySelector("div[role='grid']");
             if (!grilla) return null;
 
+            // Hacer scroll dentro del contenedor scrolleable del grid
+            const scrollable = grilla.querySelector('.jqx-grid-content') || 
+                               grilla.querySelector('[style*="overflow"]') ||
+                               grilla;
+            scrollable.scrollTop = scrollTop;
+
             const rows = [...grilla.querySelectorAll("div[role='row']")];
             if (!rows.length) return null;
-
-            let ok = false;
-            for (const row of rows) {{
-                const celdas = [...row.querySelectorAll("div[role='gridcell']")]
-                    .map(c => (c.innerText || c.textContent || '').trim());
-                if (celdas.filter(c => c.length > 0).length >= {columnas_esperadas}) {{
-                    ok = true;
-                    break;
-                }}
-            }}
-            if (!ok) return null;
 
             const filas = [];
             for (const row of rows) {{
                 const celdas = [...row.querySelectorAll("div[role='gridcell']")]
                     .map(c => (c.innerText || c.textContent || '').trim());
                 if (celdas.filter(c => c.length > 0).length < 2) continue;
-                filas.push({slice_js});
+                const slice = {'celdas.slice(1)' if skip_first else 'celdas'};
+                filas.push(slice);
             }}
             return filas;
-        }}""")
+        }}""", scroll_top)
 
-        if resultado is not None:
-            return resultado
-        await page.wait_for_timeout(intervalo)
+        if resultado is None:
+            break
 
-    print(f"Timeout waiting for bottom grid with {columnas_esperadas} columns.")
-    return []
+        hubo_nuevas = False
+        for fila in resultado:
+            clave = tuple(fila)
+            if clave not in filas_vistas and any(c for c in fila):
+                filas_vistas.add(clave)
+                todas_las_filas.append(fila)
+                hubo_nuevas = True
+
+        if not hubo_nuevas and scroll_top > 0:
+            break  # Ya no aparecen filas nuevas, terminamos
+
+        await page.wait_for_timeout(80)
+
+    if not todas_las_filas:
+        print(f"Timeout waiting for bottom grid with {columnas_esperadas} columns.")
+
+    return todas_las_filas
 
 async def extraer_tab_tramitacion(frame, page) -> list:
     """
@@ -414,20 +424,53 @@ async def extraer_tab_tramitacion(frame, page) -> list:
     return tramitacion
 
 async def extraer_tab_proponentes(frame, page) -> list:
-    """
-    Extracts data from the 'Proponentes' tab.
-    """
     await clic_tab(frame, page, "Proponentes")
-    filas = await _leer_grilla_panel_inferior(
-        frame, page, columnas_esperadas=3, skip_first=False
-    )
+    await page.wait_for_timeout(800)
+
     proponentes = []
-    for fila in filas:
-        proponentes.append({
-            "Firma":          limpiar(fila[0] if len(fila) > 0 else ""),
-            "Nombre":         limpiar(fila[1] if len(fila) > 1 else ""),
-            "Administración": limpiar(fila[2] if len(fila) > 2 else ""),
-        })
+    try:
+        resultado = await frame.evaluate("""() => {
+            const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
+            if (!contenedor) return null;
+
+            const panelVisible = [...contenedor.querySelectorAll(
+                '.jqx-tabs-content-element'
+            )].find(p => p.offsetParent !== null);
+            if (!panelVisible) return null;
+
+            const grilla = panelVisible.querySelector("div[role='grid']");
+            if (!grilla) return null;
+
+            const $ = window.$ || window.jQuery;
+            if (!$ || !$(grilla).jqxGrid) return null;
+
+            const rowCount = $(grilla).jqxGrid('getdatainformation').rowscount;
+            if (rowCount === 0) return [];
+
+            const filas = [];
+            for (let i = 0; i < rowCount; i++) {
+                const row = $(grilla).jqxGrid('getrowdata', i);
+                if (!row) continue;
+                filas.push({
+                    firma:          String(row.Secuencia_Firma ?? ''),
+                    nombre:         String(row.Nombre         ?? ''),
+                    administracion: String(row.Administracion ?? ''),
+                });
+            }
+            return filas;
+        }""")
+
+        if resultado:
+            for fila in resultado:
+                proponentes.append({
+                    "Firma":          limpiar(fila["firma"]),
+                    "Nombre":         limpiar(fila["nombre"]),
+                    "Administración": limpiar(fila["administracion"]),
+                })
+
+    except Exception as e:
+        print(f"Error extracting proponentes: {e}")
+
     return proponentes
 
 async def volver_tab_general(frame, page: Page):
