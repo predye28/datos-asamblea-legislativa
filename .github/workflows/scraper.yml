@@ -17,7 +17,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 170  # ~2h50m — margen antes del límite de 6h de Actions
+    timeout-minutes: 180  # ~2h50m — margen antes del límite de 6h de Actions
 
     steps:
       - name: Checkout Código (Main)
