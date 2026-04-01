@@ -100,6 +100,24 @@ def guardar_checkpoint(pagina_siguiente: int, ciclo_completado: bool = False, pr
 # ----------------------------------------------------------------------
 # UTILITIES
 # ----------------------------------------------------------------------
+async def esperar_frame_webpart(page: Page, timeout_ms: int = 30000) -> bool:
+    """
+    Espera a que el frame MSOPageViewerWebPart tenga contenido cargado.
+    """
+    inicio = asyncio.get_event_loop().time()
+    while (asyncio.get_event_loop().time() - inicio) * 1000 < timeout_ms:
+        for frame in page.frames:
+            nombre = getattr(frame, 'name', '')
+            if 'MSOPageViewer' in nombre or 'WebPartWPQ' in nombre:
+                try:
+                    count = await frame.evaluate("document.querySelectorAll('a, button').length")
+                    if count > 0:
+                        print(f"Frame '{nombre}' ready with {count} elements.")
+                        return True
+                except Exception:
+                    pass
+        await page.wait_for_timeout(1000)
+    return False
 
 def limpiar(v):
     """
@@ -125,6 +143,13 @@ async def navegar_a_expedientes(page: Page) -> bool:
     
     print(f"Waiting {espera_inicial}ms for frames to initialize...")
     await page.wait_for_timeout(espera_inicial)
+
+    print("Waiting for SharePoint WebPart frame to load...")
+    frame_listo = await esperar_frame_webpart(page, timeout_ms=45000)
+    if not frame_listo:
+        print("WebPart frame never loaded content — will try anyway with JS fallback.")
+    
+    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}'...")
     
     print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
     
@@ -168,52 +193,36 @@ async def navegar_a_expedientes(page: Page) -> bool:
                 print(f"    Error in frame '{ctx_name}': {e}")
                 continue
 
-        # --- NUEVO: fallback con evaluate en toda la página ---
-        print(f"  Trying JavaScript fallback on attempt {intento+1}...")
-        try:
-            clicked = await page.evaluate(f"""() => {{
-                const texto_buscado = "{TEXTO_BOTON_ENTRADA}".toLowerCase();
-                const selectores = [
-                    'a', 'button', 'div[role="button"]', 
-                    'span[role="button"]', 'a[role="button"]'
-                ];
-                for (const sel of selectores) {{
-                    for (const el of document.querySelectorAll(sel)) {{
-                        const texto = (el.innerText || el.textContent || 
-                                       el.getAttribute('title') || 
-                                       el.getAttribute('aria-label') || '').toLowerCase().trim();
-                        if (texto.includes(texto_buscado)) {{
-                            el.click();
-                            return true;
-                        }}
-                    }}
-                }}
-                // También buscar en todos los iframes
-                for (const iframe of document.querySelectorAll('iframe')) {{
-                    try {{
-                        const doc = iframe.contentDocument || iframe.contentWindow.document;
-                        for (const sel of selectores) {{
-                            for (const el of doc.querySelectorAll(sel)) {{
-                                const texto = (el.innerText || el.textContent || 
-                                               el.getAttribute('title') || '').toLowerCase().trim();
-                                if (texto.includes(texto_buscado)) {{
-                                    el.click();
-                                    return true;
-                                }}
+        # --- NUEVO: fallback ejecutando JS dentro de cada frame ---
+        print(f"  Trying per-frame JavaScript fallback on attempt {intento+1}...")
+        for ctx in [page] + list(page.frames):
+            ctx_name = getattr(ctx, 'name', 'main-page')
+            try:
+                clicked = await ctx.evaluate(f"""() => {{
+                    const texto_buscado = "{TEXTO_BOTON_ENTRADA}".toLowerCase();
+                    const selectores = ['a', 'button', 'div[role="button"]', 'span[role="button"]'];
+                    for (const sel of selectores) {{
+                        for (const el of document.querySelectorAll(sel)) {{
+                            const texto = (el.innerText || el.textContent || 
+                                           el.getAttribute('title') || 
+                                           el.getAttribute('aria-label') || '').toLowerCase().trim();
+                            if (texto.includes(texto_buscado)) {{
+                                el.click();
+                                return true;
                             }}
                         }}
-                    }} catch(e) {{ continue; }}
-                }}
-                return false;
-            }}""")
-            
-            if clicked:
-                print(f"Button found via JS fallback (attempt {intento+1}). Waiting for load...")
-                await page.wait_for_load_state("networkidle", timeout=45000)
-                await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
-                return True
-        except Exception as e:
-            print(f"  JS fallback error: {e}")
+                    }}
+                    return false;
+                }}""")
+                
+                if clicked:
+                    print(f"Button found via JS in frame '{ctx_name}' (attempt {intento+1}).")
+                    await page.wait_for_load_state("networkidle", timeout=45000)
+                    await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
+                    return True
+            except Exception as e:
+                print(f"  JS eval error in frame '{ctx_name}': {e}")
+                continue
 
         espera = 8000 + (intento * 4000)
         print(f"Button not found in attempt {intento+1}. Waiting {espera//1000}s before retry...")
