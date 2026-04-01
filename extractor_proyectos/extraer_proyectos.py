@@ -135,43 +135,39 @@ def limpiar(v):
 # ----------------------------------------------------------------------
 
 async def navegar_a_expedientes(page: Page) -> bool:
-    titulo_actual = await page.title()
-    print(f"Current page title: '{titulo_actual}'")
-    
     is_ci = os.getenv("CI", "false").lower() == "true"
-    espera_inicial = 8000 if is_ci else 2000
     
-    print(f"Waiting {espera_inicial}ms for frames to initialize...")
-    await page.wait_for_timeout(espera_inicial)
-
-    print("Waiting for SharePoint WebPart frame to load...")
-    frame_listo = await esperar_frame_webpart(page, timeout_ms=45000)
-    if not frame_listo:
-        print("WebPart frame never loaded content — will try anyway with JS fallback.")
-    
-    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}'...")
-    
-    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
-    
-    for intento in range(5):
-        await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
+    for intento in range(10):  # 10 intentos = ~10 minutos máximo
+        print(f"\n--- Attempt {intento + 1}/10 to load the portal ---")
+        
+        # En cada intento recargar la página completa
+        if intento > 0:
+            print("Reloading page...")
+            try:
+                await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
+            except Exception:
+                await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
+        
+        # Esperar a que el WebPart frame cargue su contenido
+        print("Waiting for SharePoint WebPart frame...")
+        frame_listo = await esperar_frame_webpart(page, timeout_ms=60_000)
+        
+        if not frame_listo:
+            print(f"WebPart frame empty after 60s. Server may be down. Retrying in 60s...")
+            await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
+            await page.wait_for_timeout(60_000)  # esperar 1 minuto antes del reload
+            continue
+        
+        # Frame listo — buscar el botón
+        print(f"Frame ready. Searching for '{TEXTO_BOTON_ENTRADA}'...")
         
         frames_a_buscar = [page] + list(page.frames)
-        print(f"  Attempt {intento+1}: checking {len(frames_a_buscar)} frames...")
-        
         for ctx in frames_a_buscar:
             ctx_name = getattr(ctx, 'name', 'main-page')
-            try:
-                await ctx.wait_for_load_state("domcontentloaded", timeout=5000)
-            except Exception:
-                pass
-                
             try:
                 botones = await ctx.query_selector_all(
                     "a[role='button'], button, a, div[role='button'], span[role='button']"
                 )
-                print(f"    Frame '{ctx_name}': {len(botones)} clickable elements found")
-                
                 for boton in botones:
                     try:
                         texto = (await boton.inner_text()).strip()
@@ -184,17 +180,16 @@ async def navegar_a_expedientes(page: Page) -> bool:
                             print(f"Button found in frame '{ctx_name}' (attempt {intento+1}). Clicking...")
                             await boton.scroll_into_view_if_needed()
                             await boton.click()
-                            await page.wait_for_load_state("networkidle", timeout=45000)
+                            await page.wait_for_load_state("networkidle", timeout=45_000)
                             await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
                             return True
                     except Exception:
                         continue
-            except Exception as e:
-                print(f"    Error in frame '{ctx_name}': {e}")
+            except Exception:
                 continue
-
-        # --- NUEVO: fallback ejecutando JS dentro de cada frame ---
-        print(f"  Trying per-frame JavaScript fallback on attempt {intento+1}...")
+        
+        # Fallback JS por frame
+        print("Trying per-frame JS fallback...")
         for ctx in [page] + list(page.frames):
             ctx_name = getattr(ctx, 'name', 'main-page')
             try:
@@ -214,26 +209,24 @@ async def navegar_a_expedientes(page: Page) -> bool:
                     }}
                     return false;
                 }}""")
-                
                 if clicked:
                     print(f"Button found via JS in frame '{ctx_name}' (attempt {intento+1}).")
-                    await page.wait_for_load_state("networkidle", timeout=45000)
+                    await page.wait_for_load_state("networkidle", timeout=45_000)
                     await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
                     return True
-            except Exception as e:
-                print(f"  JS eval error in frame '{ctx_name}': {e}")
+            except Exception:
                 continue
-
-        espera = 8000 + (intento * 4000)
-        print(f"Button not found in attempt {intento+1}. Waiting {espera//1000}s before retry...")
         
-        if intento == 4:
-            with open(f"debug_intento_{intento+1}.html", "w", encoding="utf-8") as f:
-                f.write(await page.content())
+        # Frame cargó pero no se encontró el botón — raro, guardar debug
+        print(f"Frame loaded but button not found. Saving debug...")
+        await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
+        with open(f"debug_intento_{intento+1}.html", "w", encoding="utf-8") as f:
+            f.write(await page.content())
         
-        await page.wait_for_timeout(espera)
-
-    print("Button not found after 5 attempts.")
+        print(f"Retrying in 60s...")
+        await page.wait_for_timeout(60_000)
+    
+    print("Failed after 10 attempts (~10 minutes).")
     return False
 
 
