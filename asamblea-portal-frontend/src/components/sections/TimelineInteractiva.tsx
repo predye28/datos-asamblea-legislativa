@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import SectionRule from '@/components/ui/SectionRule'
 import TimelineChart from '@/components/sections/TimelineChart'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import { api, type ProyectosPorMes, type DetallesMes } from '@/lib/api'
 import styles from '@/app/estadisticas/estadisticas.module.css'
 
@@ -36,9 +37,7 @@ export default function TimelineInteractiva({ datosIniciales }: Props) {
 
       {/* Detalle mes seleccionado */}
       {loadingMes && (
-        <div style={{ padding: 24, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink-faint)', textTransform: 'uppercase' }}>
-          Cargando detalle del mes...
-        </div>
+        <LoadingIndicator text="Analizando proyectos del mes..." />
       )}
       {detalleMes && !loadingMes && (
         <div style={{ background: 'var(--paper-card)', border: '1px solid var(--rule)', borderTop: '3px solid var(--accent-warm)', padding: 28, marginTop: 12, boxShadow: 'var(--shadow-sm)' }}>

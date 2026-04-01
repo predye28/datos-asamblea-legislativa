@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { getPeriodos } from '@/lib/periodos'
 import type { MetricaGeneral } from '@/lib/api'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './StatCards.module.css'
 
 function useCountUp(target: number, duration = 1200) {
@@ -29,8 +30,10 @@ function useCountUp(target: number, duration = 1200) {
 
 export default function StatCards() {
   const [general, setGeneral] = useState<MetricaGeneral | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     const periodos = getPeriodos()
     const fecha6Meses = periodos[1].desde() // index 1 es '6 meses'
 
@@ -42,7 +45,8 @@ export default function StatCards() {
         ...todas.general,
         total_diputados_activos: meses6.general.total_diputados_activos
       })
-    })
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   const refTotal = useCountUp(general?.total_proyectos || 0)
@@ -80,6 +84,14 @@ export default function StatCards() {
       tooltip: 'Diputados que han presentado al menos un proyecto en los últimos 6 meses',
     },
   ]
+
+  if (loading) {
+    return (
+      <div style={{ background: 'var(--paper-card)', border: '1px solid var(--rule)', minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingIndicator text="Calculando métricas globales..." />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.grid}>

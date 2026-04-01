@@ -5,6 +5,7 @@ import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import RankingDiputados from '@/components/sections/RankingDiputados'
 import BuscadorHome from '@/components/sections/BuscadorHome'
+import InfoAsamblea from '@/components/sections/InfoAsamblea'
 import SectionRule from '@/components/ui/SectionRule'
 
 export const revalidate = 300 // refresca cada 5 min
@@ -36,6 +37,11 @@ export default function HomePage() {
 
         <SectionRule label="Buscador de proyectos" />
         <BuscadorHome />
+
+        <br />
+        <br />
+        <br />
+        <InfoAsamblea />
       </div>
     </>
   )

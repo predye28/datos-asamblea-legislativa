@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion } from '@/lib/api'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import styles from './proyectos.module.css'
@@ -205,7 +206,7 @@ function ProyectosContent() {
 
 export default function ProyectosPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}>Cargando datos...</div>}>
+    <Suspense fallback={<LoadingIndicator text="Buscando proyectos..." fillSpace={true} />}>
       <ProyectosContent />
     </Suspense>
   )

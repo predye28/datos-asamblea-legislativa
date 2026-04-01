@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { api, DiputadoRanking } from '@/lib/api'
 import { getPeriodos } from '@/lib/periodos'
 import SectionRule from '@/components/ui/SectionRule'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import Hero from '@/components/sections/Hero'
 import styles from './diputados.module.css'
 
@@ -120,7 +121,7 @@ function DiputadosContent() {
 
 export default function DiputadosPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}>Cargando datos...</div>}>
+    <Suspense fallback={<LoadingIndicator text="Analizando actividad legislativa..." fillSpace={true} />}>
       <DiputadosContent />
     </Suspense>
   )

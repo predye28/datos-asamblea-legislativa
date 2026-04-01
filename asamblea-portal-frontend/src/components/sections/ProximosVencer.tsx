@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { api, type ProximoVencer } from '@/lib/api'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './ProximosVencer.module.css'
 
 interface Props {
@@ -81,7 +82,7 @@ export default function ProximosVencer({ datos: datosProp, clientMode = false }:
       </div>
 
       {loading ? (
-        <div className={styles.loadingMsg}>Cargando...</div>
+        <LoadingIndicator text="Consultando expedientes en riesgo..." />
       ) : datosAMostrar.length === 0 ? (
         <div className={styles.emptyMsg}>No hay proyectos próximos a vencer en este período.</div>
       ) : (

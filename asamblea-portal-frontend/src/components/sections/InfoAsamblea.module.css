@@ -1,0 +1,81 @@
+/* src/components/sections/InfoAsamblea.module.css */
+.wrapper {
+  margin-top: 48px;
+}
+
+.box {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 32px 24px;
+}
+
+@media (min-width: 768px) {
+  .box { padding: 40px; }
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.number {
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.text strong {
+  color: var(--ink);
+}
+
+.footer {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+  line-height: 1.5;
+}
+
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

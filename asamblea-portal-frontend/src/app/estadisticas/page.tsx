@@ -10,6 +10,7 @@ import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
+import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './estadisticas.module.css'
 
 const COLORS = ['#1a1814','#c0392b','#1a4b8c','#1a6b3c','#e67e22','#5c5a54','#9c9a92']
@@ -32,8 +33,8 @@ export default function EstadisticasPage() {
   }, [])
 
   if (!data) return (
-    <div className={styles.loading}>
-      <div className={styles.loadingText}>Cargando estadísticas...</div>
+    <div style={{ paddingBottom: 80 }}>
+      <LoadingIndicator text="Calculando estadísticas en tiempo real..." fillSpace={true} />
     </div>
   )
 

@@ -166,6 +166,7 @@ export default function AcercaPage() {
 
           {/* Sidebar */}
           <aside className={styles.sidebar}>
+            {/* 
             <div className={styles.sideCard}>
               <div className={styles.sideTitle}>Tecnologías usadas</div>
               <ul className={styles.stackList}>
@@ -185,6 +186,7 @@ export default function AcercaPage() {
                 ))}
               </ul>
             </div>
+            */}
 
             <div className={styles.sideCard}>
               <div className={styles.sideTitle}>Fuente de los datos</div>
