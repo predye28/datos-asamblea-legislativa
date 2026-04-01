@@ -104,4 +104,5 @@ jobs:
             extractor_proyectos/*.json
             extractor_proyectos/*.xlsx
             extractor_proyectos/*.png
+            extractor_proyectos/*.html
           retention-days: 7

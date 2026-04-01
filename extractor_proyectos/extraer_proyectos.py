@@ -120,19 +120,33 @@ async def navegar_a_expedientes(page: Page) -> bool:
     """
     Locates and clicks the button to enter the legislative files module.
     """
-    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}'...")
+    titulo_actual = await page.title()
+    print(f"Current page title: '{titulo_actual}'")
+    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
     
     for intento in range(3):
+        # Intentar forzar una espera de los frames
+        await page.wait_for_timeout(2000)
+        
         for ctx in [page] + list(page.frames):
             try:
-                for boton in await ctx.query_selector_all("a[role='button'], button, a"):
-                    texto = (await boton.inner_text()).strip()
-                    if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
-                        print(f"Button found (attempt {intento + 1}). Navigating...")
-                        await boton.click()
-                        await page.wait_for_load_state("domcontentloaded")
-                        await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
-                        return True
+                # Buscar en todos los elementos que podrían ser el botón
+                botones = await ctx.query_selector_all("a[role='button'], button, a, div[role='button']")
+                for boton in botones:
+                    try:
+                        texto = (await boton.inner_text()).strip()
+                        if not texto:
+                            # Intentar obtener de atributos si no hay texto interno
+                            texto = await boton.get_attribute("title") or ""
+                        
+                        if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
+                            print(f"Button found in frame '{ctx.name}' (attempt {intento + 1}). Navigating...")
+                            await boton.click()
+                            await page.wait_for_load_state("networkidle", timeout=30000)
+                            await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
+                            return True
+                    except Exception:
+                        continue
             except Exception:
                 continue
         
@@ -141,6 +155,9 @@ async def navegar_a_expedientes(page: Page) -> bool:
 
     print("Button not found after 3 attempts.")
     await page.screenshot(path="debug_boton_no_encontrado.png", full_page=True)
+    # También guardamos el HTML para ver qué pasó
+    with open("debug_page_source.html", "w", encoding="utf-8") as f:
+        f.write(await page.content())
     return False
 
 
@@ -827,8 +844,13 @@ async def main():
         page = await context.new_page()
 
         print("Loading SIL portal...")
-        await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=60_000)
-        await page.wait_for_timeout(6_000)
+        try:
+            await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
+        except Exception as e:
+            print(f"Warning: Initial load timeout or networkidle issue: {e}")
+            await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
+        
+        await page.wait_for_timeout(8_000)
 
         if not await navegar_a_expedientes(page):
             print("Failed to navigate to the module.")
