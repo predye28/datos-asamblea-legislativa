@@ -25,13 +25,17 @@ function useCountUp(target: number, duration = 1000) {
   return ref
 }
 
-function StatItem({ label, value, colorClass }: { label: string, value: number, colorClass: string }) {
+function StatItem({ label, value, colorClass, loading }: { label: string, value: number, colorClass: string, loading: boolean }) {
   const ref = useCountUp(value)
   return (
     <div className={styles.statCard}>
       <div className={styles.statLabel}>{label}</div>
-      <div className={`${styles.statValue} ${styles[colorClass]}`} ref={ref}>
-        {value}
+      <div className={`${styles.statValue} ${styles[colorClass]}`}>
+        {loading ? (
+          <LoadingIndicator small />
+        ) : (
+          <div ref={ref}>{value}</div>
+        )}
       </div>
     </div>
   )
@@ -89,39 +93,33 @@ export default function ResumenMetricas() {
       </div>
 
       <div className={styles.content}>
-        {loading ? (
-          <div style={{ minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <LoadingIndicator text="Analizando tasa de aprobación..." />
-          </div>
-        ) : (
-          <>
-            {/* Tarjetas de números */}
-            <div className={styles.statsGrid}>
-               <StatItem label="Proyectos presentados" value={total} colorClass="blue" />
-               <StatItem label="Convertidos en ley" value={leyes} colorClass="positive" />
-            </div>
+        {/* Tarjetas de números */}
+        <div className={styles.statsGrid}>
+           <StatItem label="Proyectos presentados" value={total} colorClass="blue" loading={loading} />
+           <StatItem label="Convertidos en ley" value={leyes} colorClass="positive" loading={loading} />
+        </div>
 
-            {/* Barra de progreso */}
-            <div className={styles.barWrap}>
-              <div className={styles.barTop}>
-                <span className={styles.barLabel}>Tasa de aprobación</span>
-                <span className={styles.barPct}>{pct.toFixed(1)}%</span>
-              </div>
-              <div className={styles.barBg}>
-                 <div className={styles.barFill} ref={barRef} />
-              </div>
-              <p className={styles.barHelp}>
-                 De los proyectos presentados{' '}
-                 {periodos[periodoIdx].label.toLowerCase().includes('este') 
-                   ? periodos[periodoIdx].label.toLowerCase() 
-                   : periodos[periodoIdx].label.toLowerCase().includes('período')
-                     ? `en el ${periodos[periodoIdx].label.toLowerCase()}`
-                     : `en los últimos ${periodos[periodoIdx].label.toLowerCase()}`}, 
-                 solo un {pct.toFixed(1)}% se ha convertido en ley. El resto se mantiene en trámite, fue archivado o se encuentra vencido.
-              </p>
-            </div>
-          </>
-        )}
+        {/* Barra de progreso */}
+        <div className={styles.barWrap}>
+          <div className={styles.barTop}>
+            <span className={styles.barLabel}>Tasa de aprobación</span>
+            <span className={styles.barPct}>
+              {loading ? '...' : `${pct.toFixed(1)}%`}
+            </span>
+          </div>
+          <div className={styles.barBg}>
+             <div className={styles.barFill} ref={barRef} />
+          </div>
+          <p className={styles.barHelp}>
+             De los proyectos presentados{' '}
+             {periodos[periodoIdx].label.toLowerCase().includes('este') 
+               ? periodos[periodoIdx].label.toLowerCase() 
+               : periodos[periodoIdx].label.toLowerCase().includes('período')
+                 ? `en el ${periodos[periodoIdx].label.toLowerCase()}`
+                 : `en los últimos ${periodos[periodoIdx].label.toLowerCase()}`}, 
+             solo un {pct.toFixed(1)}% se ha convertido en ley. El resto se mantiene en trámite, fue archivado o se encuentra vencido.
+          </p>
+        </div>
       </div>
     </div>
   )

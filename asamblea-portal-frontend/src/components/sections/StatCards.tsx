@@ -85,21 +85,17 @@ export default function StatCards() {
     },
   ]
 
-  if (loading) {
-    return (
-      <div style={{ background: 'var(--paper-card)', border: '1px solid var(--rule)', minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingIndicator text="Calculando métricas globales..." />
-      </div>
-    )
-  }
-
   return (
     <div className={styles.grid}>
       {cards.map(c => (
         <div key={c.label} className={styles.card} title={c.tooltip}>
           <div className={styles.label}>{c.label}</div>
           <div className={`${styles.value} ${styles[c.color]}`}>
-            <span ref={c.ref}>0</span>
+            {loading ? (
+              <LoadingIndicator small />
+            ) : (
+              <span ref={c.ref}>0</span>
+            )}
           </div>
           <div className={styles.sub}>{c.sub}</div>
         </div>

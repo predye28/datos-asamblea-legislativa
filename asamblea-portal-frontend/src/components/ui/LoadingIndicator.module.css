@@ -8,6 +8,13 @@
   padding: 32px 16px;
 }
 
+.wrapperSmall {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
 .fillSpace {
   min-height: 300px;
 }
@@ -24,6 +31,11 @@
   border-radius: 50%;
   background-color: var(--accent);
   animation: pulse 1.4s infinite ease-in-out both;
+}
+
+.dotSmall {
+  width: 6px;
+  height: 6px;
 }
 
 .dot:nth-child(1) { animation-delay: -0.32s; }
