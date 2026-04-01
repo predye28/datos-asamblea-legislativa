@@ -7,6 +7,9 @@ Applied fixes:
   - Re-reads grid rows in each iteration to avoid stale element references.
   - Identifies the bottom panel by position to distinguish from the main grid.
   - Extracts processing steps and proponents from the correct containers.
+  - [FIX] Detects and closes jqx-window-modal error dialogs before/after clicks.
+  - [FIX] Distinguishes real end-of-list from navigation errors in pagination.
+  - [FIX] Saves current page (not page 1) to checkpoint on non-cycle interruptions.
 """
 
 import argparse
@@ -81,12 +84,18 @@ def leer_checkpoint():
 def guardar_checkpoint(pagina_siguiente: int, ciclo_completado: bool = False, primera_pasada_completa: bool = False):
     """
     Saves the next starting page to checkpoint.json.
+
+    - ciclo_completado=True  → full list was scraped, reset to page 1.
+    - ciclo_completado=False → interrupted mid-run; save current page so
+                               the next run retries from exactly here.
     """
     if ciclo_completado:
         pagina_siguiente = 1
-        primera_pasada_completa = True  # Al completar cualquier ciclo, asumimos que la 1era ya pasó
+        primera_pasada_completa = True
         print("Cycle complete. Redirecting to page 1 for next run.")
-    
+    else:
+        print(f"Run interrupted. Checkpoint saved at page {pagina_siguiente} (will retry from here).")
+
     data = {
         "pagina_actual":           pagina_siguiente,
         "primera_pasada_completa": primera_pasada_completa,
@@ -131,6 +140,54 @@ def limpiar(v):
 
 
 # ----------------------------------------------------------------------
+# [FIX] MODAL ERROR HANDLER
+# ----------------------------------------------------------------------
+
+async def cerrar_modal_error(frame, page: Page) -> bool:
+    """
+    Detects and closes the jqx-window-modal error dialog if visible.
+    Returns True if a modal was found and closed, False otherwise.
+    """
+    try:
+        modal = await frame.query_selector(".jqx-window-modal")
+        if not modal:
+            return False
+        is_visible = await modal.is_visible()
+        if not is_visible:
+            return False
+
+        print("Error modal detected. Attempting to close it...")
+
+        close_selectors = [
+            ".jqx-window-close-button",
+            "button:has-text('Cerrar')",
+            "button:has-text('Aceptar')",
+            "button:has-text('OK')",
+            ".dialogo-identificador .jqx-window-close-button",
+        ]
+        for sel in close_selectors:
+            try:
+                btn = await frame.query_selector(sel)
+                if btn and await btn.is_visible():
+                    await btn.click()
+                    await page.wait_for_timeout(800)
+                    print("Modal closed via button.")
+                    return True
+            except Exception:
+                continue
+
+        # Fallback: Escape key
+        await page.keyboard.press("Escape")
+        await page.wait_for_timeout(800)
+        print("Modal closed via Escape.")
+        return True
+
+    except Exception as e:
+        print(f"Error while trying to close modal: {e}")
+        return False
+
+
+# ----------------------------------------------------------------------
 # INITIAL NAVIGATION
 # ----------------------------------------------------------------------
 
@@ -155,7 +212,7 @@ async def navegar_a_expedientes(page: Page) -> bool:
         if not frame_listo:
             print(f"WebPart frame empty after 60s. Server may be down. Retrying in 60s...")
             await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
-            await page.wait_for_timeout(60_000)  # esperar 1 minuto antes del reload
+            await page.wait_for_timeout(60_000)
             continue
         
         # Frame listo — buscar el botón
@@ -217,7 +274,6 @@ async def navegar_a_expedientes(page: Page) -> bool:
             except Exception:
                 continue
         
-        # Frame cargó pero no se encontró el botón — raro, guardar debug
         print(f"Frame loaded but button not found. Saving debug...")
         await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
         with open(f"debug_intento_{intento+1}.html", "w", encoding="utf-8") as f:
@@ -325,7 +381,12 @@ async def obtener_info_filas(frame) -> list:
 async def clicar_fila_por_indice(frame, page: Page, row_index: int) -> bool:
     """
     Clicks a row in the grid using its index.
+    Closes any existing error modal before clicking, and checks for new
+    modals after clicking.
     """
+    # [FIX] Clear any lingering modal before attempting the click
+    await cerrar_modal_error(frame, page)
+
     try:
         rows = await frame.query_selector_all("div[role='row']")
         if row_index >= len(rows):
@@ -333,9 +394,18 @@ async def clicar_fila_por_indice(frame, page: Page, row_index: int) -> bool:
             return False
         await rows[row_index].click()
         await page.wait_for_timeout(ESPERA_CLIC_FILA)
+
+        # [FIX] Check if a modal appeared as a result of the click
+        modal_cerrado = await cerrar_modal_error(frame, page)
+        if modal_cerrado:
+            print(f"Row {row_index}: server error modal appeared after click. Row skipped.")
+            return False
+
         return True
     except Exception as exc:
         print(f"Error clicking row {row_index}: {exc}")
+        # [FIX] Attempt to clear the modal so subsequent rows aren't blocked
+        await cerrar_modal_error(frame, page)
         return False
 
 
@@ -437,7 +507,7 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
     todas_las_filas = []
     filas_vistas = set()
 
-    for scroll_top in range(0, 5000, 150):  # scroll en pasos de 150px hasta 5000px
+    for scroll_top in range(0, 5000, 150):
         resultado = await frame.evaluate(f"""(scrollTop) => {{
             const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
             if (!contenedor) return null;
@@ -450,7 +520,6 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
             const grilla = panelVisible.querySelector("div[role='grid']");
             if (!grilla) return null;
 
-            // Hacer scroll dentro del contenedor scrolleable del grid
             const scrollable = grilla.querySelector('.jqx-grid-content') || 
                                grilla.querySelector('[style*="overflow"]') ||
                                grilla;
@@ -482,7 +551,7 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
                 hubo_nuevas = True
 
         if not hubo_nuevas and scroll_top > 0:
-            break  # Ya no aparecen filas nuevas, terminamos
+            break
 
         await page.wait_for_timeout(80)
 
@@ -673,7 +742,6 @@ async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
     Navega directamente a una página escribiendo el número en el input 'ctrl-tabla-ira'.
     """
     try:
-        # Buscar el input de página actual
         input_pagina = await frame.query_selector("input.ctrl-tabla-ira")
         if not input_pagina:
             input_pagina = await frame.query_selector("input[title='Página actual']")
@@ -682,11 +750,9 @@ async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
             print(f"Input de página no encontrado. Usando navegación secuencial.")
             return False
 
-        # Leer el número de página actual antes de cambiar
         filas_antes = await obtener_info_filas(frame)
         primer_exp_antes = filas_antes[0]["expediente"] if filas_antes else None
 
-        # Limpiar, escribir el número y presionar Enter
         await input_pagina.click(click_count=3)
         await input_pagina.fill(str(numero_pagina))
         await input_pagina.press("Enter")
@@ -694,7 +760,6 @@ async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
         print(f"Navegando directamente a página {numero_pagina}...")
         await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
 
-        # Verificar que la página cambió
         for intento in range(10):
             filas_despues = await obtener_info_filas(frame)
             primer_exp_despues = filas_despues[0]["expediente"] if filas_despues else None
@@ -712,6 +777,8 @@ async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
     except Exception as e:
         print(f"Error navegando a página {numero_pagina}: {e}")
         return False
+
+
 async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
     """
     Clicks the next page button and verifies the content has changed.
@@ -766,7 +833,7 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
             pass
 
     if not clic_exitoso:
-        print("Next page button not found. Assuming end of list.")
+        print("Next page button not found or disabled.")
         return False
 
     await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
@@ -782,7 +849,7 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
         print(f"Waiting for page change... attempt {intento + 1}/10")
         await page.wait_for_timeout(800)
 
-    print("Data grid did not change. Possible end of list.")
+    print("Data grid did not change after clicking next page.")
     return False
 
 
@@ -975,20 +1042,37 @@ async def main():
             paginas_procesadas += 1
 
             print(f"Attempting to advance to page {pagina_actual + 1}...")
-            if not await ir_siguiente_pagina(frame, page, pagina_actual):
-                print("No more pages available. Full sync complete.")
-                ciclo_finalizado = True
-                break
+            avanzo = await ir_siguiente_pagina(frame, page, pagina_actual)
+
+            if not avanzo:
+                # [FIX] Distinguish a real end-of-list from a transient navigation error.
+                # If the grid still has valid rows and we're not near an impossibly high
+                # page number, treat this as a temporary failure and save the current page
+                # so the next run retries from here instead of resetting to page 1.
+                filas_actuales = await obtener_info_filas(frame)
+                if filas_actuales and pagina_actual < 5000:
+                    print(
+                        f"Navigation to page {pagina_actual + 1} failed but grid still has data. "
+                        f"Saving checkpoint at page {pagina_actual} for retry on next run."
+                    )
+                    # Do NOT set ciclo_finalizado = True → checkpoint will keep pagina_actual
+                    break
+                else:
+                    print("No more pages available. Full sync complete.")
+                    ciclo_finalizado = True
+                    break
 
             pagina_actual += 1
 
         await browser.close()
 
-    # Guardar checkpoint para el próximo run
+    # [FIX] Save checkpoint correctly:
+    #   - ciclo_finalizado=True  → full list done, reset to page 1
+    #   - ciclo_finalizado=False → mid-run stop, retry from pagina_actual next time
     guardar_checkpoint(
-        pagina_actual, 
-        ciclo_completado=ciclo_finalizado, 
-        primera_pasada_completa=primera_pasada_completa
+        pagina_actual,
+        ciclo_completado=ciclo_finalizado,
+        primera_pasada_completa=primera_pasada_completa,
     )
 
     if not proyectos:
