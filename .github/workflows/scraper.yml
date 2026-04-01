@@ -80,7 +80,7 @@ jobs:
         run: python extraer_proyectos.py
 
       - name: Persistir Checkpoint (a Rama Schedule)
-        if: always()  # guardar checkpoint incluso si el scraper falló parcialmente
+        if: always()
         working-directory: extractor_proyectos
         run: |
           git config user.name "github-actions[bot]"
@@ -88,13 +88,16 @@ jobs:
 
           cp checkpoint.json /tmp/checkpoint_new.json
 
-          git fetch origin schedule:schedule || git branch schedule
-          git checkout schedule
+          # Cambiar a rama schedule (local), crearla si no existe
+          git checkout schedule 2>/dev/null || git checkout -b schedule
 
           cp /tmp/checkpoint_new.json checkpoint.json
           git add checkpoint.json
 
-          git diff --staged --quiet || (git commit -m "chore: update checkpoint [skip ci]" && git push origin schedule)
+          git diff --staged --quiet || git commit -m "chore: update checkpoint [skip ci]"
+
+          # Push — si la rama no existe en remoto, crearla
+          git push origin schedule || git push --set-upstream origin schedule
 
       - name: Subir artifacts de datos
         if: always()
