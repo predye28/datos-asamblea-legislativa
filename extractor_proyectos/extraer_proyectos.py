@@ -7,6 +7,7 @@ Applied fixes:
   - Re-reads grid rows in each iteration to avoid stale element references.
   - Identifies the bottom panel by position to distinguish from the main grid.
   - Extracts processing steps and proponents from the correct containers.
+  - Better CI/headless compatibility (longer waits, more browser flags, debug on every attempt).
 """
 
 import argparse
@@ -36,13 +37,17 @@ MAX_PAGINAS         = int(_mp) if _mp.strip() else None   # None = all pages
 DESCARGAR_DOCS      = False
 TEXTO_BOTON_ENTRADA = "Expedientes Legislativos - Consulta"
 
-ESPERA_CARGA_GRILLA = 4_000
-ESPERA_CLIC_FILA    = 2_500
-ESPERA_CLIC_TAB     = 1_800
-ESPERA_CLIC_PAGINA  = 3_000
+IS_CI = os.getenv("CI", "false").lower() == "true"
+
+# En CI esperamos más tiempo en cada paso
+ESPERA_CARGA_GRILLA = 8_000  if IS_CI else 4_000
+ESPERA_CLIC_FILA    = 4_000  if IS_CI else 2_500
+ESPERA_CLIC_TAB     = 3_000  if IS_CI else 1_800
+ESPERA_CLIC_PAGINA  = 5_000  if IS_CI else 3_000
+ESPERA_INICIAL      = 20_000 if IS_CI else 8_000
 
 # ----------------------------------------------------------------------
-# ARGUMENT PARSING (para rangos de páginas / checkpoint)
+# ARGUMENT PARSING
 # ----------------------------------------------------------------------
 
 _parser = argparse.ArgumentParser(add_help=False)
@@ -50,8 +55,8 @@ _parser.add_argument("--pagina-inicio", type=int, default=None)
 _parser.add_argument("--pagina-fin",    type=int, default=None)
 _args, _ = _parser.parse_known_args()
 
-PAGINA_INICIO = _args.pagina_inicio  # None = leer desde checkpoint.json
-PAGINA_FIN    = _args.pagina_fin     # None = sin límite de fin
+PAGINA_INICIO = _args.pagina_inicio
+PAGINA_FIN    = _args.pagina_fin
 
 # ----------------------------------------------------------------------
 # CHECKPOINT
@@ -59,13 +64,10 @@ PAGINA_FIN    = _args.pagina_fin     # None = sin límite de fin
 
 CHECKPOINT_FILE = "checkpoint.json"
 PAGINAS_POR_RUN = 100
-LIMITE_MONITOREO = 1200  # Después de la 1era pasada, solo monitoreamos hasta aquí.
+LIMITE_MONITOREO = 1200
 
 
 def leer_checkpoint():
-    """
-    Reads the starting page and pass status from checkpoint.json.
-    """
     try:
         with open(CHECKPOINT_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -79,14 +81,11 @@ def leer_checkpoint():
 
 
 def guardar_checkpoint(pagina_siguiente: int, ciclo_completado: bool = False, primera_pasada_completa: bool = False):
-    """
-    Saves the next starting page to checkpoint.json.
-    """
     if ciclo_completado:
         pagina_siguiente = 1
-        primera_pasada_completa = True  # Al completar cualquier ciclo, asumimos que la 1era ya pasó
+        primera_pasada_completa = True
         print("Cycle complete. Redirecting to page 1 for next run.")
-    
+
     data = {
         "pagina_actual":           pagina_siguiente,
         "primera_pasada_completa": primera_pasada_completa,
@@ -102,14 +101,22 @@ def guardar_checkpoint(pagina_siguiente: int, ciclo_completado: bool = False, pr
 # ----------------------------------------------------------------------
 
 def limpiar(v):
-    """
-    Cleans special characters and control codes from a string.
-    """
     if not isinstance(v, str):
         return v
     v = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', v)
     v = re.sub(r'[\u2400-\u243F]', '-', v)
     return v.strip()
+
+
+def guardar_debug(page_content: str, screenshot_bytes, intento: int):
+    """Saves HTML and screenshot for every failed attempt."""
+    try:
+        html_path = f"debug_intento_{intento}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(page_content)
+        print(f"  Debug HTML saved: {html_path}")
+    except Exception as e:
+        print(f"  Could not save debug HTML: {e}")
 
 
 # ----------------------------------------------------------------------
@@ -119,45 +126,85 @@ def limpiar(v):
 async def navegar_a_expedientes(page: Page) -> bool:
     """
     Locates and clicks the button to enter the legislative files module.
+    Saves debug screenshot + HTML on every failed attempt.
     """
     titulo_actual = await page.title()
     print(f"Current page title: '{titulo_actual}'")
-    print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
-    
-    for intento in range(3):
-        # Intentar forzar una espera de los frames
-        await page.wait_for_timeout(2000)
-        
-        for ctx in [page] + list(page.frames):
+    print(f"Looking for button: '{TEXTO_BOTON_ENTRADA}'")
+
+    max_intentos = 6 if IS_CI else 3
+
+    for intento in range(max_intentos):
+        # Espera progresiva entre intentos
+        if intento == 0:
+            espera = 5_000
+        else:
+            espera = min(5_000 + intento * 3_000, 20_000)
+
+        print(f"\nAttempt {intento + 1}/{max_intentos} — waiting {espera}ms...")
+        await page.wait_for_timeout(espera)
+
+        # Esperar a que aparezcan iframes
+        try:
+            await page.wait_for_selector("iframe", timeout=10_000)
+        except Exception:
+            pass
+
+        frames = [page] + list(page.frames)
+        print(f"  Frames available: {len(frames)}")
+        for f in page.frames:
+            print(f"    Frame name='{f.name}' url='{f.url[:100]}'")
+
+        encontrado = False
+        for ctx in frames:
             try:
-                # Buscar en todos los elementos que podrían ser el botón
-                botones = await ctx.query_selector_all("a[role='button'], button, a, div[role='button']")
+                botones = await ctx.query_selector_all(
+                    "a[role='button'], button, a, div[role='button'], "
+                    "span[role='button'], li, td, div"
+                )
                 for boton in botones:
                     try:
                         texto = (await boton.inner_text()).strip()
                         if not texto:
-                            # Intentar obtener de atributos si no hay texto interno
-                            texto = await boton.get_attribute("title") or ""
-                        
+                            texto = (await boton.get_attribute("title") or "").strip()
+                        if not texto:
+                            texto = (await boton.get_attribute("aria-label") or "").strip()
+
                         if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
-                            print(f"Button found in frame '{ctx.name}' (attempt {intento + 1}). Navigating...")
+                            print(f"  ✓ Button found in frame '{ctx.name}': '{texto[:80]}'")
+                            await boton.scroll_into_view_if_needed()
                             await boton.click()
-                            await page.wait_for_load_state("networkidle", timeout=30000)
+                            try:
+                                await page.wait_for_load_state("networkidle", timeout=25_000)
+                            except Exception:
+                                await page.wait_for_timeout(6_000)
                             await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
                             return True
                     except Exception:
                         continue
             except Exception:
                 continue
-        
-        print(f"Button not found in attempt {intento + 1}. Waiting 5s before retry...")
-        await page.wait_for_timeout(5000)
 
-    print("Button not found after 3 attempts.")
-    await page.screenshot(path="debug_boton_no_encontrado.png", full_page=True)
-    # También guardamos el HTML para ver qué pasó
-    with open("debug_page_source.html", "w", encoding="utf-8") as f:
-        f.write(await page.content())
+        # Guardar debug en CADA intento fallido
+        print(f"  Button not found in attempt {intento + 1}. Saving debug files...")
+        try:
+            await page.screenshot(
+                path=f"debug_intento_{intento + 1}.png",
+                full_page=True
+            )
+            print(f"  Screenshot saved: debug_intento_{intento + 1}.png")
+        except Exception as e:
+            print(f"  Could not save screenshot: {e}")
+
+        try:
+            content = await page.content()
+            with open(f"debug_intento_{intento + 1}.html", "w", encoding="utf-8") as f:
+                f.write(content)
+            print(f"  HTML saved: debug_intento_{intento + 1}.html")
+        except Exception as e:
+            print(f"  Could not save HTML: {e}")
+
+    print(f"\nButton not found after {max_intentos} attempts.")
     return False
 
 
@@ -176,22 +223,20 @@ async def encontrar_frame_con_grilla(page: Page):
             continue
     return None
 
+
 async def cambiar_mostrar_registros(frame, page: Page, cantidad: str = "10"):
-    """
-    Locates the 'Show records' dropdown and selects the desired amount.
-    """
     print(f"Attempting to change records per page to {cantidad}...")
     try:
         selector_dropdown = ".jqx-dropdownlist-content"
         dropdowns = await frame.query_selector_all(selector_dropdown)
-        
+
         target_dropdown = None
         for d in dropdowns:
             texto = await d.inner_text()
             if texto.strip().isdigit():
                 target_dropdown = d
                 break
-        
+
         if target_dropdown:
             print(f"Dropdown found (current value: {await target_dropdown.inner_text()}).")
             await target_dropdown.click()
@@ -201,7 +246,7 @@ async def cambiar_mostrar_registros(frame, page: Page, cantidad: str = "10"):
             opcion = await frame.query_selector(opcion_selector)
             if not opcion:
                 opcion = await page.query_selector(opcion_selector)
-            
+
             if opcion:
                 await opcion.click()
                 print(f"Selected: {cantidad} records per page.")
@@ -211,7 +256,7 @@ async def cambiar_mostrar_registros(frame, page: Page, cantidad: str = "10"):
                 print(f"Option '{cantidad}' not found in dropdown.")
         else:
             print("Records per page control not found.")
-            
+
     except Exception as e:
         print(f"Error changing record count: {e}")
     return False
@@ -222,16 +267,12 @@ async def cambiar_mostrar_registros(frame, page: Page, cantidad: str = "10"):
 # ----------------------------------------------------------------------
 
 async def obtener_info_filas(frame) -> list:
-    """
-    Returns a list of dictionaries with {expediente, titulo, row_index}.
-    Excludes rows from the bottom panel.
-    """
     info = []
     try:
         grilla_principal = await frame.query_selector("div[role='grid']")
         if not grilla_principal:
             return info
-        
+
         rows = await grilla_principal.query_selector_all("div[role='row']")
         for idx, row in enumerate(rows):
             try:
@@ -254,9 +295,6 @@ async def obtener_info_filas(frame) -> list:
 
 
 async def clicar_fila_por_indice(frame, page: Page, row_index: int) -> bool:
-    """
-    Clicks a row in the grid using its index.
-    """
     try:
         rows = await frame.query_selector_all("div[role='row']")
         if row_index >= len(rows):
@@ -275,9 +313,6 @@ async def clicar_fila_por_indice(frame, page: Page, row_index: int) -> bool:
 # ----------------------------------------------------------------------
 
 async def clic_tab(frame, page: Page, texto_tab: str) -> bool:
-    """
-    Clicks a specific tab in the details panel.
-    """
     selectores = [
         f"td:has-text('{texto_tab}')",
         f"li[role='tab']:has-text('{texto_tab}')",
@@ -304,9 +339,6 @@ async def clic_tab(frame, page: Page, texto_tab: str) -> bool:
 # ----------------------------------------------------------------------
 
 async def extraer_tab_general(frame, page: Page) -> dict:
-    """
-    Extracts key/value pairs from the 'General' tab in the bottom panel.
-    """
     await clic_tab(frame, page, "General")
     await page.wait_for_timeout(500)
 
@@ -358,17 +390,14 @@ async def extraer_tab_general(frame, page: Page) -> dict:
 
     return {k: limpiar(v) for k, v in datos.items()}
 
+
 async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
                                        skip_first: bool = True,
                                        timeout_ms: int = 5000) -> list:
-    """
-    Internal helper to read ALL rows from the grid inside the details panel,
-    scrolling through it to bypass jqxGrid's row virtualization.
-    """
     todas_las_filas = []
     filas_vistas = set()
 
-    for scroll_top in range(0, 5000, 150):  # scroll en pasos de 150px hasta 5000px
+    for scroll_top in range(0, 5000, 150):
         resultado = await frame.evaluate(f"""(scrollTop) => {{
             const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
             if (!contenedor) return null;
@@ -381,8 +410,7 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
             const grilla = panelVisible.querySelector("div[role='grid']");
             if (!grilla) return null;
 
-            // Hacer scroll dentro del contenedor scrolleable del grid
-            const scrollable = grilla.querySelector('.jqx-grid-content') || 
+            const scrollable = grilla.querySelector('.jqx-grid-content') ||
                                grilla.querySelector('[style*="overflow"]') ||
                                grilla;
             scrollable.scrollTop = scrollTop;
@@ -413,7 +441,7 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
                 hubo_nuevas = True
 
         if not hubo_nuevas and scroll_top > 0:
-            break  # Ya no aparecen filas nuevas, terminamos
+            break
 
         await page.wait_for_timeout(80)
 
@@ -421,6 +449,7 @@ async def _leer_grilla_panel_inferior(frame, page, columnas_esperadas: int,
         print(f"Timeout waiting for bottom grid with {columnas_esperadas} columns.")
 
     return todas_las_filas
+
 
 async def extraer_tab_tramitacion(frame, page) -> list:
     await clic_tab(frame, page, "Tramitación")
@@ -474,6 +503,7 @@ async def extraer_tab_tramitacion(frame, page) -> list:
 
     return tramitacion
 
+
 async def extraer_tab_proponentes(frame, page) -> list:
     await clic_tab(frame, page, "Proponentes")
     await page.wait_for_timeout(800)
@@ -524,10 +554,8 @@ async def extraer_tab_proponentes(frame, page) -> list:
 
     return proponentes
 
+
 async def volver_tab_general(frame, page: Page):
-    """
-    Resets the details panel to the 'General' tab.
-    """
     await clic_tab(frame, page, "General")
 
 
@@ -536,9 +564,6 @@ async def volver_tab_general(frame, page: Page):
 # ----------------------------------------------------------------------
 
 async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: list, expedientes_vistos: set) -> bool:
-    """
-    Iterates through rows in the current page and extracts details for each file.
-    """
     await clic_tab(frame, page, "General")
     await page.wait_for_timeout(500)
 
@@ -547,12 +572,12 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
     if not filas_info:
         print(f"No rows found on page {num_pagina}.")
         return False
-        
+
     primer_exp = filas_info[0]["expediente"]
     if primer_exp in expedientes_vistos:
         print(f"Cycle detected: File {primer_exp} already processed. Synchronization complete.")
         return False
-        
+
     expedientes_vistos.add(primer_exp)
 
     total = len(filas_info)
@@ -592,61 +617,54 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
             f"      Data extracted: General ({len(general)}), "
             f"Tramitación ({len(tramitacion)}), Proponentes ({len(proponentes)})"
         )
-            
+
     return True
 
 
 # ----------------------------------------------------------------------
 # PAGINATION
 # ----------------------------------------------------------------------
+
 async def ir_a_pagina_directa(frame, page: Page, numero_pagina: int) -> bool:
-    """
-    Navega directamente a una página escribiendo el número en el input 'ctrl-tabla-ira'.
-    """
     try:
-        # Buscar el input de página actual
         input_pagina = await frame.query_selector("input.ctrl-tabla-ira")
         if not input_pagina:
             input_pagina = await frame.query_selector("input[title='Página actual']")
-        
+
         if not input_pagina:
-            print(f"Input de página no encontrado. Usando navegación secuencial.")
+            print(f"Page input not found. Falling back to sequential navigation.")
             return False
 
-        # Leer el número de página actual antes de cambiar
         filas_antes = await obtener_info_filas(frame)
         primer_exp_antes = filas_antes[0]["expediente"] if filas_antes else None
 
-        # Limpiar, escribir el número y presionar Enter
         await input_pagina.click(click_count=3)
         await input_pagina.fill(str(numero_pagina))
         await input_pagina.press("Enter")
-        
-        print(f"Navegando directamente a página {numero_pagina}...")
+
+        print(f"Navigating directly to page {numero_pagina}...")
         await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
 
-        # Verificar que la página cambió
         for intento in range(10):
             filas_despues = await obtener_info_filas(frame)
             primer_exp_despues = filas_despues[0]["expediente"] if filas_despues else None
 
             if primer_exp_despues and primer_exp_despues != primer_exp_antes:
-                print(f"Página {numero_pagina} cargada correctamente.")
+                print(f"Page {numero_pagina} loaded correctly.")
                 return True
 
-            print(f"Esperando cambio de página... intento {intento + 1}/10")
+            print(f"Waiting for page change... attempt {intento + 1}/10")
             await page.wait_for_timeout(800)
 
-        print(f"La grilla no cambió al ir a página {numero_pagina}.")
+        print(f"Grid did not change when going to page {numero_pagina}.")
         return False
 
     except Exception as e:
-        print(f"Error navegando a página {numero_pagina}: {e}")
+        print(f"Error navigating to page {numero_pagina}: {e}")
         return False
+
+
 async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
-    """
-    Clicks the next page button and verifies the content has changed.
-    """
     filas_antes = await obtener_info_filas(frame)
     primer_exp_antes = filas_antes[0]["expediente"] if filas_antes else None
 
@@ -722,9 +740,6 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
 # ----------------------------------------------------------------------
 
 def exportar_excel(proyectos: list, nombre: str):
-    """
-    Exports captured project data to an Excel workbook.
-    """
     h_fill = PatternFill("solid", fgColor="1F4E79")
     h_font = Font(bold=True, color="FFFFFF")
     centro = Alignment(horizontal="center")
@@ -804,13 +819,12 @@ def exportar_excel(proyectos: list, nombre: str):
 # ----------------------------------------------------------------------
 
 async def main():
-    # Determinar página de inicio: argumento CLI tiene prioridad, luego checkpoint
     if PAGINA_INICIO is not None:
         pagina_inicio = PAGINA_INICIO
         primera_pasada_completa = False
     else:
         pagina_inicio, primera_pasada_completa = leer_checkpoint()
-    
+
     pagina_fin = PAGINA_FIN if PAGINA_FIN is not None else pagina_inicio + PAGINAS_POR_RUN - 1
 
     inicio = datetime.now()
@@ -819,6 +833,7 @@ async def main():
     print("SIL Extractor - Legislative Assembly of Costa Rica")
     print("-" * 60)
     print(f"Started at:    {inicio:%Y-%m-%d %H:%M:%S}")
+    print(f"Running in CI: {IS_CI}")
     print(f"Page range:    {pagina_inicio} → {pagina_fin}")
     print(f"Scope:         {'ALL PAGES' if not MAX_PAGINAS else f'first {MAX_PAGINAS} pages'}")
     print("-" * 60)
@@ -827,11 +842,20 @@ async def main():
     proyectos = []
 
     async with async_playwright() as p:
-        is_ci = os.getenv("CI", "false").lower() == "true"
+        browser_args = [
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-default-apps",
+        ]
+
         browser = await p.chromium.launch(
-            headless=is_ci,
-            args=["--no-sandbox", "--disable-dev-shm-usage",
-                  "--disable-blink-features=AutomationControlled"]
+            headless=True,   # siempre headless — en local igual funciona
+            args=browser_args,
         )
         context = await browser.new_context(
             user_agent=(
@@ -840,17 +864,23 @@ async def main():
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
             viewport={"width": 1440, "height": 900},
+            # Ignorar errores de certificado (algunos portales .go.cr los tienen)
+            ignore_https_errors=True,
         )
         page = await context.new_page()
 
-        print("Loading SIL portal...")
+        print(f"Loading SIL portal (initial wait: {ESPERA_INICIAL}ms)...")
         try:
-            await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
+            await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=60_000)
         except Exception as e:
-            print(f"Warning: Initial load timeout or networkidle issue: {e}")
-            await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
-        
-        await page.wait_for_timeout(8_000)
+            print(f"Warning on initial load: {e}")
+            try:
+                await page.goto(URL_BASE, wait_until="commit", timeout=30_000)
+            except Exception as e2:
+                print(f"Second load attempt failed: {e2}")
+
+        print(f"Waiting {ESPERA_INICIAL}ms for JS to initialize...")
+        await page.wait_for_timeout(ESPERA_INICIAL)
 
         if not await navegar_a_expedientes(page):
             print("Failed to navigate to the module.")
@@ -869,14 +899,13 @@ async def main():
         await cambiar_mostrar_registros(frame, page, "10")
         await page.wait_for_timeout(6_000)
 
-        # Avanzar hasta la página de inicio si no es la 1
         if pagina_inicio > 1:
-            print(f"Saltando directamente a página {pagina_inicio}...")
+            print(f"Jumping directly to page {pagina_inicio}...")
             if not await ir_a_pagina_directa(frame, page, pagina_inicio):
-                print(f"No se pudo llegar a la página {pagina_inicio}. Abortando.")
+                print(f"Could not reach page {pagina_inicio}. Aborting.")
                 await browser.close()
                 return
-            print(f"Listo. Iniciando desde página {pagina_inicio}.")
+            print(f"Ready. Starting from page {pagina_inicio}.")
 
         pagina_actual      = pagina_inicio
         paginas_procesadas = 0
@@ -884,7 +913,6 @@ async def main():
         ciclo_finalizado   = False
 
         while True:
-            # 1. Límite de fase de monitoreo (si ya se hizo la 1era pasada)
             if primera_pasada_completa and pagina_actual > LIMITE_MONITOREO:
                 print(f"Monitoring limit reached ({LIMITE_MONITOREO}). Resetting cycle.")
                 ciclo_finalizado = True
@@ -915,10 +943,9 @@ async def main():
 
         await browser.close()
 
-    # Guardar checkpoint para el próximo run
     guardar_checkpoint(
-        pagina_actual, 
-        ciclo_completado=ciclo_finalizado, 
+        pagina_actual,
+        ciclo_completado=ciclo_finalizado,
         primera_pasada_completa=primera_pasada_completa
     )
 

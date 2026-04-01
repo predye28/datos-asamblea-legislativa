@@ -48,8 +48,12 @@ jobs:
 
       - name: Workaround DNS Asamblea Costa Rica
         run: |
-          sudo echo "196.40.23.181 www.asamblea.go.cr" | sudo tee -a /etc/hosts
-          sudo echo "196.40.23.181 asamblea.go.cr" | sudo tee -a /etc/hosts
+          sudo bash -c 'echo "196.40.23.181 www.asamblea.go.cr" >> /etc/hosts'
+          sudo bash -c 'echo "196.40.23.181 asamblea.go.cr" >> /etc/hosts'
+          # Verificar que el DNS resuelve antes de continuar
+          echo "Verifying DNS resolution..."
+          ping -c 2 www.asamblea.go.cr || echo "Ping failed (may be blocked), continuing anyway..."
+          curl -I --max-time 10 https://www.asamblea.go.cr || echo "curl check failed, continuing anyway..."
 
       - name: Instalar Chromium (Playwright)
         run: playwright install chromium --with-deps
@@ -76,26 +80,23 @@ jobs:
         run: python extraer_proyectos.py
 
       - name: Persistir Checkpoint (a Rama Schedule)
+        if: always()  # guardar checkpoint incluso si el scraper falló parcialmente
         working-directory: extractor_proyectos
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Guardar el nuevo checkpoint en una ubicación temporal
+
           cp checkpoint.json /tmp/checkpoint_new.json
-          
-          # Cambiar a la rama schedule (crearla si no existe)
+
           git fetch origin schedule:schedule || git branch schedule
           git checkout schedule
-          
-          # Actualizar el archivo con el nuevo valor
+
           cp /tmp/checkpoint_new.json checkpoint.json
           git add checkpoint.json
-          
-          # Hacer commit y subir cambios solo si hay diferencias
+
           git diff --staged --quiet || (git commit -m "chore: update checkpoint [skip ci]" && git push origin schedule)
 
-      - name: Subir artifacts
+      - name: Subir artifacts de datos
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -103,6 +104,17 @@ jobs:
           path: |
             extractor_proyectos/*.json
             extractor_proyectos/*.xlsx
-            extractor_proyectos/*.png
-            extractor_proyectos/*.html
           retention-days: 7
+
+      # Paso separado para debug — siempre sube aunque no haya archivos
+      - name: Subir artifacts de debug
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-${{ github.run_number }}
+          path: |
+            extractor_proyectos/debug_intento_*.png
+            extractor_proyectos/debug_intento_*.html
+          # No fallar si no hay archivos de debug (significa que todo fue bien)
+          if-no-files-found: ignore
+          retention-days: 3
