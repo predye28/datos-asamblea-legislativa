@@ -120,7 +120,6 @@ async def navegar_a_expedientes(page: Page) -> bool:
     titulo_actual = await page.title()
     print(f"Current page title: '{titulo_actual}'")
     
-    # Esperar más tiempo en CI para dar chance a que los iframes carguen
     is_ci = os.getenv("CI", "false").lower() == "true"
     espera_inicial = 8000 if is_ci else 2000
     
@@ -129,8 +128,7 @@ async def navegar_a_expedientes(page: Page) -> bool:
     
     print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
     
-    for intento in range(5):  # aumentar de 3 a 5 intentos
-        # Screenshot de debug en CADA intento fallido en CI
+    for intento in range(5):
         await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
         
         frames_a_buscar = [page] + list(page.frames)
@@ -139,10 +137,9 @@ async def navegar_a_expedientes(page: Page) -> bool:
         for ctx in frames_a_buscar:
             ctx_name = getattr(ctx, 'name', 'main-page')
             try:
-                # Esperar a que el frame tenga contenido antes de buscar
                 await ctx.wait_for_load_state("domcontentloaded", timeout=5000)
             except Exception:
-                pass  # frame puede no soportar esto, continuar igual
+                pass
                 
             try:
                 botones = await ctx.query_selector_all(
@@ -159,7 +156,7 @@ async def navegar_a_expedientes(page: Page) -> bool:
                             texto = await boton.get_attribute("aria-label") or ""
                         
                         if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
-                            print(f"Button found in frame '{ctx.name}' (attempt {intento+1}). Clicking...")
+                            print(f"Button found in frame '{ctx_name}' (attempt {intento+1}). Clicking...")
                             await boton.scroll_into_view_if_needed()
                             await boton.click()
                             await page.wait_for_load_state("networkidle", timeout=45000)
@@ -170,12 +167,57 @@ async def navegar_a_expedientes(page: Page) -> bool:
             except Exception as e:
                 print(f"    Error in frame '{ctx_name}': {e}")
                 continue
-        
-        # Espera progresiva entre intentos: 8s, 12s, 16s, 20s
+
+        # --- NUEVO: fallback con evaluate en toda la página ---
+        print(f"  Trying JavaScript fallback on attempt {intento+1}...")
+        try:
+            clicked = await page.evaluate(f"""() => {{
+                const texto_buscado = "{TEXTO_BOTON_ENTRADA}".toLowerCase();
+                const selectores = [
+                    'a', 'button', 'div[role="button"]', 
+                    'span[role="button"]', 'a[role="button"]'
+                ];
+                for (const sel of selectores) {{
+                    for (const el of document.querySelectorAll(sel)) {{
+                        const texto = (el.innerText || el.textContent || 
+                                       el.getAttribute('title') || 
+                                       el.getAttribute('aria-label') || '').toLowerCase().trim();
+                        if (texto.includes(texto_buscado)) {{
+                            el.click();
+                            return true;
+                        }}
+                    }}
+                }}
+                // También buscar en todos los iframes
+                for (const iframe of document.querySelectorAll('iframe')) {{
+                    try {{
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        for (const sel of selectores) {{
+                            for (const el of doc.querySelectorAll(sel)) {{
+                                const texto = (el.innerText || el.textContent || 
+                                               el.getAttribute('title') || '').toLowerCase().trim();
+                                if (texto.includes(texto_buscado)) {{
+                                    el.click();
+                                    return true;
+                                }}
+                            }}
+                        }}
+                    }} catch(e) {{ continue; }}
+                }}
+                return false;
+            }}""")
+            
+            if clicked:
+                print(f"Button found via JS fallback (attempt {intento+1}). Waiting for load...")
+                await page.wait_for_load_state("networkidle", timeout=45000)
+                await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
+                return True
+        except Exception as e:
+            print(f"  JS fallback error: {e}")
+
         espera = 8000 + (intento * 4000)
         print(f"Button not found in attempt {intento+1}. Waiting {espera//1000}s before retry...")
         
-        # Guardar HTML de debug en el último intento
         if intento == 4:
             with open(f"debug_intento_{intento+1}.html", "w", encoding="utf-8") as f:
                 f.write(await page.content())
