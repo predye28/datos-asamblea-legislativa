@@ -117,47 +117,72 @@ def limpiar(v):
 # ----------------------------------------------------------------------
 
 async def navegar_a_expedientes(page: Page) -> bool:
-    """
-    Locates and clicks the button to enter the legislative files module.
-    """
     titulo_actual = await page.title()
     print(f"Current page title: '{titulo_actual}'")
+    
+    # Esperar más tiempo en CI para dar chance a que los iframes carguen
+    is_ci = os.getenv("CI", "false").lower() == "true"
+    espera_inicial = 8000 if is_ci else 2000
+    
+    print(f"Waiting {espera_inicial}ms for frames to initialize...")
+    await page.wait_for_timeout(espera_inicial)
+    
     print(f"Searching for button '{TEXTO_BOTON_ENTRADA}' in {len(page.frames)} frames...")
     
-    for intento in range(3):
-        # Intentar forzar una espera de los frames
-        await page.wait_for_timeout(2000)
+    for intento in range(5):  # aumentar de 3 a 5 intentos
+        # Screenshot de debug en CADA intento fallido en CI
+        await page.screenshot(path=f"debug_intento_{intento+1}.png", full_page=True)
         
-        for ctx in [page] + list(page.frames):
+        frames_a_buscar = [page] + list(page.frames)
+        print(f"  Attempt {intento+1}: checking {len(frames_a_buscar)} frames...")
+        
+        for ctx in frames_a_buscar:
+            ctx_name = getattr(ctx, 'name', 'main-page')
             try:
-                # Buscar en todos los elementos que podrían ser el botón
-                botones = await ctx.query_selector_all("a[role='button'], button, a, div[role='button']")
+                # Esperar a que el frame tenga contenido antes de buscar
+                await ctx.wait_for_load_state("domcontentloaded", timeout=5000)
+            except Exception:
+                pass  # frame puede no soportar esto, continuar igual
+                
+            try:
+                botones = await ctx.query_selector_all(
+                    "a[role='button'], button, a, div[role='button'], span[role='button']"
+                )
+                print(f"    Frame '{ctx_name}': {len(botones)} clickable elements found")
+                
                 for boton in botones:
                     try:
                         texto = (await boton.inner_text()).strip()
                         if not texto:
-                            # Intentar obtener de atributos si no hay texto interno
                             texto = await boton.get_attribute("title") or ""
+                        if not texto:
+                            texto = await boton.get_attribute("aria-label") or ""
                         
                         if TEXTO_BOTON_ENTRADA.lower() in texto.lower():
-                            print(f"Button found in frame '{ctx.name}' (attempt {intento + 1}). Navigating...")
+                            print(f"Button found in frame '{ctx.name}' (attempt {intento+1}). Clicking...")
+                            await boton.scroll_into_view_if_needed()
                             await boton.click()
-                            await page.wait_for_load_state("networkidle", timeout=30000)
+                            await page.wait_for_load_state("networkidle", timeout=45000)
                             await page.wait_for_timeout(ESPERA_CARGA_GRILLA)
                             return True
                     except Exception:
                         continue
-            except Exception:
+            except Exception as e:
+                print(f"    Error in frame '{ctx_name}': {e}")
                 continue
         
-        print(f"Button not found in attempt {intento + 1}. Waiting 5s before retry...")
-        await page.wait_for_timeout(5000)
+        # Espera progresiva entre intentos: 8s, 12s, 16s, 20s
+        espera = 8000 + (intento * 4000)
+        print(f"Button not found in attempt {intento+1}. Waiting {espera//1000}s before retry...")
+        
+        # Guardar HTML de debug en el último intento
+        if intento == 4:
+            with open(f"debug_intento_{intento+1}.html", "w", encoding="utf-8") as f:
+                f.write(await page.content())
+        
+        await page.wait_for_timeout(espera)
 
-    print("Button not found after 3 attempts.")
-    await page.screenshot(path="debug_boton_no_encontrado.png", full_page=True)
-    # También guardamos el HTML para ver qué pasó
-    with open("debug_page_source.html", "w", encoding="utf-8") as f:
-        f.write(await page.content())
+    print("Button not found after 5 attempts.")
     return False
 
 
