@@ -22,6 +22,7 @@ node_modules/
 !package-lock.json
 !tsconfig.json
 !components.json
+!extractor_proyectos/checkpoint.json
 *.xlsx
 *.png
 documentos/
