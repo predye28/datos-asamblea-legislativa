@@ -1,6 +1,8 @@
 'use client'
 // src/components/sections/StatCards.tsx
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { api } from '@/lib/api'
+import { getPeriodos } from '@/lib/periodos'
 import type { MetricaGeneral } from '@/lib/api'
 import styles from './StatCards.module.css'
 
@@ -8,6 +10,10 @@ function useCountUp(target: number, duration = 1200) {
   const ref = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     if (!ref.current) return
+    if (target === 0) {
+      ref.current.textContent = '0'
+      return
+    }
     let start = 0
     const steps = duration / 16
     const inc = target / steps
@@ -21,13 +27,28 @@ function useCountUp(target: number, duration = 1200) {
   return ref
 }
 
-interface Props { general: MetricaGeneral }
+export default function StatCards() {
+  const [general, setGeneral] = useState<MetricaGeneral | null>(null)
 
-export default function StatCards({ general }: Props) {
-  const refTotal = useCountUp(general.total_proyectos)
-  const refLeyes = useCountUp(general.total_leyes_aprobadas)
-  const refMes   = useCountUp(general.proyectos_este_mes)
-  const refDip   = useCountUp(general.total_diputados_activos)
+  useEffect(() => {
+    const periodos = getPeriodos()
+    const fecha6Meses = periodos[1].desde() // index 1 es '6 meses'
+
+    Promise.all([
+      api.metricas.general(),
+      api.metricas.general({ desde: fecha6Meses })
+    ]).then(([todas, meses6]) => {
+      setGeneral({
+        ...todas.general,
+        total_diputados_activos: meses6.general.total_diputados_activos
+      })
+    })
+  }, [])
+
+  const refTotal = useCountUp(general?.total_proyectos || 0)
+  const refLeyes = useCountUp(general?.total_leyes_aprobadas || 0)
+  const refMes   = useCountUp(general?.proyectos_este_mes || 0)
+  const refDip   = useCountUp(general?.total_diputados_activos || 0)
 
   const cards = [
     {
@@ -55,8 +76,8 @@ export default function StatCards({ general }: Props) {
       label: 'Diputados activos',
       ref: refDip,
       color: 'accent',
-      sub: 'Han presentado al menos un proyecto',
-      tooltip: 'Diputados con actividad legislativa registrada',
+      sub: 'En los últimos 6 meses',
+      tooltip: 'Diputados que han presentado al menos un proyecto en los últimos 6 meses',
     },
   ]
 

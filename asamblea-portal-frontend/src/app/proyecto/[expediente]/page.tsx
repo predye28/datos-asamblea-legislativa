@@ -164,11 +164,11 @@ export default async function ProyectoDetallePage({
                 {proponentes.map((p, i) => (
                   <li key={i} className={styles.propItem}>
                     <Link
-                      href={`/diputados?q=${encodeURIComponent(p.apellidos || '')}`}
+                      href={`/diputados?q=${encodeURIComponent(p.nombre_completo || '')}`}
                       className={styles.propLink}
                     >
                       <span className={styles.propName}>
-                        {p.apellidos}, {p.nombre}
+                        {p.nombre_completo}
                       </span>
                       <span className={styles.propArrow}>→</span>
                     </Link>

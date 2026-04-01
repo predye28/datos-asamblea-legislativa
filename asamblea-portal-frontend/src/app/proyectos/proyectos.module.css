@@ -61,7 +61,7 @@
 
 .select {
   padding: 8px 28px 8px 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--mono);
   border: 1px solid var(--rule);
   background: var(--paper);
@@ -69,6 +69,7 @@
   outline: none;
   cursor: pointer;
   appearance: none;
+  min-height: 44px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239c9a92'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -88,11 +89,11 @@
 
 .clearBtn {
   font-family: var(--mono);
-  font-size: 12px;          /* era 10px */
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 10px 16px;       /* zona táctil */
-  min-height: 40px;
+  padding: 10px 16px;
+  min-height: 44px;
   border: 1px solid var(--rule);
   background: transparent;
   color: var(--ink-faint);
@@ -139,7 +140,7 @@
 
 .expNum {
   font-family: var(--mono);
-  font-size: 11px;          /* era 10px */
+  font-size: 12px;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -147,7 +148,7 @@
 
 .badge {
   font-family: var(--mono);
-  font-size: 11px;          /* era 9px — absolutamente ilegible */
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 3px 10px;
@@ -193,7 +194,7 @@
 
 .cardStat {
   font-family: var(--mono);
-  font-size: 11px;          /* era 10px */
+  font-size: 12px;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -201,7 +202,7 @@
 
 .cardType {
   font-family: var(--mono);
-  font-size: 11px;          /* era 10px */
+  font-size: 12px;
   color: var(--ink-muted);
   margin-left: auto;
   text-transform: uppercase;

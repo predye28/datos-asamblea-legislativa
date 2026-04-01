@@ -6,7 +6,17 @@
   margin-bottom: 8px;
 }
 
-.header { margin-bottom: 24px; }
+/* ── Cabecera ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.headerLeft { flex: 1; }
 
 .title {
   font-family: var(--serif);
@@ -21,6 +31,42 @@
   font-style: italic;
 }
 
+/* ── Selector de período ── */
+.periodoSelector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.periodoBtn {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.periodoBtn:hover:not(.periodoBtnActive) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.periodoBtnActive {
+  background: var(--accent);
+  color: #fff !important;
+  border-color: var(--accent);
+}
+
+/* ── Lista ── */
 .list { display: flex; flex-direction: column; }
 
 .item {
@@ -61,10 +107,49 @@
 
 .badge {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-muted);
   border: 1px solid var(--rule);
   padding: 3px 10px;
   background: var(--paper-warm);
   flex-shrink: 0;
+}
+
+/* ── Estados ── */
+.skeleton {
+  height: 49px;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  background: var(--paper-card);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--paper-warm) 50%, transparent 100%);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+.empty {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header { flex-direction: column; }
+  .periodoSelector { width: 100%; }
+  .periodoBtn { flex: 1; justify-content: center; }
 }

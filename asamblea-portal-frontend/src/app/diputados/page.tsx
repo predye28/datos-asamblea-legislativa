@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { api, DiputadoRanking } from '@/lib/api'
+import { getPeriodos } from '@/lib/periodos'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import styles from './diputados.module.css'
@@ -12,15 +13,19 @@ function DiputadosContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [query, setQuery] = useState(searchParams.get('q') || '')
+  const periodos = getPeriodos()
+  const [periodoIdx, setPeriodoIdx] = useState(1) // 1 = 6 meses
   const [diputados, setDiputados] = useState<DiputadoRanking[]>([])
   const [loading, setLoading] = useState(true)
   const maxProyectos = diputados[0]?.total_proyectos || 1
 
   useEffect(() => {
-    api.metricas.general()
+    setLoading(true)
+    const desde = periodos[periodoIdx].desde()
+    api.metricas.general({ desde })
       .then(d => setDiputados(d.top_diputados))
       .finally(() => setLoading(false))
-  }, [])
+  }, [periodoIdx])
 
   const filtered = diputados.filter(d =>
     !query || d.nombre_completo.toLowerCase().includes(query.toLowerCase())
@@ -35,15 +40,30 @@ function DiputadosContent() {
       />
 
       <div className="container">
-        <SectionRule label="Buscar diputado" />
-        <div className={styles.searchWrap}>
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="Nombre o apellido..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
+        <SectionRule label="Filtrar ranking" />
+        <div className={styles.controlsLayout}>
+          <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período">
+            {periodos.map((p, i) => (
+              <button
+                key={p.label}
+                className={`${styles.periodoBtn} ${i === periodoIdx ? styles.periodoBtnActive : ''}`}
+                onClick={() => setPeriodoIdx(i)}
+                aria-pressed={i === periodoIdx}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.searchWrap}>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="Escribe el nombre o apellido del diputado..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+          </div>
         </div>
 
         <SectionRule label={`${filtered.length} diputados`} />
@@ -60,9 +80,9 @@ function DiputadosContent() {
               const barPct = Math.round((d.total_proyectos / maxProyectos) * 100)
               return (
                 <div
-                  key={`${d.apellidos}-${d.nombre}`}
+                  key={d.nombre_completo}
                   className={styles.item}
-                  onClick={() => router.push(`/proyectos?q=${encodeURIComponent(d.apellidos)}`)}
+                  onClick={() => router.push(`/proyectos?q=${encodeURIComponent(d.apellidos || d.nombre_completo)}`)}
                 >
                   <span className={`${styles.rank} ${i < 3 ? styles.rankTop : ''}`}>{i + 1}</span>
                   <div className={styles.info}>
@@ -80,7 +100,7 @@ function DiputadosContent() {
               )
             })}
             {filtered.length === 0 && (
-              <div className={styles.empty}>No se encontró ningún diputado con ese nombre.</div>
+              <div className={styles.empty}>No se encontró ningún diputado con ese nombre o en ese periodo.</div>
             )}
           </div>
         )}

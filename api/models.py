@@ -4,7 +4,7 @@ models.py — Schemas de respuesta (Pydantic v2)
 
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 # ── Bloques reutilizables ──────────────────────────────────────────────
@@ -14,6 +14,7 @@ class Proponente(BaseModel):
     apellidos: Optional[str]    = None
     nombre:    Optional[str]    = None
 
+    @computed_field
     @property
     def nombre_completo(self) -> str:
         return f"{self.apellidos or ''} {self.nombre or ''}".strip()

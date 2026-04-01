@@ -9,6 +9,7 @@ Endpoint
   GET /api/v1/metricas   → resumen completo con 5 bloques de datos
 """
 
+import time
 from fastapi import APIRouter
 from database import fetchall, fetchone, fetchval
 from models import (
@@ -28,6 +29,8 @@ MESES_ES = {
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
 }
 
+_cache_metricas = {}
+CACHE_TTL = 300 # 5 minutes
 
 @router.get("/metricas", response_model=MetricasResponse, summary="Métricas ciudadanas")
 def metricas(
@@ -40,6 +43,11 @@ def metricas(
     
     Permite filtrar por un rango de fechas de inicio del proyecto.
     """
+    cache_key = f"{desde}-{hasta}"
+    now = time.time()
+    if cache_key in _cache_metricas and (now - _cache_metricas[cache_key]['time'] < CACHE_TTL):
+        return _cache_metricas[cache_key]['data']
+
     
     # Construir WHERE para el rango de fechas
     condiciones = ["fecha_inicio IS NOT NULL"]
@@ -156,7 +164,7 @@ def metricas(
         FROM proponentes pr
         JOIN proyectos p ON p.id = pr.proyecto_id
         {where.replace('fecha_inicio', 'p.fecha_inicio')}
-        AND pr.apellidos IS NOT NULL AND pr.nombre IS NOT NULL
+        AND (pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)
         GROUP BY pr.apellidos, pr.nombre
         ORDER BY total_proyectos DESC
         LIMIT 10
@@ -164,58 +172,9 @@ def metricas(
 
     top_diputados = [
         DiputadoRanking(
-            apellidos=r["apellidos"],
-            nombre=r["nombre"],
-            nombre_completo=f"{r['apellidos']} {r['nombre']}".strip(),
-            total_proyectos=r["total_proyectos"],
-        )
-        for r in diputado_rows
-    ]
-
-    # ── 5. Órganos más activos ────────────────────────────────────────
-    organo_rows = fetchall(f"""
-        SELECT
-            tr.organo,
-            COUNT(*) AS total_tramites
-        FROM tramitacion tr
-        JOIN proyectos p ON p.id = tr.proyecto_id
-        {where.replace('fecha_inicio', 'p.fecha_inicio')}
-        AND tr.organo IS NOT NULL
-        GROUP BY tr.organo
-        ORDER BY total_tramites DESC
-        LIMIT 10
-    """, tuple(params))
-
-    por_mes = [
-        ProyectosPorMes(
-            anio=r["anio"],
-            mes=r["mes"],
-            mes_nombre=MESES_ES.get(r["mes"], str(r["mes"])),
-            total=r["total"],
-        )
-        for r in mes_rows
-    ]
-
-    # ── 4. Top 10 diputados más activos ───────────────────────────────
-    diputado_rows = fetchall(f"""
-        SELECT
-            pr.apellidos,
-            pr.nombre,
-            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos
-        FROM proponentes pr
-        JOIN proyectos p ON p.id = pr.proyecto_id
-        {where.replace('fecha_inicio', 'p.fecha_inicio')}
-        AND pr.apellidos IS NOT NULL AND pr.nombre IS NOT NULL
-        GROUP BY pr.apellidos, pr.nombre
-        ORDER BY total_proyectos DESC
-        LIMIT 10
-    """, tuple(params))
-
-    top_diputados = [
-        DiputadoRanking(
-            apellidos=r["apellidos"],
-            nombre=r["nombre"],
-            nombre_completo=f"{r['apellidos']} {r['nombre']}".strip(),
+            apellidos=r["apellidos"] or "",
+            nombre=r["nombre"] or "",
+            nombre_completo=(f"{r['apellidos'] or ''} {r['nombre'] or ''}").strip(),
             total_proyectos=r["total_proyectos"],
         )
         for r in diputado_rows
@@ -243,13 +202,15 @@ def metricas(
         for r in organo_rows
     ]
 
-    return MetricasResponse(
+    res = MetricasResponse(
         general=general,
         por_tipo=por_tipo,
         por_mes=por_mes,
         top_diputados=top_diputados,
         organos_activos=organos_activos,
     )
+    _cache_metricas[cache_key] = {'time': now, 'data': res}
+    return res
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -299,7 +260,7 @@ def proximos_vencer(dias: int = 90):
                 LIMIT 1
             ) AS estado_actual,
             (
-                SELECT STRING_AGG(pr.apellidos || ' ' || pr.nombre, ', ')
+                SELECT STRING_AGG(TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, '')), ', ')
                 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
                 LIMIT 3
@@ -354,13 +315,13 @@ def detalle_mes(anio: int, mes: int):
     # Top proponentes del mes
     top_proponentes = fetchall("""
         SELECT
-            pr.apellidos || ' ' || pr.nombre AS nombre_completo,
+            TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, '')) AS nombre_completo,
             COUNT(*) AS proyectos
         FROM proponentes pr
         JOIN proyectos p ON p.id = pr.proyecto_id
         WHERE EXTRACT(YEAR FROM p.fecha_inicio) = %(anio)s
           AND EXTRACT(MONTH FROM p.fecha_inicio) = %(mes)s
-          AND pr.apellidos IS NOT NULL
+          AND (pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)
         GROUP BY pr.apellidos, pr.nombre
         ORDER BY proyectos DESC
         LIMIT 5

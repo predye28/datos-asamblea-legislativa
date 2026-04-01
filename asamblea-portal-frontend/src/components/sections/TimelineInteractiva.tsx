@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import SectionRule from '@/components/ui/SectionRule'
 import TimelineChart from '@/components/sections/TimelineChart'
@@ -8,12 +8,19 @@ import { api, type ProyectosPorMes, type DetallesMes } from '@/lib/api'
 import styles from '@/app/estadisticas/estadisticas.module.css'
 
 interface Props {
-  datosIniciales: ProyectosPorMes[]
+  datosIniciales?: ProyectosPorMes[]
 }
 
 export default function TimelineInteractiva({ datosIniciales }: Props) {
+  const [datos, setDatos] = useState<ProyectosPorMes[]>(datosIniciales || [])
   const [detalleMes, setDetalleMes] = useState<DetallesMes | null>(null)
   const [loadingMes, setLoadingMes] = useState(false)
+
+  useEffect(() => {
+    if (!datosIniciales) {
+      api.metricas.general().then(r => setDatos(r.por_mes))
+    }
+  }, [datosIniciales])
 
   const handleMonthClick = (anio: number, mes: number) => {
     setLoadingMes(true)
@@ -25,7 +32,7 @@ export default function TimelineInteractiva({ datosIniciales }: Props) {
   return (
     <>
       <SectionRule label="Proyectos presentados por mes — últimos 12 meses" />
-      <TimelineChart data={datosIniciales} onClickBar={handleMonthClick} />
+      <TimelineChart data={datos} onClickBar={handleMonthClick} />
 
       {/* Detalle mes seleccionado */}
       {loadingMes && (

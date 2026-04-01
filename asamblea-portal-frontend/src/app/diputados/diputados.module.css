@@ -2,7 +2,42 @@
 
 /* El Hero ya es manejado por el componente unificado Hero.tsx */
 
-/* Búsqueda */
+/* Filtros de Ranking (Período y Búsqueda) */
+.controlsLayout { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+@media (min-width: 768px) {
+  .controlsLayout { flex-direction: row; align-items: stretch; }
+  .periodoSelector { flex: 1; }
+  .searchWrap { flex: 2; margin-bottom: 0 !important; }
+}
+
+.periodoSelector { display: flex; flex-wrap: wrap; gap: 6px; }
+.periodoBtn {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  min-height: 52px; /* Alineado con input buscador */
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--rule);
+  background: var(--paper-card);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex: 1;
+  justify-content: center;
+}
+.periodoBtn:hover:not(.periodoBtnActive) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.periodoBtnActive {
+  background: var(--accent);
+  color: #fff !important;
+  border-color: var(--accent);
+}
+
 .searchWrap { margin-bottom: 8px; }
 .searchInput {
   width: 100%;

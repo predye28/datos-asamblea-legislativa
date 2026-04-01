@@ -9,6 +9,7 @@ export interface Proponente {
   secuencia: number | null
   apellidos: string | null
   nombre: string | null
+  nombre_completo?: string
 }
 
 export interface TramiteItem {

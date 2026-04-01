@@ -19,7 +19,7 @@ export default function AcercaPage() {
             {/* Por qué existe */}
             <section className={styles.section}>
               <div className={styles.pullQuote}>
-                "La información pública existe. El problema es que está escrita para abogados."
+                "Todo está publicado. Nada está explicado."
               </div>
               <p>
                 La Asamblea Legislativa publica todo lo que hace: cada proyecto de ley,
@@ -65,9 +65,9 @@ export default function AcercaPage() {
               </div>
             </section>
 
-            {/* Cómo funciona — arquitectura */}
+            {/* Cómo funciona*/}
             <section className={styles.section}>
-              <h2 className={styles.h2}>Cómo funciona técnicamente</h2>
+              <h2 className={styles.h2}>Cómo funciona</h2>
               <p>
                 El portal es completamente automatizado. Cada noche, un sistema extrae los datos
                 directamente del sitio web de la Asamblea, los procesa y los guarda en una base de datos.
@@ -78,11 +78,10 @@ export default function AcercaPage() {
                 <div className={styles.archStep}>
                   <div className={styles.archIcon}>①</div>
                   <div className={styles.archInfo}>
-                    <div className={styles.archTitle}>Extractor (scraper)</div>
+                    <div className={styles.archTitle}>Recolectamos la información</div>
                     <div className={styles.archDesc}>
-                      Un script Python corre cada noche usando Playwright para navegar el portal SIL
-                      y extraer proyectos, proponentes y tramitaciones. Se ejecuta automáticamente en
-                      GitHub Actions a las 2am hora CR.
+                      Un sistema automático revisa todos los días la página de la Asamblea Legislativa
+                      y obtiene los proyectos de ley, sus autores y su estado.
                     </div>
                   </div>
                 </div>
@@ -90,10 +89,10 @@ export default function AcercaPage() {
                 <div className={styles.archStep}>
                   <div className={styles.archIcon}>②</div>
                   <div className={styles.archInfo}>
-                    <div className={styles.archTitle}>Base de datos (PostgreSQL / Neon)</div>
+                    <div className={styles.archTitle}>La información se mantiene actualizada</div>
                     <div className={styles.archDesc}>
-                      Los datos se guardan en una base de datos PostgreSQL alojada en Neon.
-                      La inserción es idempotente: si un proyecto ya existe, no se duplica.
+                      Si un proyecto cambia, se actualiza automáticamente. Si aparece uno nuevo, se agrega.
+                      Así siempre ves la versión más reciente.
                     </div>
                   </div>
                 </div>
@@ -101,10 +100,10 @@ export default function AcercaPage() {
                 <div className={styles.archStep}>
                   <div className={styles.archIcon}>③</div>
                   <div className={styles.archInfo}>
-                    <div className={styles.archTitle}>API (FastAPI)</div>
+                    <div className={styles.archTitle}>Guardamos todo de forma organizada</div>
                     <div className={styles.archDesc}>
-                      Una API REST construida con FastAPI expone los datos con endpoints para listar,
-                      buscar y obtener métricas. Está desplegada en Railway.
+                      La información se almacena de forma estructurada
+                      para poder consultarla fácilmente en cualquier momento.
                     </div>
                   </div>
                 </div>
@@ -112,10 +111,19 @@ export default function AcercaPage() {
                 <div className={styles.archStep}>
                   <div className={styles.archIcon}>④</div>
                   <div className={styles.archInfo}>
-                    <div className={styles.archTitle}>Portal (Next.js)</div>
+                    <div className={styles.archTitle}>La hacemos fácil de consultar</div>
                     <div className={styles.archDesc}>
-                      Este portal consume la API y presenta los datos con un diseño pensado
-                      para el ciudadano común. Desplegado en Vercel.
+                      Podés buscar proyectos, filtrarlos por diputado o tema, y explorar lo que está pasando en el país.
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.archArrow}>↓</div>
+                <div className={styles.archStep}>
+                  <div className={styles.archIcon}>⑤</div>
+                  <div className={styles.archInfo}>
+                    <div className={styles.archTitle}>La mostramos de forma clara</div>
+                    <div className={styles.archDesc}>
+                      Transformamos datos complejos en información simple, para que cualquier persona pueda entender qué hace el gobierno.
                     </div>
                   </div>
                 </div>
@@ -124,11 +132,10 @@ export default function AcercaPage() {
 
             {/* Video */}
             <section className={styles.section}>
-              <h2 className={styles.h2}>Video explicativo</h2>
+              <h2 className={styles.h2}>¿Querés ver cómo funciona por dentro?</h2>
               <p>
-                Próximamente: un video en YouTube donde el creador del portal explica paso a paso
-                cómo se construyó, qué tecnologías se usaron y por qué tomó las decisiones que tomó.
-                Si te interesa entender cómo funciona por dentro, va a ser para vos.
+                Si te interesa la parte técnica y cómo se construyó este portal paso a paso, podés ver el siguiente
+                video donde se explica todo el proceso y las decisiones detrás del proyecto.
               </p>
               <div className={styles.videoPlaceholder}>
                 <div className={styles.videoIcon}>▶</div>
@@ -163,10 +170,12 @@ export default function AcercaPage() {
               <div className={styles.sideTitle}>Tecnologías usadas</div>
               <ul className={styles.stackList}>
                 {[
-                  ['Python', 'Extrae los datos del SIL cada noche'],
+                  ['Playwright', 'Navega el SIL y extrae los datos automáticamente'],
+                  ['Python', 'Lenguaje del extractor y del motor de sincronización'],
                   ['PostgreSQL', 'Base de datos donde se guarda todo'],
                   ['FastAPI', 'API que conecta los datos con el portal'],
                   ['Next.js', 'El portal web que estás viendo'],
+                  ['Vercel / Render', 'Plataformas donde vive el portal y la API'],
                   ['GitHub Actions', 'Se actualiza solo, sin intervención manual'],
                 ].map(([tech, role]) => (
                   <li key={tech} className={styles.stackItem}>
@@ -199,6 +208,12 @@ export default function AcercaPage() {
                 Si ves datos incorrectos o un error técnico, probablemente el problema esté
                 en el SIL original. Pero si el error es nuestro, nos importa saberlo.
               </p>
+              <a
+                href="mailto:hola@asamblealdia.cr"
+                className={styles.sideLink}
+              >
+                Escribinos →
+              </a>
             </div>
           </aside>
         </div>

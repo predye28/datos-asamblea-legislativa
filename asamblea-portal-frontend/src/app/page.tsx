@@ -1,8 +1,6 @@
-// src/app/page.tsx
-import { api } from '@/lib/api'
 import Hero from '@/components/sections/Hero'
 import StatCards from '@/components/sections/StatCards'
-import AprobacionBar from '@/components/sections/AprobacionBar'
+import ResumenMetricas from '@/components/sections/ResumenMetricas'
 import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import RankingDiputados from '@/components/sections/RankingDiputados'
@@ -11,12 +9,7 @@ import SectionRule from '@/components/ui/SectionRule'
 
 export const revalidate = 300 // refresca cada 5 min
 
-export default async function HomePage() {
-  const [metricas, vencer] = await Promise.all([
-    api.metricas.general(),
-    api.metricas.proximosVencer(),
-  ])
-
+export default function HomePage() {
   return (
     <>
       <Hero
@@ -27,24 +20,19 @@ export default async function HomePage() {
 
       <div className="container" style={{ paddingTop: 0, paddingBottom: 60 }}>
         <SectionRule label="Resumen general" />
-        <StatCards general={metricas.general} />
-
-        <SectionRule label="Tasa de aprobación" />
-        <AprobacionBar
-          pct={metricas.general.tasa_aprobacion_pct}
-          total={metricas.general.total_proyectos}
-          leyes={metricas.general.total_leyes_aprobadas}
-        />
+        <StatCards />
+        
+        <ResumenMetricas />
 
 
         <SectionRule label="Proyectos en riesgo de vencer" />
-        <ProximosVencer datos={vencer.datos} clientMode={true} />
+        <ProximosVencer clientMode={true} />
 
-        <TimelineInteractiva datosIniciales={metricas.por_mes} />
+        <TimelineInteractiva />
 
 
         <SectionRule label="Diputados más activos" />
-        <RankingDiputados diputados={metricas.top_diputados} />
+        <RankingDiputados />
 
         <SectionRule label="Buscador de proyectos" />
         <BuscadorHome />
