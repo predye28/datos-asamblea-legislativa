@@ -61,7 +61,7 @@ PAGINA_FIN    = _args.pagina_fin     # None = sin límite de fin
 # ----------------------------------------------------------------------
 
 CHECKPOINT_FILE = "checkpoint.json"
-PAGINAS_POR_RUN = 100
+PAGINAS_POR_RUN = 50
 LIMITE_MONITOREO = 1200  # Después de la 1era pasada, solo monitoreamos hasta aquí.
 
 
@@ -961,114 +961,136 @@ async def main():
 
     os.makedirs(CARPETA_DOCS, exist_ok=True)
     proyectos = []
+    pagina_actual = pagina_inicio
+    ciclo_finalizado = False
 
-    async with async_playwright() as p:
-        is_ci = os.getenv("CI", "false").lower() == "true"
-        browser = await p.chromium.launch(
-            headless=is_ci,
-            args=["--no-sandbox", "--disable-dev-shm-usage",
-                  "--disable-blink-features=AutomationControlled"]
-        )
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-            viewport={"width": 1440, "height": 900},
-        )
-        page = await context.new_page()
+    try:
+        async with async_playwright() as p:
+            is_ci = os.getenv("CI", "false").lower() == "true"
+            browser = await p.chromium.launch(
+                headless=is_ci,
+                args=["--no-sandbox", "--disable-dev-shm-usage",
+                      "--disable-blink-features=AutomationControlled"]
+            )
+            context = await browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1440, "height": 900},
+            )
+            page = await context.new_page()
 
-        print("Loading SIL portal...")
-        try:
-            await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
-        except Exception as e:
-            print(f"Warning: Initial load timeout or networkidle issue: {e}")
-            await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
-        
-        await page.wait_for_timeout(8_000)
+            print("Loading SIL portal...")
+            try:
+                await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
+            except Exception as e:
+                print(f"Warning: Initial load timeout or networkidle issue: {e}")
+                await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
+            
+            await page.wait_for_timeout(8_000)
 
-        if not await navegar_a_expedientes(page):
-            print("Failed to navigate to the module.")
-            await browser.close()
-            return
-
-        print("Locating data grid...")
-        await page.wait_for_timeout(3_000)
-        frame = await encontrar_frame_con_grilla(page)
-
-        if not frame:
-            print("Grid not found. Aborting.")
-            await browser.close()
-            return
-
-        await cambiar_mostrar_registros(frame, page, "10")
-        await page.wait_for_timeout(6_000)
-
-        # Avanzar hasta la página de inicio si no es la 1
-        if pagina_inicio > 1:
-            print(f"Saltando directamente a página {pagina_inicio}...")
-            if not await ir_a_pagina_directa(frame, page, pagina_inicio):
-                print(f"No se pudo llegar a la página {pagina_inicio}. Abortando.")
+            if not await navegar_a_expedientes(page):
+                print("Failed to navigate to the module. Saving checkpoint for retry.")
                 await browser.close()
+                guardar_checkpoint(
+                    pagina_inicio,
+                    ciclo_completado=False,
+                    primera_pasada_completa=primera_pasada_completa,
+                )
                 return
-            print(f"Listo. Iniciando desde página {pagina_inicio}.")
 
-        pagina_actual      = pagina_inicio
-        paginas_procesadas = 0
-        expedientes_vistos = set()
-        ciclo_finalizado   = False
+            print("Locating data grid...")
+            await page.wait_for_timeout(3_000)
+            frame = await encontrar_frame_con_grilla(page)
 
-        while True:
-            # 1. Límite de fase de monitoreo (si ya se hizo la 1era pasada)
-            if primera_pasada_completa and pagina_actual > LIMITE_MONITOREO:
-                print(f"Monitoring limit reached ({LIMITE_MONITOREO}). Resetting cycle.")
-                ciclo_finalizado = True
-                break
+            if not frame:
+                print("Grid not found. Saving checkpoint for retry.")
+                await browser.close()
+                guardar_checkpoint(
+                    pagina_inicio,
+                    ciclo_completado=False,
+                    primera_pasada_completa=primera_pasada_completa,
+                )
+                return
 
-            if MAX_PAGINAS and paginas_procesadas >= MAX_PAGINAS:
-                print(f"Limit of {MAX_PAGINAS} pages reached.")
-                break
+            await cambiar_mostrar_registros(frame, page, "10")
+            await page.wait_for_timeout(6_000)
 
-            if pagina_actual > pagina_fin:
-                print(f"Batch complete: pages {pagina_inicio}-{pagina_fin}.")
-                break
-
-            continuar = await procesar_pagina_grilla(page, frame, pagina_actual, proyectos, expedientes_vistos)
-            if not continuar:
-                ciclo_finalizado = True
-                break
-
-            paginas_procesadas += 1
-
-            print(f"Attempting to advance to page {pagina_actual + 1}...")
-            avanzo = await ir_siguiente_pagina(frame, page, pagina_actual)
-
-            if not avanzo:
-                # [FIX] Distinguish a real end-of-list from a transient navigation error.
-                # If the grid still has valid rows and we're not near an impossibly high
-                # page number, treat this as a temporary failure and save the current page
-                # so the next run retries from here instead of resetting to page 1.
-                filas_actuales = await obtener_info_filas(frame)
-                if filas_actuales and pagina_actual < 5000:
-                    print(
-                        f"Navigation to page {pagina_actual + 1} failed but grid still has data. "
-                        f"Saving checkpoint at page {pagina_actual} for retry on next run."
+            # Avanzar hasta la página de inicio si no es la 1
+            if pagina_inicio > 1:
+                print(f"Saltando directamente a página {pagina_inicio}...")
+                if not await ir_a_pagina_directa(frame, page, pagina_inicio):
+                    print(f"No se pudo llegar a la página {pagina_inicio}. Guardando checkpoint para reintentar.")
+                    await browser.close()
+                    guardar_checkpoint(
+                        pagina_inicio,
+                        ciclo_completado=False,
+                        primera_pasada_completa=primera_pasada_completa,
                     )
-                    # Do NOT set ciclo_finalizado = True → checkpoint will keep pagina_actual
-                    break
-                else:
-                    print("No more pages available. Full sync complete.")
+                    return
+                print(f"Listo. Iniciando desde página {pagina_inicio}.")
+
+            pagina_actual      = pagina_inicio
+            paginas_procesadas = 0
+            expedientes_vistos = set()
+
+            while True:
+                # 1. Límite de fase de monitoreo (si ya se hizo la 1era pasada)
+                if primera_pasada_completa and pagina_actual > LIMITE_MONITOREO:
+                    print(f"Monitoring limit reached ({LIMITE_MONITOREO}). Resetting cycle.")
                     ciclo_finalizado = True
                     break
 
-            pagina_actual += 1
+                if MAX_PAGINAS and paginas_procesadas >= MAX_PAGINAS:
+                    print(f"Limit of {MAX_PAGINAS} pages reached.")
+                    break
 
-        await browser.close()
+                if pagina_actual > pagina_fin:
+                    print(f"Batch complete: pages {pagina_inicio}-{pagina_fin}.")
+                    break
 
-    # [FIX] Save checkpoint correctly:
-    #   - ciclo_finalizado=True  → full list done, reset to page 1
-    #   - ciclo_finalizado=False → mid-run stop, retry from pagina_actual next time
+                continuar = await procesar_pagina_grilla(page, frame, pagina_actual, proyectos, expedientes_vistos)
+                if not continuar:
+                    ciclo_finalizado = True
+                    break
+
+                paginas_procesadas += 1
+
+                print(f"Attempting to advance to page {pagina_actual + 1}...")
+                avanzo = await ir_siguiente_pagina(frame, page, pagina_actual)
+
+                if not avanzo:
+                    filas_actuales = await obtener_info_filas(frame)
+                    if filas_actuales and pagina_actual < 5000:
+                        print(
+                            f"Navigation to page {pagina_actual + 1} failed but grid still has data. "
+                            f"Saving checkpoint at page {pagina_actual} for retry on next run."
+                        )
+                        # ciclo_finalizado se queda False → checkpoint conserva pagina_actual
+                        break
+                    else:
+                        print("No more pages available. Full sync complete.")
+                        ciclo_finalizado = True
+                        break
+
+                pagina_actual += 1
+
+            await browser.close()
+
+    except Exception as e:
+        print(f"Unexpected error: {e}. Saving checkpoint at page {pagina_actual} for retry.")
+        guardar_checkpoint(
+            pagina_actual,
+            ciclo_completado=False,
+            primera_pasada_completa=primera_pasada_completa,
+        )
+        raise
+
+    # Checkpoint normal al finalizar el loop sin excepción:
+    #   - ciclo_finalizado=True  → lista completa, resetear a página 1
+    #   - ciclo_finalizado=False → parada a mitad, reintentar desde pagina_actual
     guardar_checkpoint(
         pagina_actual,
         ciclo_completado=ciclo_finalizado,
