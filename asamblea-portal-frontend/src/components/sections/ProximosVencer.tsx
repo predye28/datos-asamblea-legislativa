@@ -59,11 +59,11 @@ export default function ProximosVencer({ datos: datosProp, clientMode = false }:
     <div className={styles.block}>
       <div className={styles.blockHeader}>
         <div>
-          <div className={styles.kicker}>⚠ Proyectos en riesgo de vencer</div>
-          <div className={styles.title}>El reloj legislativo corre</div>
+          <div className={styles.kicker}>Seguimiento de vigencia</div>
+          <div className={styles.title}>Expedientes próximos a vencer</div>
           <p className={styles.explanation}>
-            Cada proyecto tiene 4 años de vida. Si no se aprueba, muere automáticamente
-            y debe presentarse desde cero. Estos son los que vencen pronto.
+            Según el Reglamento de la Asamblea, los proyectos tienen un plazo cuatrienal de vigencia. 
+            Aquí se detallan las iniciativas que están por cumplir su periodo reglamentario.
           </p>
         </div>
         {clientMode && (

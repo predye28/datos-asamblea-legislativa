@@ -673,9 +673,12 @@ async def volver_tab_general(frame, page: Page):
 # PROCESS PAGE
 # ----------------------------------------------------------------------
 
-async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: list, expedientes_vistos: set) -> bool:
+async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: list, expedientes_vistos: set):
     """
-    Iterates through rows in the current page and extracts details for each file.
+    Retorna:
+      True  → página procesada OK, continuar
+      False → ciclo completado normalmente (expediente ya visto)
+      None  → error de sesión (grilla se vació), reintentar esta página
     """
     await clic_tab(frame, page, "General")
     await page.wait_for_timeout(500)
@@ -698,6 +701,8 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
     print(f"PAGE {num_pagina} - {total} files found")
     print("-" * 60)
 
+    filas_exitosas = 0  # <-- NUEVO: contador de filas realmente procesadas
+
     for i, info in enumerate(filas_info):
         num_exp      = info["expediente"]
         titulo       = info["titulo"]
@@ -708,11 +713,24 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
 
         ok = await clicar_fila_por_indice(frame, page, row_index)
         if not ok:
+            # Si ya fallaron varias filas seguidas, probablemente es error de sesión
+            # NUEVO: si es la primera fila o ya llevamos varias fallidas, señalizar
+            if i == 0 or (i > 0 and filas_exitosas == 0):
+                print(f"Grid session error detected at row {i+1}. Signaling retry.")
+                return None  # <-- señal de error de sesión
             continue
+
+        filas_exitosas += 1  # <-- NUEVO
 
         general     = await extraer_tab_general(frame, page)
         tramitacion = await extraer_tab_tramitacion(frame, page)
         proponentes = await extraer_tab_proponentes(frame, page)
+
+        # NUEVO: si después de la primera fila exitosa empiezan a fallar los tabs,
+        # es señal de que la sesión se cayó
+        if filas_exitosas > 1 and len(general) == 0 and len(tramitacion) == 0:
+            print(f"Tabs disappeared after row {i+1}. Session error. Signaling retry.")
+            return None
 
         await volver_tab_general(frame, page)
         await page.wait_for_timeout(300)
@@ -730,6 +748,11 @@ async def procesar_pagina_grilla(page: Page, frame, num_pagina: int, acumulado: 
             f"      Data extracted: General ({len(general)}), "
             f"Tramitación ({len(tramitacion)}), Proponentes ({len(proponentes)})"
         )
+
+    # NUEVO: si procesamos filas pero ninguna fue exitosa, es error de sesión
+    if filas_exitosas == 0:
+        print(f"Page {num_pagina}: no rows could be clicked. Session error. Signaling retry.")
+        return None
             
     return True
 
@@ -964,6 +987,40 @@ async def main():
     pagina_actual = pagina_inicio
     ciclo_finalizado = False
 
+    async def iniciar_sesion(page: Page, pagina_destino: int):
+        """
+        Navega al portal, localiza la grilla y avanza a pagina_destino.
+        Retorna (frame, True) si todo fue bien, (None, False) si falló.
+        """
+        try:
+            await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
+        except Exception as e:
+            print(f"Warning: page load issue: {e}")
+
+        await page.wait_for_timeout(5_000)
+
+        if not await navegar_a_expedientes(page):
+            print("Could not navigate to module.")
+            return None, False
+
+        await page.wait_for_timeout(3_000)
+        _frame = await encontrar_frame_con_grilla(page)
+        if not _frame:
+            print("Grid not found after navigation.")
+            return None, False
+
+        await cambiar_mostrar_registros(_frame, page, "10")
+        await page.wait_for_timeout(4_000)
+
+        if pagina_destino > 1:
+            print(f"Jumping directly to page {pagina_destino}...")
+            if not await ir_a_pagina_directa(_frame, page, pagina_destino):
+                print(f"Could not reach page {pagina_destino}.")
+                return None, False
+            print(f"Ready. Starting from page {pagina_destino}.")
+
+        return _frame, True
+
     try:
         async with async_playwright() as p:
             is_ci = os.getenv("CI", "false").lower() == "true"
@@ -982,23 +1039,21 @@ async def main():
             )
             page = await context.new_page()
 
+            # ── Carga inicial ──────────────────────────────────────────
             print("Loading SIL portal...")
             try:
                 await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
             except Exception as e:
                 print(f"Warning: Initial load timeout or networkidle issue: {e}")
                 await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
-            
+
             await page.wait_for_timeout(8_000)
 
             if not await navegar_a_expedientes(page):
                 print("Failed to navigate to the module. Saving checkpoint for retry.")
                 await browser.close()
-                guardar_checkpoint(
-                    pagina_inicio,
-                    ciclo_completado=False,
-                    primera_pasada_completa=primera_pasada_completa,
-                )
+                guardar_checkpoint(pagina_inicio, ciclo_completado=False,
+                                   primera_pasada_completa=primera_pasada_completa)
                 return
 
             print("Locating data grid...")
@@ -1008,36 +1063,31 @@ async def main():
             if not frame:
                 print("Grid not found. Saving checkpoint for retry.")
                 await browser.close()
-                guardar_checkpoint(
-                    pagina_inicio,
-                    ciclo_completado=False,
-                    primera_pasada_completa=primera_pasada_completa,
-                )
+                guardar_checkpoint(pagina_inicio, ciclo_completado=False,
+                                   primera_pasada_completa=primera_pasada_completa)
                 return
 
             await cambiar_mostrar_registros(frame, page, "10")
             await page.wait_for_timeout(6_000)
 
-            # Avanzar hasta la página de inicio si no es la 1
             if pagina_inicio > 1:
                 print(f"Saltando directamente a página {pagina_inicio}...")
                 if not await ir_a_pagina_directa(frame, page, pagina_inicio):
                     print(f"No se pudo llegar a la página {pagina_inicio}. Guardando checkpoint para reintentar.")
                     await browser.close()
-                    guardar_checkpoint(
-                        pagina_inicio,
-                        ciclo_completado=False,
-                        primera_pasada_completa=primera_pasada_completa,
-                    )
+                    guardar_checkpoint(pagina_inicio, ciclo_completado=False,
+                                       primera_pasada_completa=primera_pasada_completa)
                     return
                 print(f"Listo. Iniciando desde página {pagina_inicio}.")
 
+            # ── Loop principal ─────────────────────────────────────────
             pagina_actual      = pagina_inicio
             paginas_procesadas = 0
             expedientes_vistos = set()
+            MAX_REINTENTOS_SESION = 3
 
             while True:
-                # 1. Límite de fase de monitoreo (si ya se hizo la 1era pasada)
+                # Límite de fase de monitoreo
                 if primera_pasada_completa and pagina_actual > LIMITE_MONITOREO:
                     print(f"Monitoring limit reached ({LIMITE_MONITOREO}). Resetting cycle.")
                     ciclo_finalizado = True
@@ -1051,11 +1101,51 @@ async def main():
                     print(f"Batch complete: pages {pagina_inicio}-{pagina_fin}.")
                     break
 
-                continuar = await procesar_pagina_grilla(page, frame, pagina_actual, proyectos, expedientes_vistos)
-                if not continuar:
+                resultado = await procesar_pagina_grilla(
+                    page, frame, pagina_actual, proyectos, expedientes_vistos
+                )
+
+                # ── None = error de sesión (grilla se vació mid-página) ──
+                if resultado is None:
+                    print(
+                        f"Session error detected on page {pagina_actual}. "
+                        f"Attempting full navigation restart..."
+                    )
+                    reintento_exitoso = False
+
+                    for intento_sesion in range(MAX_REINTENTOS_SESION):
+                        print(f"Restart attempt {intento_sesion + 1}/{MAX_REINTENTOS_SESION}...")
+                        await page.wait_for_timeout(5_000)
+
+                        frame_nuevo, ok = await iniciar_sesion(page, pagina_actual)
+                        if ok:
+                            frame = frame_nuevo
+                            reintento_exitoso = True
+                            print(f"Restart successful. Retrying page {pagina_actual}...")
+                            break
+                        else:
+                            print(f"Restart attempt {intento_sesion + 1} failed.")
+                            await page.wait_for_timeout(15_000)
+
+                    if not reintento_exitoso:
+                        # El sitio parece caído — guardar checkpoint sin modificar
+                        # primera_pasada_completa ni resetear a página 1
+                        print(
+                            f"Site appears to be down after {MAX_REINTENTOS_SESION} restart attempts. "
+                            f"Saving checkpoint at page {pagina_actual} for retry on next run."
+                        )
+                        # ciclo_finalizado queda False → checkpoint correcto
+                        break
+
+                    # Reintentar la misma página con sesión reiniciada
+                    continue
+
+                # ── False = fin de ciclo normal (expediente ya visto o sin filas) ──
+                elif resultado is False:
                     ciclo_finalizado = True
                     break
 
+                # ── True = página procesada OK ──
                 paginas_procesadas += 1
 
                 print(f"Attempting to advance to page {pagina_actual + 1}...")
@@ -1068,7 +1158,6 @@ async def main():
                             f"Navigation to page {pagina_actual + 1} failed but grid still has data. "
                             f"Saving checkpoint at page {pagina_actual} for retry on next run."
                         )
-                        # ciclo_finalizado se queda False → checkpoint conserva pagina_actual
                         break
                     else:
                         print("No more pages available. Full sync complete.")
@@ -1088,9 +1177,9 @@ async def main():
         )
         raise
 
-    # Checkpoint normal al finalizar el loop sin excepción:
-    #   - ciclo_finalizado=True  → lista completa, resetear a página 1
-    #   - ciclo_finalizado=False → parada a mitad, reintentar desde pagina_actual
+    # Checkpoint final:
+    #   ciclo_finalizado=True  → lista completa, resetear a página 1
+    #   ciclo_finalizado=False → parada a mitad o error, conservar pagina_actual
     guardar_checkpoint(
         pagina_actual,
         ciclo_completado=ciclo_finalizado,

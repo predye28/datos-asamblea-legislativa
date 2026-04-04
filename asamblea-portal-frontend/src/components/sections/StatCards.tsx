@@ -56,18 +56,18 @@ export default function StatCards() {
 
   const cards = [
     {
-      label: 'Proyectos en total',
+      label: 'Expedientes totales',
       ref: refTotal,
       color: 'blue',
       sub: 'Presentados en la Asamblea',
-      tooltip: 'Cada proyecto es una propuesta de ley que algún diputado presentó para votación',
+      tooltip: 'Propuestas de proyectos de ley registradas oficialmente ante la secretaría del Plenario',
     },
     {
-      label: 'Se convirtieron en ley',
+      label: 'Leyes aprobadas',
       ref: refLeyes,
       color: 'positive',
-      sub: 'Del total de propuestas',
-      tooltip: 'Solo una pequeña fracción de los proyectos llega a convertirse en ley vigente',
+      sub: 'Del total de expedientes',
+      tooltip: 'Proyectos que completaron satisfactoriamente el trámite legislativo en ambos debates',
     },
     {
       label: 'Este mes',
@@ -81,7 +81,7 @@ export default function StatCards() {
       ref: refDip,
       color: 'accent',
       sub: 'En los últimos 6 meses',
-      tooltip: 'Diputados que han presentado al menos un proyecto en los últimos 6 meses',
+      tooltip: 'Muestra la cantidad de diputados con al menos una iniciativa presentada recientemente',
     },
   ]
 

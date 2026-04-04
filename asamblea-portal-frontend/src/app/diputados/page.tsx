@@ -35,9 +35,9 @@ function DiputadosContent() {
   return (
     <div style={{ paddingBottom: 80 }}>
       <Hero
-        kicker="Actividad legislativa"
-        headline="Diputados más activos"
-        deck="Diputados ordenados por cantidad de proyectos presentados. La actividad no mide la calidad ni si sus propuestas fueron aprobadas — solo cuántos proyectos pusieron sobre la mesa."
+        kicker="Actividad parlamentaria"
+        headline="Registro de iniciativas por diputado"
+        deck="Distribución de diputaciones según la cantidad de proyectos presentados. Este registro refleja el volumen de iniciativas ingresadas a la secretaría del Plenario en el período seleccionado."
       />
 
       <div className="container">
@@ -107,11 +107,11 @@ function DiputadosContent() {
         )}
 
         <div className={styles.nota}>
-          <div className={styles.notaTitle}>¿Qué significa este ranking?</div>
+          <div className={styles.notaTitle}>¿Qué mide este registro?</div>
           <p>
-            Un diputado con muchos proyectos presentados es legislativamente activo —
-            propone cambios con frecuencia. Eso no garantiza que sus proyectos sean buenos
-            ni que se aprueben. El ranking es solo de actividad, no de efectividad.
+            Esta visualización muestra la frecuencia con la que una diputación presenta nuevos expedientes
+            a la corriente legislativa. Es un indicador de actividad propositiva que no contempla
+            parámetros de efectividad, aprobación ni evaluación de contenido.
           </p>
         </div>
       </div>

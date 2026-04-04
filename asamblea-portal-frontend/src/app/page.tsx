@@ -14,28 +14,28 @@ export default function HomePage() {
   return (
     <>
       <Hero
-        kicker="¿Para qué sirve esto?"
-        headline={<>Los datos de la Asamblea Legislativa,<br />para que cualquier persona los entienda</>}
-        deck="La Asamblea publica su información, pero de una forma que pocos entienden. Este portal toma esos mismos datos oficiales y los convierte en algo que cualquier ciudadano puede leer, comparar y cuestionar. Porque la transparencia solo funciona si se entiende."
+        kicker="Transparencia ciudadana"
+        headline={<>El trabajo de la Asamblea Legislativa,<br />explicado de forma sencilla</>}
+        deck="Facilitamos el acceso a la información oficial del Sistema de Información Legislativa (SIL). Nuestra misión es presentar los datos de manera clara y estructurada para que cualquier ciudadano pueda dar seguimiento al proceso de creación de leyes en Costa Rica."
       />
 
       <div className="container" style={{ paddingTop: 0, paddingBottom: 60 }}>
-        <SectionRule label="Resumen general" />
+        <SectionRule label="Panorama legislativo" />
         <StatCards />
         
         <ResumenMetricas />
 
 
-        <SectionRule label="Proyectos en riesgo de vencer" />
+        <SectionRule label="Expedientes en trámite" />
         <ProximosVencer clientMode={true} />
 
         <TimelineInteractiva />
 
 
-        <SectionRule label="Diputados más activos" />
+        <SectionRule label="Iniciativas por diputado" />
         <RankingDiputados />
 
-        <SectionRule label="Buscador de proyectos" />
+        <SectionRule label="Consulta de proyectos" />
         <BuscadorHome />
 
         <br />

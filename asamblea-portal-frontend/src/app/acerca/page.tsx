@@ -5,9 +5,9 @@ export default function AcercaPage() {
   return (
     <div style={{ paddingBottom: 80 }}>
       <Hero
-        kicker="Acerca de este proyecto"
-        headline={<>Un portal ciudadano hecho<br />por preocupación, no por política</>}
-        deck="La Asamblea Legislativa tiene toda su información en línea, pero en un formato que pocos pueden leer. Este portal toma esos datos oficiales y los explica en lenguaje sencillo, para que cualquier costarricense pueda entender qué hace su gobierno."
+        kicker="Sobre el proyecto"
+        headline={<>Información legislativa,<br />al alcance de todos</>}
+        deck="Este portal procesa la información oficial de la Asamblea Legislativa para presentarla en un formato accesible. Nuestro objetivo es que cualquier ciudadano pueda seguir el proceso de creación de leyes en Costa Rica de forma sencilla y directa."
       />
 
       <div className="container">
@@ -19,23 +19,22 @@ export default function AcercaPage() {
             {/* Por qué existe */}
             <section className={styles.section}>
               <div className={styles.pullQuote}>
-                "Todo está publicado. Nada está explicado."
+                "Accesibilidad de datos para una ciudadanía informada."
               </div>
               <p>
-                La Asamblea Legislativa publica todo lo que hace: cada proyecto de ley,
-                cada diputado que lo firma, cada comisión por donde pasa. Eso es parte de su
-                obligación como institución pública.
+                La Asamblea Legislativa publica de forma transparente toda su actividad: expedientes, 
+                firmas de diputaciones y el avance por comisiones. Esta información es pública y esencial 
+                para la vida democrática del país.
               </p>
               <p>
-                El problema es cómo lo publica. El sistema oficial está pensado para
-                especialistas en derecho, no para el ciudadano común. Buscar un proyecto,
-                entender su estado, o saber qué hizo tu diputado requiere conocimiento técnico
-                que la mayoría de personas no tiene — ni tiene por qué tener.
+                Debido a la complejidad técnica del proceso legal, el sistema oficial está diseñado 
+                principalmente para el uso jurídico y legislativo. Reconociendo esto, nuestro portal 
+                busca ofrecer una alternativa de visualización simplificada para el público general.
               </p>
               <p>
-                Este portal existe para cerrar esa brecha. Tomamos los mismos datos oficiales
-                y los presentamos de forma que cualquier persona, sin importar su nivel educativo,
-                pueda entender qué está pasando en su Asamblea.
+                Este proyecto existe para facilitar esa consulta diaria. Tomamos los datos oficiales del 
+                Sistema de Información Legislativa (SIL) y los organizamos para que cualquier persona 
+                pueda comprender el estado actual de las leyes que se discuten en el Plenario.
               </p>
             </section>
 
@@ -207,8 +206,8 @@ export default function AcercaPage() {
             <div className={styles.sideCard}>
               <div className={styles.sideTitle}>¿Encontraste un error?</div>
               <p className={styles.sideText}>
-                Si ves datos incorrectos o un error técnico, probablemente el problema esté
-                en el SIL original. Pero si el error es nuestro, nos importa saberlo.
+                Si notas alguna inconsistencia en la información o un error técnico, 
+                agradecemos tu reporte para verificar nuestra sincronización con el sistema original.
               </p>
               <a
                 href="mailto:hola@asamblealdia.cr"

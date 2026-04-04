@@ -30,9 +30,9 @@ export default function RankingDiputados() {
       {/* Cabecera con título + selector de período */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.title}>¿Quién propone más leyes?</div>
+          <div className={styles.title}>Iniciativas según diputación</div>
           <div className={styles.sub}>
-            Actividad por cantidad de proyectos — no mide calidad ni aprobación
+            Registro administrativo de cantidad de proyectos presentados en el período seleccionado.
           </div>
         </div>
         <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período">

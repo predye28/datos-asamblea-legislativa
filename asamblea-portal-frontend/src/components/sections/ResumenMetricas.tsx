@@ -76,7 +76,7 @@ export default function ResumenMetricas() {
   return (
     <div className={styles.block}>
       <div className={styles.header}>
-        <div className={styles.title}>¿Cuántas propuestas se convierten en ley?</div>
+        <div className={styles.title}>Avance de proyectos hacia ley</div>
         {/* Selector de período */}
         <div className={styles.periodoSelector}>
           {periodos.map((p, i) => (
@@ -111,13 +111,7 @@ export default function ResumenMetricas() {
              <div className={styles.barFill} ref={barRef} />
           </div>
           <p className={styles.barHelp}>
-             De los proyectos presentados{' '}
-             {periodos[periodoIdx].label.toLowerCase().includes('este') 
-               ? periodos[periodoIdx].label.toLowerCase() 
-               : periodos[periodoIdx].label.toLowerCase().includes('período')
-                 ? `en el ${periodos[periodoIdx].label.toLowerCase()}`
-                 : `en los últimos ${periodos[periodoIdx].label.toLowerCase()}`}, 
-             solo un {pct.toFixed(1)}% se ha convertido en ley. El resto se mantiene en trámite, fue archivado o se encuentra vencido.
+              Un {pct.toFixed(1)}% de los expedientes ya ha completado su trámite y es ley de la República. El resto se encuentra en diversas etapas del proceso legislativo, en consulta pública o ha sido archivado conforme a la ley.
           </p>
         </div>
       </div>

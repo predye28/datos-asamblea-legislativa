@@ -3,15 +3,15 @@
    Sistema de diseño — Portal ciudadano Asamblea Legislativa CR
    Audiencia objetivo: 10–60 años. Prioridad en accesibilidad y legibilidad.
    ────────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   /* ── Colores de texto (Siempre oscuro) ── */
-  --ink:        #F1F5F9;
-  --ink-muted:  #94A3B8;
-  --ink-faint:  #64748B;
+  --ink:        #F8FAFC;  /* Un poco más brillante */
+  --ink-muted:  #CBD5E1;  /* Antes #94A3B8 (más contraste) */
+  --ink-faint:  #94A3B8;  /* Antes #64748B (más contraste) */
 
   /* ── Fondos ── */
   --paper:      #0F172A;
@@ -22,13 +22,13 @@
   /* ── Colores de acento ── */
   --accent:     #3B82F6;
   --accent-dark:#2563EB;
-  --accent-warm:#D97706;
+  --accent-warm:#F59E0B; /* Más vivo */
   --positive:   #22C55E;
   --blue:       #3B82F6;
 
-  /* ── Tipografía ── */
-  --serif: 'Playfair Display', Georgia, serif;
-  --body:  'Source Serif 4', Georgia, serif;
+  /* ── Tipografía (Actualizada para máxima claridad) ── */
+  --serif: 'Outfit', 'Inter', system-ui, sans-serif; /* Títulos modernos y legibles */
+  --body:  'Inter', system-ui, sans-serif;           /* Cuerpo sans-serif para accesibilidad universal */
   --mono:  'IBM Plex Mono', monospace;
 
   /* ── Layout ── */
