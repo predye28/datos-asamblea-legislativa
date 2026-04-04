@@ -1,123 +1,63 @@
-name: Scraper Asamblea Legislativa
-
+name: Fase 1 — Datos Urgentes SIL
+ 
 on:
   schedule:
-    - cron: '0 8 * * *'  # 2am costa rica (UTC-6 = 08:00 UTC)
-  workflow_dispatch:
-    inputs:
-      max_paginas:
-        description: 'Límite de páginas (0 = todas)'
-        required: false
-        default: '0'
-      reset_checkpoint:
-        description: 'Reiniciar checkpoint a página 1 (true/false)'
-        required: false
-        default: 'false'
-
+    - cron: '0 8 * * *'   # 2am Costa Rica (UTC-6 = 08:00 UTC)
+  workflow_dispatch:       # Permite ejecutar manualmente desde GitHub
+ 
 jobs:
-  scrape:
+  fase1:
     runs-on: ubuntu-latest
-    timeout-minutes: 330  # ~2h50m — margen antes del límite de 6h de Actions
-
+    timeout-minutes: 60   # Máximo 60 min — si tarda más, algo está muy mal
+ 
     steps:
-      - name: Checkout Código (Main)
+      - name: Checkout código
         uses: actions/checkout@v4
         with:
           ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Obtener Checkpoint Actual (Rama Schedule)
-        run: |
-          git fetch origin schedule:schedule || echo "Rama schedule no existe todavía, se creará al final."
-          git checkout schedule -- extractor_proyectos/checkpoint.json || echo "No hay checkpoint previo en schedule."
-
+ 
       - name: Instalar Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+ 
       - name: Cache de dependencias pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('extractor_proyectos/requirements.txt') }}
-
+ 
       - name: Instalar dependencias Python
         working-directory: extractor_proyectos
         run: pip install -r requirements.txt
-
-      - name: Workaround DNS Asamblea Costa Rica
+ 
+      - name: Workaround DNS — Asamblea Costa Rica
         run: |
           sudo bash -c 'echo "196.40.23.181 www.asamblea.go.cr" >> /etc/hosts'
           sudo bash -c 'echo "196.40.23.181 asamblea.go.cr" >> /etc/hosts'
-          # Verificar que el DNS resuelve antes de continuar
-          echo "Verifying DNS resolution..."
-          ping -c 2 www.asamblea.go.cr || echo "Ping failed (may be blocked), continuing anyway..."
-          curl -I --max-time 10 https://www.asamblea.go.cr || echo "curl check failed, continuing anyway..."
-
+          echo "Verificando DNS..."
+          ping -c 2 www.asamblea.go.cr || echo "Ping bloqueado — continuando de todas formas"
+          curl -sI --max-time 10 https://www.asamblea.go.cr | head -5 || echo "curl check falló — continuando"
+ 
       - name: Instalar Chromium (Playwright)
         run: playwright install chromium --with-deps
-
-      - name: Resetear checkpoint si se solicitó
-        if: ${{ github.event.inputs.reset_checkpoint == 'true' }}
-        working-directory: extractor_proyectos
-        run: |
-          echo '{"pagina_actual": 1, "primera_pasada_completa": false, "ultima_ejecucion": null}' > checkpoint.json
-          echo "Checkpoint reset to page 1 and Phase 1."
-
-      - name: Mostrar checkpoint actual
-        working-directory: extractor_proyectos
-        run: |
-          echo "Current checkpoint:"
-          cat checkpoint.json || echo "No checkpoint file yet."
-
-      - name: Correr scraper
+ 
+      - name: Ejecutar Fase 1
         working-directory: extractor_proyectos
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MAX_PAGINAS: ${{ github.event.inputs.max_paginas || '0' }}
           CI: "true"
-        run: python extraer_proyectos.py
-
-      - name: Persistir Checkpoint (a Rama Schedule)
-        if: always()
-        working-directory: extractor_proyectos
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          cp checkpoint.json /tmp/checkpoint_new.json
-
-          # Cambiar a rama schedule (local), crearla si no existe
-          git checkout schedule 2>/dev/null || git checkout -b schedule
-
-          cp /tmp/checkpoint_new.json checkpoint.json
-          git add checkpoint.json
-
-          git diff --staged --quiet || git commit -m "chore: update checkpoint [skip ci]"
-
-          # Push — si la rama no existe en remoto, crearla
-          git push origin schedule || git push --set-upstream origin schedule
-
-      - name: Subir artifacts de datos
+        run: python fase1_scraper.py
+ 
+      - name: Subir artifacts (datos + debug)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scraper-output-${{ github.run_number }}
+          name: fase1-output-${{ github.run_number }}
           path: |
-            extractor_proyectos/*.json
-            extractor_proyectos/*.xlsx
-          retention-days: 7
-
-      # Paso separado para debug — siempre sube aunque no haya archivos
-      - name: Subir artifacts de debug
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-${{ github.run_number }}
-          path: |
-            extractor_proyectos/debug_intento_*.png
-            extractor_proyectos/debug_intento_*.html
-          # No fallar si no hay archivos de debug (significa que todo fue bien)
+            extractor_proyectos/fase1_*.json
+            extractor_proyectos/fase1_*.xlsx
+            extractor_proyectos/debug_fase1_*.png
+            extractor_proyectos/debug_fase1_*.html
           if-no-files-found: ignore
-          retention-days: 3
+          retention-days: 7
