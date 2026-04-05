@@ -5,6 +5,18 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
 // ── Tipos ──────────────────────────────────────────────────────────────
 
+export interface Categoria {
+  id: number
+  slug: string
+  nombre: string
+  orden: number
+}
+
+export interface CategoriaResumen {
+  slug: string
+  nombre: string
+}
+
 export interface Proponente {
   secuencia: number | null
   apellidos: string | null
@@ -34,6 +46,20 @@ export interface ProyectoResumen {
   tiene_documento: boolean
   estado_actual: string | null
   es_ley: boolean
+  categorias: CategoriaResumen[]
+}
+
+export interface ProyectoListItem {
+  id: number
+  numero_expediente: number
+  titulo: string | null
+  tipo_expediente: string | null
+  fecha_inicio: string | null
+  vencimiento_cuatrienal: string | null
+  es_ley: boolean
+  numero_ley: string | null
+  estado_actual: string | null
+  categorias: Pick<Categoria, 'slug' | 'nombre'>[]
 }
 
 export interface ProyectoDetalle extends ProyectoResumen {
@@ -91,10 +117,11 @@ export interface ProyectosPorTipo {
 
 export interface MetricasResponse {
   general: MetricaGeneral
-  por_tipo: ProyectosPorTipo[]
+  por_tipo: { tipo: string; total: number; porcentaje: number }[]
   por_mes: ProyectosPorMes[]
   top_diputados: DiputadoRanking[]
-  organos_activos: OrganoActividad[]
+  organos_activos: { organo: string; total_tramites: number }[]
+  por_categoria: { categoria: string; slug: string; total: number; porcentaje: number }[]
 }
 
 export interface ProximoVencer {
@@ -154,6 +181,7 @@ export const api = {
       anio?: number
       solo_leyes?: boolean
       orden?: string
+      categoria?: string
     }) => {
       const qs = new URLSearchParams()
       if (params.pagina)     qs.set('pagina',     String(params.pagina))
@@ -162,6 +190,7 @@ export const api = {
       if (params.anio)       qs.set('anio',       String(params.anio))
       if (params.solo_leyes) qs.set('solo_leyes', 'true')
       if (params.orden)      qs.set('orden',      params.orden)
+      if (params.categoria)  qs.set('categoria',  params.categoria)
       return apiFetch<ProyectosResponse>(`/proyectos?${qs}`)
     },
 
@@ -186,5 +215,10 @@ export const api = {
     proximosVencer: (dias = 90) => apiFetch<{ datos: ProximoVencer[]; total: number; dias_consultados: number }>(`/metricas/proximos-vencer?dias=${dias}`),
     lineaTiempo: () => apiFetch<{ datos: { anio: number; leyes_aprobadas: number }[] }>('/metricas/linea-tiempo'),
     detalleMes: (anio: number, mes: number) => apiFetch<DetallesMes>(`/metricas/detalle-mes?anio=${anio}&mes=${mes}`),
+  },
+
+  categorias: {
+    listar: () =>
+      apiFetch<{ datos: Categoria[] }>('/categorias'),
   },
 }

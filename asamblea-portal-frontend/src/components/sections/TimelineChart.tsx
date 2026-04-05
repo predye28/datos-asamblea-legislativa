@@ -1,7 +1,7 @@
 'use client'
 // src/components/sections/TimelineChart.tsx
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import type { ProyectosPorMes } from '@/lib/api'
 import styles from './TimelineChart.module.css'
@@ -15,7 +15,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className={styles.tooltip}>
-      <div className={styles.tooltipLabel}>{label}</div>
+      <div className={styles.tooltipLabel}>{payload[0].payload.fullName}</div>
       <div className={styles.tooltipValue}>{payload[0].value} proyectos</div>
     </div>
   )
@@ -23,56 +23,54 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function TimelineChart({ data, onClickBar }: Props) {
   const chartData = data.map(d => ({
-    name: `${d.mes_nombre} ${String(d.anio).slice(2)}`,
+    // En móviles es mejor un label corto, usamos 3 letras e.g., "Ene 24"
+    name: `${d.mes_nombre.slice(0, 3)} ${String(d.anio).slice(2)}`,
+    fullName: `${d.mes_nombre} ${d.anio}`,
     total: d.total,
     anio: d.anio,
     mes: d.mes,
   }))
 
-  const max = Math.max(...chartData.map(d => d.total))
-
   return (
     <div className={styles.block}>
       <div className={styles.header}>
-        <div className={styles.title}>Proyectos presentados por mes</div>
-        <div className={styles.sub}>Últimos 12 meses — cada barra es un mes completo</div>
+        <div className={styles.title}>Evolución de proyectos presentados</div>
+        <div className={styles.sub}>Últimos 12 meses — comportamiento de ingreso de expedientes</div>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={chartData} barCategoryGap="20%" margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.4}/>
+              <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="name"
             tick={{ fontFamily: 'var(--mono)', fontSize: 10, fill: 'var(--ink-faint)' }}
             axisLine={false}
             tickLine={false}
+            tickMargin={10}
+            minTickGap={15}
           />
           <YAxis
             tick={{ fontFamily: 'var(--mono)', fontSize: 10, fill: 'var(--ink-faint)' }}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--paper-warm)' }} />
-          <Bar
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent', stroke: 'var(--rule)', strokeWidth: 1, strokeDasharray: '3 3' }} />
+          <Area
+            type="monotone"
             dataKey="total"
-            radius={[2, 2, 0, 0]}
-            onClick={(d) => onClickBar && onClickBar(d.anio, d.mes)}
-            style={{ cursor: onClickBar ? 'pointer' : 'default' }}
-          >
-            {chartData.map((entry, i) => (
-              <Cell
-                key={i}
-                fill={entry.total === max ? 'var(--accent)' : 'var(--ink)'}
-                opacity={entry.total === max ? 1 : 0.15 + (entry.total / max) * 0.55}
-              />
-            ))}
-          </Bar>
-        </BarChart>
+            stroke="var(--accent)"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorTotal)"
+            activeDot={{ r: 6, fill: 'var(--accent)', stroke: 'var(--paper-card)', strokeWidth: 2, onClick: (e: any, payload: any) => onClickBar && onClickBar(payload.payload.anio, payload.payload.mes) }}
+            dot={{ r: 3, fill: 'var(--paper-card)', stroke: 'var(--accent)', strokeWidth: 1.5 }}
+          />
+        </AreaChart>
       </ResponsiveContainer>
-      <div className={styles.legend}>
-        <span className={styles.legendDot} style={{ background: 'var(--accent)' }} />
-        <span>Mes más activo</span>
-        <span className={styles.legendDot} style={{ background: 'var(--ink)', opacity: 0.5, marginLeft: 16 }} />
-        <span>Resto de meses</span>
-      </div>
     </div>
   )
 }

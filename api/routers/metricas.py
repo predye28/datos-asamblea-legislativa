@@ -19,6 +19,7 @@ from models import (
     ProyectosPorMes,
     DiputadoRanking,
     OrganoActividad,
+    ProyectosPorCategoria,
 )
 
 router = APIRouter()
@@ -202,12 +203,38 @@ def metricas(
         for r in organo_rows
     ]
 
+    # ── 6. Por Categoría / Tema ───────────────────────────────────────
+    cat_rows = fetchall(f"""
+        SELECT
+            c.slug,
+            c.nombre as categoria,
+            COUNT(pc.proyecto_id) AS total
+        FROM categorias c
+        JOIN proyecto_categorias pc ON pc.categoria_id = c.id
+        JOIN proyectos p ON p.id = pc.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        GROUP BY c.slug, c.nombre, c.orden
+        ORDER BY total DESC, c.orden ASC
+        LIMIT 15
+    """, tuple(params))
+
+    por_categoria = [
+        ProyectosPorCategoria(
+            slug=r["slug"],
+            categoria=r["categoria"],
+            total=r["total"],
+            porcentaje=round((r["total"] / total * 100) if total else 0.0, 1),
+        )
+        for r in cat_rows
+    ]
+
     res = MetricasResponse(
         general=general,
         por_tipo=por_tipo,
         por_mes=por_mes,
         top_diputados=top_diputados,
         organos_activos=organos_activos,
+        por_categoria=por_categoria,
     )
     _cache_metricas[cache_key] = {'time': now, 'data': res}
     return res

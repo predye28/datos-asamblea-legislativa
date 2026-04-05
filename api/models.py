@@ -9,6 +9,17 @@ from pydantic import BaseModel, Field, computed_field
 
 # ── Bloques reutilizables ──────────────────────────────────────────────
 
+class CategoriaResumen(BaseModel):
+    slug:   str
+    nombre: str
+
+
+class Categoria(BaseModel):
+    id:     int
+    slug:   str
+    nombre: str
+    orden:  int = 0
+
 class Proponente(BaseModel):
     secuencia: Optional[int]    = None
     apellidos: Optional[str]    = None
@@ -51,9 +62,10 @@ class ProyectoResumen(BaseModel):
     tiene_documento:        bool = False
     estado_actual:          Optional[str] = None   # último órgano en tramitación
     es_ley:                 bool = False            # tiene numero_ley
+    categorias:             list[CategoriaResumen] = []
 
 
-# ── Proyecto completo (vista de detalle) ─────────────────────────────
+# ── Proyecto completo (vista de detalle) ─────────────────────────────────
 
 class ProyectoDetalle(ProyectoResumen):
     proponentes: list[Proponente]  = []
@@ -112,9 +124,23 @@ class OrganoActividad(BaseModel):
     total_tramites: int
 
 
+class ProyectosPorCategoria(BaseModel):
+    categoria: str
+    slug: str
+    total: int
+    porcentaje: float
+
+
 class MetricasResponse(BaseModel):
     general:          MetricaGeneral
     por_tipo:         list[ProyectosPorTipo]
     por_mes:          list[ProyectosPorMes]       # últimos 12 meses
     top_diputados:    list[DiputadoRanking]        # top 10
     organos_activos:  list[OrganoActividad]        # top 10 más activos
+    por_categoria:    list[ProyectosPorCategoria]  # top temas
+
+
+# ── Respuesta de catálogo de categorías ──────────────────────────────────
+
+class CategoriasResponse(BaseModel):
+    datos: list[Categoria]

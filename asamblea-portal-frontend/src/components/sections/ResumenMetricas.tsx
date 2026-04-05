@@ -4,29 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 import type { MetricaGeneral } from '@/lib/api'
 import { getPeriodos } from '@/lib/periodos'
+import { useCountUp } from '@/lib/hooks'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './ResumenMetricas.module.css'
 
-// Hook animado para los números
-function useCountUp(target: number, duration = 1000) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!ref.current) return
-    let start = 0
-    const steps = duration / 16
-    const inc = target / steps
-    const timer = setInterval(() => {
-      start = Math.min(start + inc, target)
-      if (ref.current) ref.current.textContent = Math.round(start).toLocaleString('es-CR')
-      if (start >= target) clearInterval(timer)
-    }, 16)
-    return () => clearInterval(timer)
-  }, [target, duration])
-  return ref
-}
 
 function StatItem({ label, value, colorClass, loading }: { label: string, value: number, colorClass: string, loading: boolean }) {
-  const ref = useCountUp(value)
+  const ref = useCountUp<HTMLDivElement>(value)
   return (
     <div className={styles.statCard}>
       <div className={styles.statLabel}>{label}</div>

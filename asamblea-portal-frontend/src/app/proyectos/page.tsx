@@ -2,7 +2,7 @@
 // src/app/proyectos/page.tsx
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { api, ProyectoResumen, Paginacion } from '@/lib/api'
+import { api, ProyectoResumen, Paginacion, Categoria } from '@/lib/api'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
@@ -36,6 +36,13 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
         )}
         {p.tipo_expediente && <span className={styles.cardType}>{p.tipo_expediente}</span>}
       </div>
+      {p.categorias && p.categorias.length > 0 && (
+        <div className={styles.cardCats}>
+          {p.categorias.map(cat => (
+            <span key={cat.slug} className={styles.catTag}>{cat.nombre}</span>
+          ))}
+        </div>
+      )}
     </article>
   )
 }
@@ -76,17 +83,20 @@ function ProyectosContent() {
   const [anio,      setAnio]      = useState(searchParams.get('anio') || '')
   const [soloLeyes, setSoloLeyes] = useState(searchParams.get('solo_leyes') === 'true')
   const [orden,     setOrden]     = useState(searchParams.get('orden') || 'reciente')
+  const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
   const [pagina,    setPagina]    = useState(1)
 
-  const [data,    setData]    = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
-  const [tipos,   setTipos]   = useState<{ tipo_expediente: string; total: number }[]>([])
-  const [loading, setLoading] = useState(true)
+  const [data,       setData]       = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
+  const [tipos,      setTipos]      = useState<{ tipo_expediente: string; total: number }[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [loading,    setLoading]    = useState(true)
 
   // años disponibles (últimos 10)
   const anios = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
 
   useEffect(() => {
     api.proyectos.tipos().then(setTipos).catch(() => {})
+    api.categorias.listar().then(res => setCategorias(res.datos)).catch(() => {})
   }, [])
 
   const fetchData = useCallback(async () => {
@@ -103,6 +113,7 @@ function ProyectosContent() {
           anio: anio ? Number(anio) : undefined,
           solo_leyes: soloLeyes || undefined,
           orden,
+          categoria: categoria || undefined,
         })
       }
       setData(result)
@@ -111,7 +122,7 @@ function ProyectosContent() {
     } finally {
       setLoading(false)
     }
-  }, [query, tipo, anio, soloLeyes, orden, pagina])
+  }, [query, tipo, anio, soloLeyes, orden, categoria, pagina])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -122,8 +133,26 @@ function ProyectosContent() {
   }
 
   const clearFilters = () => {
-    setQuery(''); setTipo(''); setAnio(''); setSoloLeyes(false); setOrden('reciente'); setPagina(1)
+    setQuery(''); setTipo(''); setAnio(''); setSoloLeyes(false)
+    setOrden('reciente'); setCategoria(''); setPagina(1)
   }
+
+  // Label contextual
+  const labelContextual = (() => {
+    if (!data) return 'Cargando...'
+    const total = data.paginacion.total.toLocaleString('es-CR')
+    const parts: string[] = []
+    if (categoria) {
+      const cat = categorias.find(c => c.slug === categoria)
+      if (cat) parts.push(cat.nombre)
+    }
+    if (query.trim()) parts.push(`"${query.trim()}"`)
+    if (anio) parts.push(String(anio))
+    if (soloLeyes) parts.push('solo leyes')
+    return parts.length > 0
+      ? `${total} proyectos — ${parts.join(', ')}`
+      : `${total} proyectos encontrados`
+  })()
 
   return (
     <div style={{ paddingBottom: 80 }}>
@@ -147,6 +176,26 @@ function ProyectosContent() {
             />
             <button type="submit" className={styles.searchBtn}>Buscar →</button>
           </form>
+
+          {/* Filtro de categorías */}
+          {categorias.length > 0 && (
+            <div className={styles.catFilterRow}>
+              <button
+                className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
+                onClick={() => { setCategoria(''); setPagina(1) }}
+              >Todos</button>
+              {categorias.map(cat => (
+                <button
+                  key={cat.slug}
+                  className={`${styles.catChip} ${categoria === cat.slug ? styles.catChipActive : ''}`}
+                  onClick={() => { setCategoria(cat.slug); setPagina(1) }}
+                >
+                  {cat.nombre}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className={styles.filterRow}>
             <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); setPagina(1) }}>
               <option value="">Todos los tipos</option>
@@ -178,7 +227,7 @@ function ProyectosContent() {
         </div>
 
         {/* Resultados */}
-        <SectionRule label={data ? `${data.paginacion.total.toLocaleString('es-CR')} proyectos encontrados` : 'Cargando...'} />
+        <SectionRule label={labelContextual} />
 
         {loading ? (
           <div className={styles.loading}>

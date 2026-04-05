@@ -1,6 +1,7 @@
 import Hero from '@/components/sections/Hero'
 import StatCards from '@/components/sections/StatCards'
 import ResumenMetricas from '@/components/sections/ResumenMetricas'
+import TemasDestacados from '@/components/sections/TemasDestacados'
 import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import RankingDiputados from '@/components/sections/RankingDiputados'
@@ -25,6 +26,8 @@ export default function HomePage() {
         
         <ResumenMetricas />
 
+        <SectionRule label="Temas en debate" />
+        <TemasDestacados />
 
         <SectionRule label="Expedientes en trámite" />
         <ProximosVencer clientMode={true} />

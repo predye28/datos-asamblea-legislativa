@@ -361,3 +361,35 @@
     order: -1;
   }
 }
+
+/* Categorías en el sidebar del detalle */
+.catLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.catLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 13px;
+  transition: color 0.12s;
+  gap: 8px;
+}
+
+.catLink:last-child {
+  border-bottom: none;
+}
+
+.catLink:hover {
+  color: var(--accent);
+}
+
+.catLink:hover .propArrow {
+  transform: translateX(3px);
+}

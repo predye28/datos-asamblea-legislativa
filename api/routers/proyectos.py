@@ -10,6 +10,7 @@ Endpoints
   GET /api/v1/proyectos/buscar             → búsqueda por texto o diputado
 """
 
+import math
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
@@ -18,6 +19,7 @@ from models import (
     ProyectosResponse,
     ProyectoResumen,
     ProyectoDetalle,
+    CategoriaResumen,
     Proponente,
     TramiteItem,
     DocumentoItem,
@@ -37,11 +39,68 @@ MESES_ES = {
 # HELPERS INTERNOS
 # ══════════════════════════════════════════════════════════════════════
 
+def _cats_de_proyecto(proyecto_id: int) -> list[CategoriaResumen]:
+    """Devuelve las categorías de un proyecto (uso en detalle individual)."""
+    rows = fetchall(
+        """
+        SELECT c.slug, c.nombre
+        FROM categorias c
+        JOIN proyecto_categorias pc ON pc.categoria_id = c.id
+        WHERE pc.proyecto_id = %s
+        ORDER BY c.orden
+        """,
+        (proyecto_id,),
+    )
+    return [CategoriaResumen(**r) for r in rows]
+
+
+def _cats_batch(ids: list[int]) -> dict[int, list[CategoriaResumen]]:
+    """
+    Trae las categorías de múltiples proyectos en UNA sola query.
+    Retorna un dict  proyecto_id -> [CategoriaResumen, ...]
+    """
+    if not ids:
+        return {}
+    rows = fetchall(
+        """
+        SELECT pc.proyecto_id, c.slug, c.nombre
+        FROM proyecto_categorias pc
+        JOIN categorias c ON c.id = pc.categoria_id
+        WHERE pc.proyecto_id = ANY(%s)
+        ORDER BY pc.proyecto_id, c.orden
+        """,
+        (ids,),
+    )
+    result: dict[int, list[CategoriaResumen]] = {i: [] for i in ids}
+    for r in rows:
+        result[r["proyecto_id"]].append(CategoriaResumen(slug=r["slug"], nombre=r["nombre"]))
+    return result
+
+
 def _enriquecer(row: dict) -> ProyectoResumen:
-    """Convierte una fila cruda de BD en un ProyectoResumen enriquecido."""
+    """Para uso en detalle individual (ya trae cats por separado)."""
     data = dict(row)
-    data["es_ley"] = bool(data.get("numero_ley"))
+    data["es_ley"]     = bool(data.get("numero_ley"))
+    data["categorias"] = _cats_de_proyecto(data["id"])
     return ProyectoResumen(**data)
+
+
+def _enriquecer_batch(rows: list[dict]) -> list[ProyectoResumen]:
+    """
+    Convierte una lista de filas crudas en ProyectoResumen,
+    trayendo TODAS las categorías en una sola query (sin N+1).
+    """
+    if not rows:
+        return []
+    ids = [r["id"] for r in rows]
+    cats_map = _cats_batch(ids)
+    result = []
+    for row in rows:
+        data = dict(row)
+        data["es_ley"]     = bool(data.get("numero_ley"))
+        data["categorias"] = cats_map.get(data["id"], [])
+        result.append(ProyectoResumen(**data))
+    return result
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -56,6 +115,7 @@ def listar_proyectos(
     anio:       Optional[int] = Query(None, description="Filtrar por año de inicio"),
     solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
     orden:      str           = Query("reciente", description="reciente | antiguo | expediente"),
+    categoria:  Optional[str] = Query(None, description="Filtrar por slug de categoría"),
 ):
     """
     Devuelve proyectos paginados.
@@ -81,6 +141,18 @@ def listar_proyectos(
 
     if solo_leyes:
         condiciones.append("p.numero_ley IS NOT NULL")
+
+    if categoria:
+        condiciones.append(
+            """
+            EXISTS (
+                SELECT 1 FROM proyecto_categorias pc
+                JOIN categorias c ON c.id = pc.categoria_id
+                WHERE pc.proyecto_id = p.id AND c.slug = %s
+            )
+            """
+        )
+        params.append(categoria)
 
     where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
 
@@ -131,9 +203,8 @@ def listar_proyectos(
     """
 
     rows = fetchall(sql, tuple(params_paginado))
-    datos = [_enriquecer(r) for r in rows]
+    datos = _enriquecer_batch(rows)
 
-    import math
     total_paginas = math.ceil(total / por_pagina) if total else 1
 
     return ProyectosResponse(
@@ -226,7 +297,7 @@ def buscar_proyectos(
     """
 
     rows = fetchall(sql, tuple(params_query))
-    datos = [_enriquecer(r) for r in rows]
+    datos = _enriquecer_batch(rows)
 
     import math
     total_paginas = math.ceil(total / por_pagina) if total else 1
@@ -325,13 +396,17 @@ def detalle_proyecto(numero_expediente: int):
     )
     documentos = [DocumentoItem(**d) for d in doc_rows]
 
+    # Categorías
+    categorias = _cats_de_proyecto(row["id"])
+
     # Construir el objeto de detalle
     data = dict(row)
-    data["es_ley"] = bool(data.get("numero_ley"))
+    data["es_ley"]      = bool(data.get("numero_ley"))
     data["proponentes"] = proponentes
     data["tramitacion"] = tramitacion
-    data["documentos"] = documentos
-    
+    data["documentos"]  = documentos
+    data["categorias"]  = categorias
+
     return ProyectoDetalle(**data)
 
 

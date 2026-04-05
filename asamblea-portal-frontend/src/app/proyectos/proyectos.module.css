@@ -277,3 +277,50 @@
   color: var(--ink-faint);
   padding: 0 8px;
 }
+
+/* Category filter chips */
+.catFilterRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
+.catChip {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 14px;
+  min-height: 36px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.catChip:hover { background: var(--paper-warm); color: var(--ink); border-color: var(--ink-faint); }
+.catChipActive { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+
+/* Category tags on each card */
+.cardCats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
+.catTag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  color: var(--ink-muted);
+}

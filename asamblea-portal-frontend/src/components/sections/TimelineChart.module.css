@@ -71,3 +71,32 @@
   border-radius: 2px;
   flex-shrink: 0;
 }
+
+/* Contenedor escrolable para móviles */
+.chartScroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Personalización del scrollbar horizontal */
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) var(--paper);
+}
+
+.chartScroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chartScroll::-webkit-scrollbar-track {
+  background: var(--paper);
+  border-radius: 4px;
+}
+
+.chartScroll::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 4px;
+}
+
+.chartInner {
+  min-width: 580px; /* Asegura un ancho mínimo para que las 12 barras no colapsen */
+  height: 220px;
+}

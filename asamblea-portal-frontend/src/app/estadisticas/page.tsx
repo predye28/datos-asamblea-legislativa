@@ -10,6 +10,7 @@ import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import ProximosVencer from '@/components/sections/ProximosVencer'
 import TimelineInteractiva from '@/components/sections/TimelineInteractiva'
+import TemasDestacados from '@/components/sections/TemasDestacados'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './estadisticas.module.css'
 
@@ -91,6 +92,10 @@ export default function EstadisticasPage() {
             </div>
           ))}
         </div>
+
+        {/* Por Temas / Categorías */}
+        <SectionRule label="Temas en debate" />
+        <TemasDestacados />
 
         {/* Próximos a Vencer */}
         <SectionRule label="Proyectos próximos a vencer" />

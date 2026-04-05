@@ -30,7 +30,7 @@ export default async function ProyectoDetallePage({
   const {
     titulo, tipo_expediente, fecha_inicio, vencimiento_cuatrienal,
     fecha_publicacion, numero_gaceta, numero_ley,
-    proponentes, tramitacion, documentos, es_ley, estado_actual,
+    proponentes, tramitacion, documentos, es_ley, estado_actual, categorias,
   } = proyecto
 
   return (
@@ -153,6 +153,26 @@ export default async function ProyectoDetallePage({
 
           {/* Sidebar */}
           <aside className={styles.sidebar}>
+            {/* Categorías temáticas */}
+            {categorias && categorias.length > 0 && (
+              <section className={styles.sideCard}>
+                <div className={styles.sideTitle}>Tema{categorias.length !== 1 ? 's' : ''}</div>
+                <p className={styles.sideExplain}>Categorías temáticas de este proyecto</p>
+                <div className={styles.catLinks}>
+                  {categorias.map(cat => (
+                    <Link
+                      key={cat.slug}
+                      href={`/proyectos?categoria=${cat.slug}`}
+                      className={styles.catLink}
+                    >
+                      {cat.nombre}
+                      <span className={styles.propArrow}>→</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Proponentes */}
             <section className={styles.sideCard}>
               <div className={styles.sideTitle}>
