@@ -42,3 +42,26 @@ export const getPeriodos = () => {
     }
   ]
 }
+
+export const getAllLegislativePeriods = () => {
+  const periods = []
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  
+  // Iniciamos en 1994 (periodo democrático moderno estable para esta data)
+  let startYear = 1994
+  
+  // Generar periodos hasta que el startYear supere al año actual
+  while (startYear <= currentYear) {
+    const endYear = startYear + 4
+    periods.push({
+      label: `${startYear}-${endYear}`,
+      desde: `${startYear}-05-01`,
+      hasta: `${endYear}-04-30`
+    })
+    startYear = endYear
+  }
+  
+  // Invertir para mostrar el más reciente primero
+  return periods.reverse()
+}

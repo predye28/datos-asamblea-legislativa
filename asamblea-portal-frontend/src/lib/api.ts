@@ -88,6 +88,7 @@ export interface MetricaGeneral {
   proyectos_este_mes: number
   proyectos_este_anio: number
   promedio_tramites: number
+  promedio_dias_aprobacion: number
 }
 
 export interface DiputadoRanking {
@@ -121,7 +122,7 @@ export interface MetricasResponse {
   por_mes: ProyectosPorMes[]
   top_diputados: DiputadoRanking[]
   organos_activos: { organo: string; total_tramites: number }[]
-  por_categoria: { categoria: string; slug: string; total: number; porcentaje: number }[]
+  por_categoria: { categoria: string; slug: string; total: number; porcentaje: number; leyes_aprobadas: number; tasa_aprobacion: number }[]
 }
 
 export interface ProximoVencer {
@@ -179,6 +180,8 @@ export const api = {
       por_pagina?: number
       tipo?: string
       anio?: number
+      desde?: string
+      hasta?: string
       solo_leyes?: boolean
       orden?: string
       categoria?: string
@@ -188,14 +191,20 @@ export const api = {
       if (params.por_pagina) qs.set('por_pagina', String(params.por_pagina))
       if (params.tipo)       qs.set('tipo',       params.tipo)
       if (params.anio)       qs.set('anio',       String(params.anio))
+      if (params.desde)      qs.set('desde',      params.desde)
+      if (params.hasta)      qs.set('hasta',      params.hasta)
       if (params.solo_leyes) qs.set('solo_leyes', 'true')
       if (params.orden)      qs.set('orden',      params.orden)
       if (params.categoria)  qs.set('categoria',  params.categoria)
       return apiFetch<ProyectosResponse>(`/proyectos?${qs}`)
     },
 
-    buscar: (q: string, pagina = 1) =>
-      apiFetch<ProyectosResponse>(`/proyectos/buscar?q=${encodeURIComponent(q)}&pagina=${pagina}`),
+    buscar: (q: string, pagina = 1, desde?: string, hasta?: string) => {
+      const qs = new URLSearchParams({ q, pagina: String(pagina) })
+      if (desde) qs.set('desde', desde)
+      if (hasta) qs.set('hasta', hasta)
+      return apiFetch<ProyectosResponse>(`/proyectos/buscar?${qs}`)
+    },
 
     detalle: (num: number) =>
       apiFetch<ProyectoDetalle>(`/proyectos/${num}`),
@@ -215,6 +224,13 @@ export const api = {
     proximosVencer: (dias = 90) => apiFetch<{ datos: ProximoVencer[]; total: number; dias_consultados: number }>(`/metricas/proximos-vencer?dias=${dias}`),
     lineaTiempo: () => apiFetch<{ datos: { anio: number; leyes_aprobadas: number }[] }>('/metricas/linea-tiempo'),
     detalleMes: (anio: number, mes: number) => apiFetch<DetallesMes>(`/metricas/detalle-mes?anio=${anio}&mes=${mes}`),
+    diputados: (params: { desde?: string; hasta?: string; q?: string }) => {
+      const qs = new URLSearchParams()
+      if (params.desde) qs.set('desde', params.desde)
+      if (params.hasta) qs.set('hasta', params.hasta)
+      if (params.q) qs.set('q', params.q)
+      return apiFetch<{ datos: DiputadoRanking[]; total: number }>(`/metricas/diputados?${qs}`)
+    },
   },
 
   categorias: {

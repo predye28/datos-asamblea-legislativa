@@ -113,6 +113,8 @@ def listar_proyectos(
     por_pagina: int = Query(20,   ge=1, le=100, description="Resultados por página"),
     tipo:       Optional[str] = Query(None, description="Filtrar por tipo de expediente"),
     anio:       Optional[int] = Query(None, description="Filtrar por año de inicio"),
+    desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
+    hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
     solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
     orden:      str           = Query("reciente", description="reciente | antiguo | expediente"),
     categoria:  Optional[str] = Query(None, description="Filtrar por slug de categoría"),
@@ -124,6 +126,8 @@ def listar_proyectos(
     - **por_pagina**: cuántos resultados por página (máximo 100)
     - **tipo**: filtra por tipo de expediente (ej: "Proyecto de Ley")
     - **anio**: filtra proyectos iniciados en ese año
+    - **desde**: filtra proyectos iniciados desde esta fecha
+    - **hasta**: filtra proyectos iniciados hasta esta fecha
     - **solo_leyes**: si `true`, muestra solo los que tienen número de ley
     - **orden**: `reciente` (más nuevo primero), `antiguo`, `expediente`
     """
@@ -138,6 +142,14 @@ def listar_proyectos(
     if anio:
         condiciones.append("EXTRACT(YEAR FROM p.fecha_inicio) = %s")
         params.append(anio)
+
+    if desde:
+        condiciones.append("p.fecha_inicio >= %s")
+        params.append(desde)
+
+    if hasta:
+        condiciones.append("p.fecha_inicio <= %s")
+        params.append(hasta)
 
     if solo_leyes:
         condiciones.append("p.numero_ley IS NOT NULL")
@@ -225,6 +237,8 @@ def listar_proyectos(
 @router.get("/proyectos/buscar", response_model=ProyectosResponse, summary="Buscar proyectos")
 def buscar_proyectos(
     q:          str = Query(..., min_length=2, description="Texto libre: título, diputado, órgano"),
+    desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
+    hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
     pagina:     int = Query(1,  ge=1),
     por_pagina: int = Query(20, ge=1, le=100),
 ):
@@ -237,16 +251,10 @@ def buscar_proyectos(
     Retorna los proyectos que coincidan con **cualquiera** de esos campos.
     """
     termino = f"%{q}%"
-    params = [termino, termino, termino]
-
-    from_sql = "FROM proyectos p"
-    join_sql = """
-        LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
-        LEFT JOIN tramitacion tr2  ON tr2.proyecto_id = p.id
-        LEFT JOIN documentos  doc  ON doc.proyecto_id = p.id
-    """
-    where_sql = """
-        WHERE
+    
+    condiciones = [
+        """
+        (
             p.titulo ILIKE %s
             OR EXISTS (
                 SELECT 1 FROM proponentes pr
@@ -258,13 +266,31 @@ def buscar_proyectos(
                 WHERE tr.proyecto_id = p.id
                   AND tr.organo ILIKE %s
             )
+        )
+        """
+    ]
+    params = [termino, termino, termino, termino]
+
+    if desde:
+        condiciones.append("p.fecha_inicio >= %s")
+        params.append(desde)
+    if hasta:
+        condiciones.append("p.fecha_inicio <= %s")
+        params.append(hasta)
+
+    where_sql = "WHERE " + " AND ".join(condiciones)
+    
+    from_sql = "FROM proyectos p"
+    join_sql = """
+        LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
+        LEFT JOIN tramitacion tr2  ON tr2.proyecto_id = p.id
+        LEFT JOIN documentos  doc  ON doc.proyecto_id = p.id
     """
 
-    params_total = [termino, termino, termino, termino]
-    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {from_sql} {where_sql}", tuple(params_total))
+    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {from_sql} {where_sql}", tuple(params))
 
     offset = (pagina - 1) * por_pagina
-    params_query = [termino, termino, termino, termino, por_pagina, offset]
+    params_query = params + [por_pagina, offset]
 
     sql = f"""
         SELECT

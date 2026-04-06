@@ -2,109 +2,236 @@
 
 /* Filtros */
 .filters {
-  background: var(--paper-card);
+  background: var(--paper);
   border: 1px solid var(--rule);
-  padding: 20px;
-  margin-bottom: 8px;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
 }
 
 .searchRow {
   display: flex;
+  align-items: center;
   border: 2px solid var(--rule);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border-radius: 12px;
+  background: var(--paper-card);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  padding-left: 16px;
 }
 
 .searchRow:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+.searchIcon {
+  color: var(--ink-muted);
+  flex-shrink: 0;
 }
 
 .searchInput {
   flex: 1;
-  padding: 13px 16px;
-  font-size: 16px;          /* era 14px — evita zoom en iOS */
+  min-width: 0; /* Permite que el input se reduzca más allá del tamaño de su placeholder */
+  padding: 16px 12px;
+  font-size: 16px;
   border: none;
-  background: var(--paper);
+  background: transparent;
   color: var(--ink);
   outline: none;
   font-family: var(--body);
+  text-overflow: ellipsis; /* Corta el placeholder con ... si no cabe */
 }
 
-.searchInput::placeholder { color: var(--ink-faint); font-style: italic; }
+.searchInput::placeholder { color: var(--ink-muted); font-style: italic; }
 
 .searchBtn {
-  font-family: var(--mono);
-  font-size: 13px;          /* era 11px */
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 13px 20px;       /* zona táctil */
-  background: var(--accent); /* azul — más institucional */
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 0 16px; /* Padding más compacto en móviles */
+  align-self: stretch; /* Ocupa el alto completo del form grid */
+  background: var(--accent);
   color: #fff;
   border: none;
   cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-  min-height: 48px;
+  transition: background 0.2s, opacity 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Evita que el botón se aplaste inesperadamente */
+}
+
+@media (min-width: 768px) {
+  .searchBtn {
+    padding: 0 32px; /* Pad original en pantallas más grandes */
+  }
 }
 
 .searchBtn:hover { background: var(--accent-dark); }
+.searchBtn:active { opacity: 0.9; transform: scale(0.98); }
 
-.filterRow {
+.filterControlsContainer {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.selectsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .selectsRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.selectWrapper {
+  position: relative;
+  display: flex;
 }
 
 .select {
-  padding: 8px 28px 8px 12px;
-  font-size: 13px;
-  font-family: var(--mono);
+  width: 100%;
+  padding: 14px 40px 14px 16px;
+  font-size: 14px;
+  font-family: var(--body);
+  font-weight: 500;
   border: 1px solid var(--rule);
-  background: var(--paper);
+  border-radius: 10px;
+  background: var(--table-alt, var(--paper-warm));
   color: var(--ink);
   outline: none;
   cursor: pointer;
   appearance: none;
-  min-height: 44px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239c9a92'/%3E%3C/svg%3E");
+  transition: all 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 6 5-6' stroke='%23666' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 16px center;
+}
+
+.select:hover, .select:focus {
+  border-color: var(--accent);
+  background-color: var(--paper);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
 }
 
 .checkLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 13px;          /* era 11px */
-  color: var(--ink-muted);
+  gap: 12px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
   cursor: pointer;
-  white-space: nowrap;
-  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--paper-warm);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.checkLabel:hover {
+  background: var(--paper);
+  border-color: var(--rule);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.checkboxWrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkboxWrapper input {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 6px;
+  background: var(--paper);
+  cursor: pointer;
+  outline: none;
+  margin: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.checkboxWrapper input:checked {
+  background: var(--positive, #10b981);
+  border-color: var(--positive, #10b981);
+}
+
+.checkIcon {
+  position: absolute;
+  color: white;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  animation: checkPop 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .clearBtn {
-  font-family: var(--mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 10px 16px;
-  min-height: 44px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 10px;
   border: 1px solid var(--rule);
-  background: transparent;
-  color: var(--ink-faint);
+  background: var(--paper);
+  color: var(--negative, #ef4444);
   cursor: pointer;
-  transition: all 0.15s;
-  margin-left: auto;
-  display: flex;
+  transition: all 0.2s ease;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.clearBtn:hover { color: var(--accent); border-color: var(--accent); }
+.clearBtn svg {
+  color: inherit;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clearBtn:hover { 
+  background: rgba(239, 68, 68, 0.08); 
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.clearBtn:hover svg {
+  transform: rotate(-10deg) scale(1.1);
+}
 
 /* Cards grid */
 .grid {
@@ -281,28 +408,43 @@
 /* Category filter chips */
 .catFilterRow {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding-bottom: 4px;
+  gap: 8px;
+  flex-wrap: wrap; 
+  padding-bottom: 8px;
 }
 
 .catChip {
-  font-family: var(--mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 6px 14px;
-  min-height: 36px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 24px;
   border: 1px solid var(--rule);
-  background: var(--paper);
+  background: var(--paper-warm);
   color: var(--ink-muted);
   cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent; /* IMPORTANTE: quita el rectángulo azul gigante nativo al tocar en celular */
+  outline: none; /* Evita bordes cuadrados del navegador */
 }
 
-.catChip:hover { background: var(--paper-warm); color: var(--ink); border-color: var(--ink-faint); }
-.catChipActive { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+.catChip:hover { 
+  background: var(--paper); 
+  color: var(--ink); 
+  border-color: var(--ink-muted); 
+  transform: translateY(-1px);
+}
+
+.catChipActive { 
+  background: var(--accent) !important; 
+  color: #fff !important; 
+  border-color: var(--accent) !important; 
+  /* Reducimos o quitamos la sombra súper expandida para evitar que parezca que el botón "sangra" o es más grande */
+  box-shadow: none !important; 
+}
 
 /* Category tags on each card */
 .cardCats {

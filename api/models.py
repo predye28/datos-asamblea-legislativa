@@ -97,6 +97,7 @@ class MetricaGeneral(BaseModel):
     proyectos_este_mes:      int
     proyectos_este_anio:     int
     promedio_tramites:       float
+    promedio_dias_aprobacion: int = 0
 
 
 class ProyectosPorTipo(BaseModel):
@@ -129,6 +130,8 @@ class ProyectosPorCategoria(BaseModel):
     slug: str
     total: int
     porcentaje: float
+    leyes_aprobadas: int = 0
+    tasa_aprobacion: float = 0.0
 
 
 class MetricasResponse(BaseModel):

@@ -50,7 +50,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 100     # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 3    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
 PAGINA_INICIO_FASE2  = 4      # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)
@@ -882,31 +882,35 @@ async def main():
             await browser.close()
 
     except Exception as e:
-        log(f"Error inesperado: {e}")
-        log(f"Guardando checkpoint en página {pagina_actual}.")
-        guardar_checkpoint_db(pagina_actual)
-        raise
+        log(f"Error inesperado (cancelación o cierre manual): {e}")
+        log(f"Rescatando {len(proyectos)} expedientes recopilados hasta la página {pagina_actual}.")
+        # NO hacemos 'raise' aquí para que pueda sincronizar a la DB lo que ya se descargó.
 
-    # ── Guardar checkpoint ─────────────────────────────────────────────
+    stats = {}
+    # ── Sync y exportación (PRIMERO SINCRONIZAMOS) ─────────────────────
+    if proyectos:
+        log("─" * 55)
+        log("SINCRONIZACIÓN CON BASE DE DATOS")
+        log("─" * 55)
+        try:
+            crear_tablas()
+            stats = sync_proyectos(proyectos)
+            log(f"¡Sincronización exitosa de {len(proyectos)} proyectos rescatados!")
+        except Exception as e:
+            log(f"Error crítico al sincronizar la BD: {e}")
+            sys.exit(1) # Si falla la bd, salir SIN mover el checkpoint
+    else:
+        log("No se extrajeron proyectos en este run.")
+
+    # ── Guardar checkpoint (SEGUNDO, SOLO SI SYNC FUE EXITOSO) ─────────
     if ciclo_completo:
         proxima = PAGINA_INICIO_FASE2
         log(f"Ciclo completo. Próxima ejecución empezará en página {proxima}.")
     else:
         proxima = pagina_actual
-        log(f"Checkpoint guardado en página {proxima}.")
+        log(f"El próximo run arrancará en la página {proxima}.")
 
     guardar_checkpoint_db(proxima)
-
-    # ── Sync y exportación ─────────────────────────────────────────────
-    if not proyectos:
-        log("No se extrajeron proyectos en este run.")
-        sys.exit(0)
-
-    log("─" * 55)
-    log("SINCRONIZACIÓN CON BASE DE DATOS")
-    log("─" * 55)
-    crear_tablas()
-    stats = sync_proyectos(proyectos)
 
     ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_file  = f"fase2_{ts}_p{pagina_inicio}-{pagina_actual}.json"

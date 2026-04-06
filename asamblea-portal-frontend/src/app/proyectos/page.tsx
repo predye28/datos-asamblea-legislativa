@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion, Categoria } from '@/lib/api'
+import { getAllLegislativePeriods } from '@/lib/periodos'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
@@ -84,6 +85,7 @@ function ProyectosContent() {
   const [soloLeyes, setSoloLeyes] = useState(searchParams.get('solo_leyes') === 'true')
   const [orden,     setOrden]     = useState(searchParams.get('orden') || 'reciente')
   const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
+  const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || '')
   const [pagina,    setPagina]    = useState(1)
 
   const [data,       setData]       = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
@@ -91,8 +93,11 @@ function ProyectosContent() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading,    setLoading]    = useState(true)
 
-  // años disponibles (últimos 10)
-  const anios = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
+  // periodos disponibles
+  const periodos = getAllLegislativePeriods()
+  
+  // años disponibles (últimos 15)
+  const anios = Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i)
 
   useEffect(() => {
     api.proyectos.tipos().then(setTipos).catch(() => {})
@@ -102,15 +107,18 @@ function ProyectosContent() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
+      const periodObj = periodos.find(p => p.label === periodo)
       let result
       if (query.trim()) {
-        result = await api.proyectos.buscar(query.trim(), pagina)
+        result = await api.proyectos.buscar(query.trim(), pagina, periodObj?.desde, periodObj?.hasta)
       } else {
         result = await api.proyectos.list({
           pagina,
           por_pagina: 20,
           tipo: tipo || undefined,
           anio: anio ? Number(anio) : undefined,
+          desde: periodObj?.desde,
+          hasta: periodObj?.hasta,
           solo_leyes: soloLeyes || undefined,
           orden,
           categoria: categoria || undefined,
@@ -122,7 +130,7 @@ function ProyectosContent() {
     } finally {
       setLoading(false)
     }
-  }, [query, tipo, anio, soloLeyes, orden, categoria, pagina])
+  }, [query, tipo, anio, soloLeyes, orden, categoria, periodo, pagina])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -134,7 +142,7 @@ function ProyectosContent() {
 
   const clearFilters = () => {
     setQuery(''); setTipo(''); setAnio(''); setSoloLeyes(false)
-    setOrden('reciente'); setCategoria(''); setPagina(1)
+    setOrden('reciente'); setCategoria(''); setPeriodo(''); setPagina(1)
   }
 
   // Label contextual
@@ -147,7 +155,8 @@ function ProyectosContent() {
       if (cat) parts.push(cat.nombre)
     }
     if (query.trim()) parts.push(`"${query.trim()}"`)
-    if (anio) parts.push(String(anio))
+    if (periodo) parts.push(`período ${periodo}`)
+    else if (anio) parts.push(String(anio))
     if (soloLeyes) parts.push('solo leyes')
     return parts.length > 0
       ? `${total} proyectos — ${parts.join(', ')}`
@@ -167,14 +176,15 @@ function ProyectosContent() {
         <SectionRule label="Filtros" />
         <div className={styles.filters}>
           <form className={styles.searchRow} onSubmit={handleSearch}>
+            <svg className={styles.searchIcon} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input
               className={`${styles.searchInput}`}
               type="text"
-              placeholder="Buscar por título, diputado u órgano..."
+              placeholder="Buscar por título, expediente o palabras clave..."
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
-            <button type="submit" className={styles.searchBtn}>Buscar →</button>
+            <button type="submit" className={styles.searchBtn}>Buscar</button>
           </form>
 
           {/* Filtro de categorías */}
@@ -183,7 +193,7 @@ function ProyectosContent() {
               <button
                 className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
                 onClick={() => { setCategoria(''); setPagina(1) }}
-              >Todos</button>
+              >Todos los temas</button>
               {categorias.map(cat => (
                 <button
                   key={cat.slug}
@@ -196,33 +206,63 @@ function ProyectosContent() {
             </div>
           )}
 
-          <div className={styles.filterRow}>
-            <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); setPagina(1) }}>
-              <option value="">Todos los tipos</option>
-              {tipos.map(t => (
-                <option key={t.tipo_expediente} value={t.tipo_expediente}>
-                  {t.tipo_expediente} ({t.total})
-                </option>
-              ))}
-            </select>
-            <select className={styles.select} value={anio} onChange={e => { setAnio(e.target.value); setPagina(1) }}>
-              <option value="">Todos los años</option>
-              {anios.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-            <select className={styles.select} value={orden} onChange={e => { setOrden(e.target.value); setPagina(1) }}>
-              <option value="reciente">Más recientes</option>
-              <option value="antiguo">Más antiguos</option>
-              <option value="expediente">Por expediente</option>
-            </select>
-            <label className={styles.checkLabel}>
-              <input
-                type="checkbox"
-                checked={soloLeyes}
-                onChange={e => { setSoloLeyes(e.target.checked); setPagina(1) }}
-              />
-              Solo leyes aprobadas
-            </label>
-            <button className={styles.clearBtn} onClick={clearFilters}>Limpiar</button>
+          <div className={styles.filterControlsContainer}>
+            <div className={styles.selectsRow}>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={periodo} onChange={e => { setPeriodo(e.target.value); setAnio(''); setPagina(1) }}>
+                  <option value="">Cualquier período</option>
+                  {periodos.map(p => <option key={p.label} value={p.label}>Periodo {p.label}</option>)}
+                </select>
+              </div>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={anio} onChange={e => { setAnio(e.target.value); setPeriodo(''); setPagina(1) }}>
+                  <option value="">Año específico (Cualquiera)</option>
+                  {anios.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); setPagina(1) }}>
+                  <option value="">Tipo de expediente (Todos)</option>
+                  {tipos.map(t => (
+                    <option key={t.tipo_expediente} value={t.tipo_expediente}>
+                      {t.tipo_expediente} ({t.total})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={orden} onChange={e => { setOrden(e.target.value); setPagina(1) }}>
+                  <option value="reciente">Más recientes primero</option>
+                  <option value="antiguo">Más antiguos primero</option>
+                  <option value="expediente">Por número de expediente</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className={styles.actionsRow}>
+              <label className={styles.checkLabel}>
+                <div className={styles.checkboxWrapper}>
+                  <input
+                    type="checkbox"
+                    checked={soloLeyes}
+                    onChange={e => { setSoloLeyes(e.target.checked); setPagina(1) }}
+                  />
+                  {soloLeyes && <svg className={styles.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span>Solo leyes aprobadas</span>
+              </label>
+
+              {(query || tipo || anio || soloLeyes || categoria || orden !== 'reciente') && (
+                <button className={styles.clearBtn} onClick={clearFilters} aria-label="Limpiar filtros">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                    <line x1="18" y1="9" x2="12" y2="15"></line>
+                    <line x1="12" y1="9" x2="18" y2="15"></line>
+                  </svg>
+                  <span>Limpiar filtros</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

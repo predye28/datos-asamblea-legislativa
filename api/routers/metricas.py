@@ -99,6 +99,13 @@ def metricas(
         ) sub
     """, tuple(params)) or 0.0
     
+    dias_aprobacion = fetchval(f"""
+        SELECT ROUND(AVG(fecha_publicacion - fecha_inicio))
+        FROM proyectos p
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND numero_ley IS NOT NULL AND fecha_publicacion >= fecha_inicio
+    """, tuple(params)) or 0
+    
     general = MetricaGeneral(
         total_proyectos=total,
         total_leyes_aprobadas=total_leyes,
@@ -107,6 +114,7 @@ def metricas(
         proyectos_este_mes=gen.get("proyectos_este_mes") or 0,
         proyectos_este_anio=gen.get("proyectos_este_anio") or 0,
         promedio_tramites=float(avg_tramites),
+        promedio_dias_aprobacion=int(dias_aprobacion),
     )
 
     # ── 2. Por tipo de expediente ─────────────────────────────────────
@@ -208,7 +216,8 @@ def metricas(
         SELECT
             c.slug,
             c.nombre as categoria,
-            COUNT(pc.proyecto_id) AS total
+            COUNT(pc.proyecto_id) AS total,
+            COUNT(CASE WHEN p.numero_ley IS NOT NULL THEN 1 END) AS leyes_aprobadas
         FROM categorias c
         JOIN proyecto_categorias pc ON pc.categoria_id = c.id
         JOIN proyectos p ON p.id = pc.proyecto_id
@@ -224,6 +233,8 @@ def metricas(
             categoria=r["categoria"],
             total=r["total"],
             porcentaje=round((r["total"] / total * 100) if total else 0.0, 1),
+            leyes_aprobadas=r.get("leyes_aprobadas", 0),
+            tasa_aprobacion=round((r.get("leyes_aprobadas", 0) / r["total"] * 100) if r["total"] else 0.0, 1)
         )
         for r in cat_rows
     ]
@@ -385,3 +396,55 @@ def detalle_mes(anio: int, mes: int):
         "top_proponentes": top_proponentes,
         "proyectos": proyectos,
     }
+
+
+@router.get("/metricas/diputados", summary="Ranking y búsqueda completa de diputados")
+def diputados_ranking(desde: str = None, hasta: str = None, q: str = None):
+    """
+    Retorna la lista completa de diputados (proponentes) ordenada por cantidad de proyectos.
+    Si se proporciona `q` (búsqueda), ignora el rango de fechas para buscar en todo el histórico de la BD.
+    """
+    condiciones = ["(pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)"]
+    params = []
+
+    if q:
+        # Si hay búsqueda, busca en todos los tiempos sin restricción de desde/hasta
+        q_val = f"%{q.strip().lower()}%"
+        condiciones.append("LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)) LIKE %s")
+        params.append(q_val)
+    else:
+        # Solo aplicar filtro de periodo si no se está buscando
+        if desde:
+            condiciones.append("p.fecha_inicio >= %s")
+            params.append(desde)
+        if hasta:
+            condiciones.append("p.fecha_inicio <= %s")
+            params.append(hasta)
+
+    where_clause = "WHERE " + " AND ".join(condiciones)
+
+    query_str = f"""
+        SELECT
+            pr.apellidos,
+            pr.nombre,
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        {where_clause}
+        GROUP BY pr.apellidos, pr.nombre
+        ORDER BY total_proyectos DESC
+    """
+    
+    diputado_rows = fetchall(query_str, tuple(params))
+    
+    datos = [
+        DiputadoRanking(
+            apellidos=r["apellidos"] or "",
+            nombre=r["nombre"] or "",
+            nombre_completo=(f"{r['apellidos'] or ''} {r['nombre'] or ''}").strip(),
+            total_proyectos=r["total_proyectos"],
+        )
+        for r in diputado_rows
+    ]
+    
+    return {"datos": datos, "total": len(datos)}

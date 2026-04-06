@@ -159,6 +159,26 @@
   font-size: 16px;
 }
 
+.loadMoreBtn {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  padding: 16px;
+  background: var(--paper);
+  border: none;
+  border-top: 1px solid var(--rule);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.loadMoreBtn:hover {
+  background: var(--paper-warm);
+  color: var(--accent-dark);
+}
+
 /* Nota explicativa */
 .nota {
   background: var(--paper-card);

@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Legend,
 } from 'recharts'
 import { api, MetricasResponse } from '@/lib/api'
+import { getAllLegislativePeriods } from '@/lib/periodos'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import ProximosVencer from '@/components/sections/ProximosVencer'
@@ -22,6 +23,23 @@ export default function EstadisticasPage() {
   
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
+  const [periodo, setPeriodo] = useState('')
+
+  const periodos = getAllLegislativePeriods()
+
+  const handlePeriodChange = (val: string) => {
+    setPeriodo(val)
+    if (!val) {
+      setDesde('')
+      setHasta('')
+      return
+    }
+    const p = periodos.find(x => x.label === val)
+    if (p) {
+      setDesde(p.desde)
+      setHasta(p.hasta)
+    }
+  }
 
 
 
@@ -51,28 +69,37 @@ export default function EstadisticasPage() {
 
       <div className="container">
         
-        {/* Filtros de Fecha */}
-        <SectionRule label="Rango de fecha de los proyectos" />
+        {/* Filtros de Período */}
+        <SectionRule label="Seleccionar Periodo Legislativo" />
         <div className={styles.dateFilters}>
-          <div className={styles.dateInputGroup}>
-            <label>Desde:</label>
-            <input type="date" value={desde} onChange={e => setDesde(e.target.value)} className={styles.dateInput} />
+          <div className={styles.dateInputGroup} style={{ flex: '1 1 100%' }}>
+            <select 
+              value={periodo} 
+              onChange={e => handlePeriodChange(e.target.value)}
+              className={styles.dateInput}
+            >
+              <option value="">Todos los registros históricos</option>
+              {periodos.map(p => (
+                <option key={p.label} value={p.label}>Periodo Legislativo {p.label}</option>
+              ))}
+            </select>
           </div>
-          <div className={styles.dateInputGroup}>
-            <label>Hasta:</label>
-            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className={styles.dateInput} />
+          
+          <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+            <span className={styles.dateRangeMeta}>
+              {periodo ? (
+                <>Mostrando datos del <strong>{periodo}</strong> ({desde} al {hasta})</>
+              ) : (
+                <>Mostrando la <strong>base de datos completa</strong> (sin filtros de tiempo)</>
+              )}
+            </span>
+
+            {periodo && (
+              <button className={styles.clearBtn} onClick={() => { setDesde(''); setHasta(''); setPeriodo(''); }}>
+                Ver todo el histórico
+              </button>
+            )}
           </div>
-          {(desde || hasta) && (
-            <button className={styles.clearBtn} onClick={() => { setDesde(''); setHasta(''); }}>
-              Limpiar filtro
-            </button>
-          )}
-          <span className={styles.dateRangeMeta}>
-            Mostrando proyectos iniciados entre 
-            <strong> {desde || 'el inicio'} </strong> 
-            y 
-            <strong> {hasta || 'hoy'} </strong>
-          </span>
         </div>
 
         {/* KPIs */}
@@ -82,6 +109,7 @@ export default function EstadisticasPage() {
             { label: 'Total proyectos', value: general.total_proyectos.toLocaleString('es-CR'), color: 'blue' },
             { label: 'Leyes aprobadas', value: general.total_leyes_aprobadas.toLocaleString('es-CR'), color: 'positive' },
             { label: 'Tasa de aprobación', value: `${general.tasa_aprobacion_pct.toFixed(1)}%`, color: 'accent' },
+            { label: 'Tiempo para ser ley', value: `~${general.promedio_dias_aprobacion.toLocaleString('es-CR')} días`, color: 'accent' },
             { label: 'Prom. trámites por proyecto', value: general.promedio_tramites.toFixed(1), color: 'neutral' },
             { label: 'Proyectos este año', value: general.proyectos_este_anio.toLocaleString('es-CR'), color: 'neutral' },
             { label: 'Diputados activos', value: general.total_diputados_activos.toString(), color: 'neutral' },
@@ -122,6 +150,35 @@ export default function EstadisticasPage() {
                 <div className={styles.tipoMeta}>
                   <span className={styles.tipoName}>{t.tipo}</span>
                   <span className={styles.tipoCount}>{t.total.toLocaleString('es-CR')} ({t.porcentaje.toFixed(1)}%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tasa de éxito por tema */}
+        <SectionRule label="Tasa de éxito por tema (Eficacia real)" />
+        <div className={styles.chartCard} style={{ marginBottom: 32 }}>
+          <div className={styles.chartExplain}>
+            Un tema puede tener muchos proyectos propuestos, pero ¿qué porcentaje realmente logra completar su camino y convertirse en ley?
+            Este gráfico revela qué temas logran consenso legislativo (leyes publicadas) versus cuáles se archivan o descartan.
+          </div>
+          <div className={styles.tipoGrid}>
+            {data.por_categoria.filter(c => c.total > 5).slice(0, 8).map((c, i) => (
+              <div key={c.slug} className={styles.tipoItem} style={{ borderLeft: `6px solid ${COLORS[i % COLORS.length]}`, paddingLeft: 12, background: 'var(--paper-warm)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: 14 }}>{c.categoria}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 16 }}>{c.tasa_aprobacion}% <span style={{fontSize: 11, fontWeight: 'normal', color: 'var(--ink-muted)'}}>de éxito</span></span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--ink-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{c.total.toLocaleString('es-CR')} proyectos propuestos</span>
+                  <span>{c.leyes_aprobadas.toLocaleString('es-CR')} convertidos en ley</span>
+                </div>
+                <div className={styles.tipoBar} style={{ marginTop: 8, height: 8 }}>
+                  <div
+                    className={styles.tipoBarFill}
+                    style={{ width: `${c.tasa_aprobacion}%`, background: COLORS[i % COLORS.length], borderRadius: '0' }}
+                  />
                 </div>
               </div>
             ))}
