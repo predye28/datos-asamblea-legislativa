@@ -98,7 +98,7 @@
 }
 
 .item:last-child { border-bottom: none; }
-.item:hover { background: var(--paper-warm); padding-left: 12px; margin: 0 -12px; padding-right: 12px; }
+.item:hover { background: var(--paper-warm); border-radius: 4px; }
 
 /* Columna izquierda: días + label */
 .diasWrap {
@@ -194,7 +194,12 @@
 }
 
 @media (max-width: 640px) {
+  .block {
+    padding: 18px 16px;
+  }
   .blockHeader { flex-direction: column; }
   .filtrosDias { width: 100%; }
-  .metaItem { max-width: 200px; }
+  .metaItem { max-width: 180px; }
+  .expTitle { font-size: 14px; }
+  .title { font-size: 18px; }
 }

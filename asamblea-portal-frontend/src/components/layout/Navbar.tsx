@@ -81,16 +81,31 @@ export default function Navbar() {
         className={`${styles.mobileMenu} ${menuAbierto ? styles.mobileMenuOpen : ''}`}
         aria-label="Menú móvil"
       >
-        {links.map(l => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
+        {/* Header del menú móvil */}
+        <div className={styles.mobileMenuHeader}>
+          <span className={styles.mobileMenuTitle}>La <span style={{ color: 'var(--accent)' }}>Asamblea</span></span>
+          <button
+            className={styles.mobileMenuClose}
+            onClick={() => setMenuAbierto(false)}
+            aria-label="Cerrar menú"
           >
-            {l.label}
-            {pathname === l.href && <span className={styles.activeDot} />}
-          </Link>
-        ))}
+            ✕
+          </button>
+        </div>
+
+        {/* Links del menú */}
+        <div className={styles.mobileMenuLinks}>
+          {links.map(l => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
+            >
+              {l.label}
+              {pathname === l.href && <span className={styles.activeDot} />}
+            </Link>
+          ))}
+        </div>
       </nav>
     </header>
   )

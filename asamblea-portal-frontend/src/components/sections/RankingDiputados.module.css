@@ -83,25 +83,25 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 12px;
+  padding: 14px 8px;
   border-bottom: 1px solid var(--rule);
   text-decoration: none;
   color: var(--ink);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: all 0.2s ease;
   border-radius: 8px;
-  margin: 0 -8px; /* Pequeño margen negativo para que el radius se vea bien sin saltos */
 }
 
 .item:last-child { border-bottom: none; }
 
 .item:hover { 
   background: var(--paper-warm);
-  transform: translateX(6px);
+  transform: translateX(4px);
+  padding-left: 12px;
 }
 
 .item:active {
   background: var(--rule);
-  transform: translateX(2px);
+  transform: translateX(0);
 }
 
 .num {
@@ -183,9 +183,20 @@
 
 @media (max-width: 480px) {
   .block {
-    padding: 20px 16px;
+    padding: 18px 14px;
   }
   .title { font-size: 16px; }
+
+  /* Sin translate en iOS */
+  @media (hover: none) {
+    .item:hover {
+      transform: none;
+      padding-left: 8px;
+    }
+    .item:active {
+      background: var(--paper-warm);
+    }
+  }
 }
 
 /* ── CTA Ver todos ── */

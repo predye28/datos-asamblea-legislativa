@@ -42,7 +42,6 @@
 
 html {
   color-scheme: dark;
-  scroll-behavior: smooth;
   overflow-x: clip; /* Mueve aquí para no bloquear position:sticky en body */
 }
 
@@ -50,16 +49,18 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--body);
-  font-size: 18px;
-  line-height: 1.75;
+  font-size: 16px;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   max-width: 100%;
   /* NO overflow-x aquí — afecta position:sticky en los hijos */
 }
 
 a { color: inherit; text-decoration: none; }
-button { cursor: pointer; font-family: inherit; }
-input, select { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; touch-action: manipulation; }
+input, select, textarea { font-family: inherit; }
+img { max-width: 100%; height: auto; }
 
 /* ── Typography ── */
 .font-serif { font-family: var(--serif); }
@@ -67,7 +68,8 @@ input, select { font-family: inherit; }
 
 /* ── Layout ── */
 .container { max-width: var(--max-w); margin: 0 auto; padding: 0 40px; }
-@media (max-width: 640px) { .container { padding: 0 20px; } }
+@media (max-width: 768px) { .container { padding: 0 24px; } }
+@media (max-width: 480px) { .container { padding: 0 16px; } }
 
 /* ── Section rule ── */
 .section-rule {

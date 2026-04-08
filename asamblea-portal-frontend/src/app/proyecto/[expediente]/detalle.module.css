@@ -73,11 +73,11 @@
 
 .heroTitle {
   font-family: var(--serif);
-  font-size: clamp(22px, 3.2vw, 36px);
+  font-size: clamp(20px, 3.2vw, 36px);
   font-weight: 700;
   line-height: 1.2;
   color: inherit;
-  max-width: 78%;
+  max-width: 90%;
   margin-bottom: 12px;
 }
 
@@ -93,7 +93,7 @@
 /* Layout */
 .layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   gap: 24px;
   padding-top: 32px;
 }
@@ -358,7 +358,7 @@
   color: var(--ink);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
     padding-top: 16px;
@@ -372,11 +372,22 @@
   
   .heroTitle {
     max-width: 100%;
-    font-size: 26px;
+    font-size: 20px;
+    line-height: 1.3;
+  }
+  
+  .heroMeta {
+    gap: 8px;
+  }
+
+  .badgeActivo {
+    max-width: 200px;
+    font-size: 11px;
   }
   
   .card, .sideCard {
-    padding: 24px 16px;
+    padding: 20px 14px;
+    border-radius: 12px;
   }
   
   .dlRow {
@@ -392,8 +403,20 @@
   }
   
   .dlRow dd {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
+  }
+
+  .sectionTitle {
+    font-size: 15px;
+  }
+
+  /* Sin hover transform en touch */
+  @media (hover: none) {
+    .propLink:hover { color: inherit; }
+    .propLink:active { color: var(--accent); }
+    .catLink:hover { color: inherit; }
+    .catLink:active { color: var(--accent); }
   }
 }
 

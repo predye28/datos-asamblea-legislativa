@@ -92,7 +92,7 @@
 
 .statValue {
   font-family: var(--serif);
-  font-size: 40px;
+  font-size: clamp(28px, 5vw, 40px);
   font-weight: 700;
   line-height: 1;
 }
@@ -154,8 +154,14 @@
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
+  .block {
+    padding: 20px 16px;
+  }
   .header { flex-direction: column; }
   .periodoSelector { width: 100%; }
-  .periodoBtn { flex: 1; justify-content: center; }
-  .statsGrid { grid-template-columns: 1fr; }
+  .periodoBtn { flex: 1; justify-content: center; min-height: 40px; }
+  /* Mantener 2-col en móvil para mejor densidad */
+  .statsGrid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .statCard { padding: 16px 12px; }
+  .barPct { font-size: 26px; }
 }

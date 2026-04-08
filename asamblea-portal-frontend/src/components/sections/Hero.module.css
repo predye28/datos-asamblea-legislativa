@@ -78,11 +78,17 @@
 
 @media (max-width: 768px) {
   .headline { max-width: 100%; }
-  .deck { font-size: 16px; }
+  .deck { font-size: 15px; max-width: 100%; }
 }
 
 @media (max-width: 640px) {
-  .hero { padding: 52px 0; }
+  .hero { padding: 44px 0 40px; }
   .inner { padding: 0 20px; }
-  .kicker { font-size: 11px; }
+  .kicker { font-size: 11px; margin-bottom: 14px; }
+  .headline { font-size: clamp(24px, 6vw, 36px); margin-bottom: 16px; }
+  .deck { font-size: 14px; line-height: 1.65; }
+}
+
+@media (max-width: 400px) {
+  .hero { padding: 32px 0 28px; }
 }

@@ -502,40 +502,85 @@
   }
 
   .container {
-    padding: 20px 16px 80px; /* Menos espacio horizontal en celular */
+    padding: 16px 16px 80px;
   }
 
   .card {
-    padding: 16px; /* Reducir padding enorme */
-    margin-bottom: 24px;
+    padding: 16px;
+    margin-bottom: 20px;
   }
 
+  /* 3 col → 2 col, el tercer card ocupa todo el ancho */
   .statGrid {
     grid-template-columns: repeat(2, 1fr);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+  }
+
+  .statCard:last-child {
+    grid-column: 1 / -1;
   }
 
   .statCard {
-    padding: 20px 12px;
+    padding: 18px 12px;
   }
 
   .statNum {
-    font-size: clamp(24px, 6vw, 32px);
+    font-size: clamp(24px, 7vw, 36px);
   }
 
   .temasGrid {
-    grid-template-columns: 1fr;
-    padding: 12px 16px;
-    margin-bottom: 24px;
+    padding: 10px 12px;
+    margin-bottom: 20px;
+    gap: 4px;
+  }
+
+  .temaChip {
+    padding: 10px 12px;
   }
 
   .proyectoCard {
-    padding: 20px 16px;
+    padding: 16px 14px;
+  }
+
+  .pcTitle {
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+
+  /* Hover stuck fix en iOS — sin hover en dispositivos táctiles */
+  @media (hover: none) {
+    .temaChip:hover {
+      transform: none;
+      background: transparent;
+      border-color: transparent;
+    }
+    .temaChip:active {
+      background: var(--paper-warm);
+      border-color: var(--rule);
+    }
+
+    .proyectoCard:hover {
+      transform: none;
+      box-shadow: var(--shadow-sm);
+      border-color: var(--rule);
+    }
+    .proyectoCard:active {
+      background: var(--paper-warm);
+      border-color: var(--accent);
+    }
+
+    .statCard:hover {
+      transform: none;
+    }
   }
 }
 
 @media (max-width: 400px) {
   .statGrid {
     grid-template-columns: 1fr;
+  }
+
+  .statCard:last-child {
+    grid-column: auto;
   }
 }

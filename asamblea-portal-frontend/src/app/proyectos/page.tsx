@@ -162,11 +162,18 @@ function ProyectosContent() {
     e.preventDefault()
     setPagina(1)
     fetchData()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handlePageChange = (p: number) => {
+    setPagina(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const clearFilters = () => {
     setQuery(''); setTipo(''); setAnio(''); setSoloLeyes(false)
     setOrden('reciente'); setCategoria(''); setPeriodo(''); setPagina(1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Label contextual
@@ -226,13 +233,13 @@ function ProyectosContent() {
               <div className={`${styles.catFilterRow} ${showCats ? styles.catFilterRowOpen : ''}`}>
                 <button
                   className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
-                  onClick={() => { setCategoria(''); setPagina(1); setShowCats(false); }}
+                  onClick={() => { setCategoria(''); handlePageChange(1); setShowCats(false); }}
                 >Todos los temas</button>
                 {categorias.map(cat => (
                   <button
                     key={cat.slug}
                     className={`${styles.catChip} ${categoria === cat.slug ? styles.catChipActive : ''}`}
-                    onClick={() => { setCategoria(cat.slug); setPagina(1); setShowCats(false); }}
+                    onClick={() => { setCategoria(cat.slug); handlePageChange(1); setShowCats(false); }}
                   >
                     {cat.nombre}
                   </button>
@@ -244,19 +251,19 @@ function ProyectosContent() {
           <div className={styles.filterControlsContainer}>
             <div className={styles.selectsRow}>
               <div className={styles.selectWrapper}>
-                <select className={styles.select} value={periodo} onChange={e => { setPeriodo(e.target.value); setAnio(''); setPagina(1) }}>
+                <select className={styles.select} value={periodo} onChange={e => { setPeriodo(e.target.value); setAnio(''); handlePageChange(1) }}>
                   <option value="">Cualquier período</option>
                   {periodos.map(p => <option key={p.label} value={p.label}>Periodo {p.label}</option>)}
                 </select>
               </div>
               <div className={styles.selectWrapper}>
-                <select className={styles.select} value={anio} onChange={e => { setAnio(e.target.value); setPeriodo(''); setPagina(1) }}>
+                <select className={styles.select} value={anio} onChange={e => { setAnio(e.target.value); setPeriodo(''); handlePageChange(1) }}>
                   <option value="">Año específico (Cualquiera)</option>
                   {anios.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               <div className={styles.selectWrapper}>
-                <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); setPagina(1) }}>
+                <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); handlePageChange(1) }}>
                   <option value="">Tipo de expediente (Todos)</option>
                   {tipos.map(t => (
                     <option key={t.tipo_expediente} value={t.tipo_expediente}>
@@ -266,7 +273,7 @@ function ProyectosContent() {
                 </select>
               </div>
               <div className={styles.selectWrapper}>
-                <select className={styles.select} value={orden} onChange={e => { setOrden(e.target.value); setPagina(1) }}>
+                <select className={styles.select} value={orden} onChange={e => { setOrden(e.target.value); handlePageChange(1) }}>
                   <option value="reciente">Más recientes primero</option>
                   <option value="antiguo">Más antiguos primero</option>
                   <option value="expediente">Por número de expediente</option>
@@ -280,7 +287,7 @@ function ProyectosContent() {
                   <input
                     type="checkbox"
                     checked={soloLeyes}
-                    onChange={e => { setSoloLeyes(e.target.checked); setPagina(1) }}
+                    onChange={e => { setSoloLeyes(e.target.checked); handlePageChange(1) }}
                   />
                   {soloLeyes && <svg className={styles.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
@@ -320,7 +327,7 @@ function ProyectosContent() {
                 </div>
               )}
             </div>
-            {data && <Pager pag={data.paginacion} onPage={setPagina} />}
+            {data && <Pager pag={data.paginacion} onPage={handlePageChange} />}
           </>
         )}
       </div>

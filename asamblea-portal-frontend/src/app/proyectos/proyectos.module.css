@@ -4,13 +4,13 @@
 .filters {
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-radius: 20px;
-  padding: 32px;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  gap: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
   position: relative;
 }
 
@@ -244,7 +244,7 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px; /* Separación clara entre tarjetas */
+  gap: 12px;
 }
 
 .card {
@@ -261,8 +261,8 @@
 
 .card:hover {
   background: var(--paper-warm);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   border-color: var(--accent);
 }
 
@@ -412,11 +412,12 @@
 /* Pagination */
 .pager {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   justify-content: center;
   margin-top: 36px;
   flex-wrap: wrap;
+  padding: 0 8px;
 }
 
 .pageBtn {
@@ -506,26 +507,25 @@
 
 /* Indicador de scroll mejorado */
 .catFilterContainer::after {
-  content: '▼ Deslizá para ver más temas';
+  content: '▼';
   position: absolute;
-  bottom: 8px;
+  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--mono);
   font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
   color: var(--accent);
-  background: var(--paper-card);
-  padding: 4px 12px;
-  border-radius: 20px;
+  background: var(--paper);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   opacity: 0;
   transition: all 0.3s ease;
   z-index: 12;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  letter-spacing: 0.05em;
 }
 
 .catFilterContainer:has(.catFilterRowOpen)::after {
@@ -649,4 +649,82 @@
   border: 1px solid var(--rule);
   border-radius: 20px; /* Redondo estilo pill */
   color: var(--ink-muted);
+}
+
+/* ── Mobile overrides globales ── */
+@media (max-width: 640px) {
+  .filters {
+    padding: 16px;
+    border-radius: 12px;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .searchInput {
+    font-size: 16px; /* Previene zoom en iOS */
+  }
+
+  .card {
+    padding: 18px 16px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  /* Evitar hover stuck en iOS — solo hover real en pantallas con puntero */
+  @media (hover: none) {
+    .card:hover {
+      transform: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border-color: var(--rule);
+      background: var(--paper-card);
+    }
+    .card:active {
+      background: var(--paper-warm);
+      border-color: var(--accent);
+    }
+  }
+
+  .pager {
+    gap: 3px;
+    margin-top: 24px;
+  }
+
+  .pageBtn {
+    padding: 8px 10px;
+    min-width: 38px;
+    min-height: 38px;
+    font-size: 11px;
+  }
+
+  /* En móvil, ocultar botones de página individuales y mostrar solo Anterior/Siguiente */
+  .pager .pageBtn:not(:first-child):not(:last-child) {
+    display: none;
+  }
+
+  .pager .pageBtnActive {
+    display: flex !important;
+  }
+
+  .selectsRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mobileCatToggle {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+
+  .checkLabel {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 400px) {
+  .selectsRow {
+    grid-template-columns: 1fr;
+  }
 }

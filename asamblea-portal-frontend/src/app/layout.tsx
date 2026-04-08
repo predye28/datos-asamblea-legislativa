@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer'
 export const metadata: Metadata = {
   title: 'La Asamblea al Día',
   description: 'Los datos de la Asamblea Legislativa de Costa Rica, traducidos para todos los costarricenses.',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
   openGraph: {
     title: 'La Asamblea al Día',
     description: 'Transparencia legislativa para todos los costarricenses.',
