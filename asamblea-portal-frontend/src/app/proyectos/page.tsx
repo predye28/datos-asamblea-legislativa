@@ -1,6 +1,6 @@
 'use client'
 // src/app/proyectos/page.tsx
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion, Categoria } from '@/lib/api'
 import { getAllLegislativePeriods } from '@/lib/periodos'
@@ -98,6 +98,7 @@ function ProyectosContent() {
   const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || '')
   const [pagina,    setPagina]    = useState(1)
   const [showCats,  setShowCats]  = useState(false)
+  const catRef = useRef<HTMLDivElement>(null)
 
   const [data,       setData]       = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
   const [tipos,      setTipos]      = useState<{ tipo_expediente: string; total: number }[]>([])
@@ -108,7 +109,19 @@ function ProyectosContent() {
   const periodos = getAllLegislativePeriods()
   
   // años disponibles (últimos 15)
+  // años disponibles (últimos 15)
   const anios = Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i)
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (catRef.current && !catRef.current.contains(event.target as Node)) {
+        setShowCats(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     api.proyectos.tipos().then(setTipos).catch(() => {})
@@ -200,7 +213,7 @@ function ProyectosContent() {
 
           {/* Filtro de categorías */}
           {categorias.length > 0 && (
-            <div className={styles.catFilterContainer}>
+            <div className={styles.catFilterContainer} ref={catRef}>
               <button 
                 type="button" 
                 className={styles.mobileCatToggle}
