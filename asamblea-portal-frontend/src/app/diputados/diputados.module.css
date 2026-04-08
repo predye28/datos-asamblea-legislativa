@@ -13,9 +13,9 @@
 .periodoSelector { display: flex; flex-wrap: wrap; gap: 6px; }
 .periodoBtn {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   padding: 6px 12px;
   min-height: 52px; /* Alineado con input buscador */
   display: flex;
@@ -24,18 +24,21 @@
   background: var(--paper-card);
   color: var(--ink-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   flex: 1;
   justify-content: center;
+  border-radius: 6px;
 }
 .periodoBtn:hover:not(.periodoBtnActive) {
   border-color: var(--accent);
   color: var(--accent);
+  background: var(--paper-warm);
 }
 .periodoBtnActive {
   background: var(--accent);
   color: #fff !important;
   border-color: var(--accent);
+  box-shadow: 0 4px 10px -4px rgba(37, 99, 235, 0.3);
 }
 
 .searchWrap { margin-bottom: 8px; }
@@ -70,14 +73,25 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 20px;     /* era 16px — más espacio táctil */
+  padding: 18px 24px;
   background: var(--paper-card);
   cursor: pointer;
-  transition: background 0.12s, padding-left 0.15s;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   border-bottom: 1px solid var(--rule);
+  text-decoration: none;
 }
+
 .item:last-child { border-bottom: none; }
-.item:hover { background: var(--paper-warm); padding-left: 28px; }
+
+.item:hover { 
+  background: var(--paper-warm);
+  transform: translateX(4px);
+}
+
+.item:active {
+  background: var(--rule);
+  transform: translateX(0);
+}
 
 .rank {
   font-family: var(--serif);
@@ -93,21 +107,21 @@
 .info { flex: 1; min-width: 0; }
 
 .name {
-  font-size: 16px;        /* era 15px */
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
   color: var(--ink);
 }
 
 .barWrap {
-  height: 5px;            /* era 4px — más visible */
+  height: 5px;
   background: var(--paper-warm);
   border-radius: 2px;
   overflow: hidden;
 }
 .barFill {
   height: 100%;
-  background: var(--accent); /* era negro — ahora azul */
+  background: var(--accent);
   border-radius: 2px;
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -123,7 +137,7 @@
 }
 .countLabel {
   font-family: var(--mono);
-  font-size: 11px;        /* era 9px — era ilegible */
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-faint);
@@ -133,10 +147,14 @@
   font-family: var(--mono);
   font-size: 14px;
   color: var(--ink-faint);
-  transition: transform 0.15s, color 0.15s;
+  transition: transform 0.3s ease, color 0.3s ease;
   flex-shrink: 0;
 }
-.item:hover .arrow { transform: translateX(4px); color: var(--accent); }
+
+.item:hover .arrow { 
+  transform: translateX(6px); 
+  color: var(--accent); 
+}
 
 /* Skeleton loader */
 .loading { display: flex; flex-direction: column; border: 1px solid var(--rule); }
@@ -198,4 +216,16 @@
   font-size: 14px;
   color: var(--ink-muted);
   line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .periodoBtn { 
+    font-size: 10px; 
+    padding: 2px 4px; 
+    min-height: 44px; 
+  }
+  .searchInput { 
+    font-size: 14px; 
+    padding: 12px 16px; 
+  }
 }

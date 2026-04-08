@@ -16,14 +16,17 @@
   border: none;
   cursor: pointer;
   padding: 8px 0;
-  transition: color 0.15s;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 44px;
 }
 
-.backBtn:hover { color: var(--accent); }
+.backBtn:hover { 
+  color: var(--accent);
+  transform: translateX(-4px);
+}
 
 /* ── Hero ──────────────────────────────────────────────────────────── */
 .hero {
@@ -120,11 +123,13 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  transition: border-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .statCard:hover {
   border-top-color: var(--ink-faint);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .statCardAccent {
@@ -133,6 +138,7 @@
 
 .statCardAccent:hover {
   border-top-color: var(--accent);
+  transform: translateY(-2px);
 }
 
 .statNum {
@@ -244,14 +250,22 @@
   align-items: center;
   gap: 16px;
   padding: 12px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   text-decoration: none;
   background: transparent;
-  transition: background 0.15s ease;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
 .temaChip:hover {
   background: var(--paper-warm);
+  border-color: var(--rule);
+  transform: translateX(4px);
+}
+
+.temaChip:active {
+  background: var(--rule);
+  transform: translateX(2px);
 }
 
 .temaNombre {
@@ -309,12 +323,23 @@
   border: 1px solid var(--rule);
   padding: 24px;
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s ease, 
+              border-color 0.3s ease;
+  will-change: transform, box-shadow;
 }
 
 .proyectoCard:hover {
+  transform: translateY(-4px);
   border-color: var(--accent);
-  background: var(--paper-warm);
+  box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.1);
+  background: var(--paper-card);
+}
+
+.proyectoCard:active {
+  transform: translateY(-1px);
+  transition: transform 0.1s ease;
 }
 
 .pcTop {
@@ -354,12 +379,12 @@
 .pcArrow {
   color: var(--ink-faint);
   font-size: 16px;
-  transition: transform 0.2s;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
 }
 
 .proyectoCard:hover .pcArrow {
   color: var(--accent);
-  transform: translateX(4px);
+  transform: translateX(6px);
 }
 
 .pcTitle {
@@ -390,20 +415,27 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 14px 20px;
-  background: transparent;
+  padding: 16px 20px;
+  background: var(--paper-card);
   color: var(--ink);
   border: 1px solid var(--rule);
   text-decoration: none;
   font-family: var(--body);
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .verTodosBtn:hover {
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.verTodosBtn:active {
+  transform: translateY(0);
 }
 
 /* ── Error state ─────────────────────────────────────────────────────── */

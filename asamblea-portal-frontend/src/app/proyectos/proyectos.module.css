@@ -446,18 +446,24 @@
 }
 
 .mobileCatToggle {
-  display: none;
+  display: flex;
   font-family: var(--body);
   font-weight: 500;
   font-size: 15px;
-  padding: 14px 16px;
-  background: var(--paper-warm);
-  border: 1px solid var(--rule);
+  padding: 14px 20px;
+  background: var(--paper-card);
+  border: 2px solid var(--rule);
   color: var(--ink);
   border-radius: 12px;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobileCatToggle:hover {
+  border-color: var(--accent);
+  background: var(--paper-warm);
 }
 
 .toggleIcon {
@@ -471,23 +477,26 @@
 }
 
 .catFilterRow {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap; 
-  padding-bottom: 8px;
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 10px;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.catFilterRowOpen {
+  display: grid !important;
+}
+
+.catFilterRow::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 @media (max-width: 640px) {
-  .mobileCatToggle {
-    display: flex;
-  }
   .catFilterRow {
-    display: none;
-    padding-top: 16px;
-    animation: slideDown 0.2s ease-out forwards;
-  }
-  .catFilterRowOpen {
-    display: flex;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -497,11 +506,13 @@
 }
 
 .catChip {
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 500;
-  font-size: 14px;
-  padding: 8px 18px;
-  border-radius: 24px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+  border-radius: 6px;
   border: 1px solid var(--rule);
   background: var(--paper-warm);
   color: var(--ink-muted);
@@ -510,14 +521,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  -webkit-tap-highlight-color: transparent; /* IMPORTANTE: quita el rectángulo azul gigante nativo al tocar en celular */
-  outline: none; /* Evita bordes cuadrados del navegador */
+  -webkit-tap-highlight-color: transparent; 
+  outline: none;
+  white-space: nowrap;
 }
 
 .catChip:hover { 
   background: var(--paper); 
-  color: var(--ink); 
-  border-color: var(--ink-muted); 
+  color: var(--accent); 
+  border-color: var(--accent); 
   transform: translateY(-1px);
 }
 
@@ -525,8 +537,7 @@
   background: var(--accent) !important; 
   color: #fff !important; 
   border-color: var(--accent) !important; 
-  /* Reducimos o quitamos la sombra súper expandida para evitar que parezca que el botón "sangra" o es más grande */
-  box-shadow: none !important; 
+  box-shadow: 0 4px 10px -4px rgba(37, 99, 235, 0.3) !important;
 }
 
 /* Category tags on each card */
