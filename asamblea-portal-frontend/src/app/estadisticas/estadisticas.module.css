@@ -1,192 +1,338 @@
 /* src/app/estadisticas/estadisticas.module.css */
-.loading { display: flex; align-items: center; justify-content: center; min-height: 300px; }
-.loadingText { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
 
+/* ── Selector de período ─────────────────────────────────────────── */
+.periodoWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.periodoSelect {
+  flex: 1;
+  min-width: 200px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 12px 40px 12px 16px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 48px;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.periodoSelect:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.clearBtn {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-muted);
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.clearBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.periodoMeta {
+  width: 100%;
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── KPI Grid ────────────────────────────────────────────────────── */
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;              /* era 1px — ahora tarjetas separadas */
+  gap: 12px;
   margin-bottom: 8px;
 }
 
 .kpi {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-top: 3px solid var(--rule);
-  padding: 24px 20px;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s;
+  border-radius: 14px;
+  padding: 20px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.kpi:hover { border-top-color: var(--accent); }
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
 
-.kpiLabel {
-  font-family: var(--mono);
-  font-size: 12px;        /* era 10px */
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-  margin-bottom: 10px;
-  line-height: 1.4;
+.kpiAccent {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .kpiValue {
-  font-family: var(--serif);
-  font-size: 36px;
-  font-weight: 700;
+  font-family: var(--body);
+  font-size: clamp(20px, 4vw, 32px);
+  font-weight: 800;
   color: var(--ink);
   line-height: 1;
+  margin-bottom: 6px;
 }
 
-.kpiValue.blue     { color: var(--blue); }
-.kpiValue.positive { color: var(--positive); }
-.kpiValue.accent   { color: var(--accent); }
+.kpiAccent .kpiValue {
+  color: var(--accent);
+}
 
-.chartCard {
+.kpiLabel {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.3;
+}
+
+/* ── Tarjeta genérica ────────────────────────────────────────────── */
+.card {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-top: 3px solid var(--accent);
-  padding: 28px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 14px;
+  padding: 24px 20px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.chartExplain {
-  font-size: 15px;        /* era 13px */
+.cardDesc {
+  font-size: 14px;
   color: var(--ink-muted);
   font-style: italic;
-  margin-bottom: 24px;
-  max-width: 640px;
+  margin-bottom: 20px;
   line-height: 1.6;
 }
 
-/* Tipo bars */
-.tipoGrid { display: flex; flex-direction: column; gap: 12px; }
+/* ── Eficacia por tema ───────────────────────────────────────────── */
+.eficaciaList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-.tipoItem { display: flex; flex-direction: column; gap: 4px; }
+.eficaciaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.tipoBar { height: 6px; background: var(--paper-warm); }
-.tipoBarFill { height: 100%; transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+.eficaciaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
 
-.tipoMeta { display: flex; justify-content: space-between; align-items: baseline; }
+.eficaciaTema {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
 
-.tipoName { font-size: 13px; color: var(--ink); }
+.eficaciaPct {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.eficaciaStats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.eficaciaBar {
+  height: 6px;
+  background: var(--paper);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.eficaciaFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Tipo de expediente ──────────────────────────────────────────── */
+.tipoList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tipoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tipoMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tipoName {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .tipoCount {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--ink-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* Organo list */
-.organoList { display: flex; flex-direction: column; gap: 14px; }
+.tipoBar {
+  height: 6px;
+  background: var(--paper);
+  border-radius: 3px;
+  overflow: hidden;
+}
 
-.organoItem { display: flex; align-items: center; gap: 16px; }
+.tipoFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-.organoName { font-size: 13px; width: 280px; flex-shrink: 0; color: var(--ink); }
+/* ── Órganos ─────────────────────────────────────────────────────── */
+.organoList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-.organoBarWrap { flex: 1; height: 8px; background: var(--paper-warm); }
-.organoBarFill { height: 100%; background: var(--ink); opacity: 0.7; }
+.organoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.organoTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.organoRank {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.organoName {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .organoCount {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--ink-faint);
-  width: 60px;
-  text-align: right;
+  color: var(--ink-muted);
   flex-shrink: 0;
 }
 
-@media (max-width: 800px) {
-  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
-  .organoName { width: 140px; font-size: 12px; }
-  .dateFilters { flex-direction: column; align-items: flex-start; }
+.organoBar {
+  height: 6px;
+  background: var(--paper);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-left: 30px;
 }
 
-@media (max-width: 500px) {
-  .kpiGrid { grid-template-columns: 1fr; }
-  .dateInputGroup { width: 100%; flex-direction: column; align-items: flex-start; }
-  .dateInput { width: 100%; }
-  .clearBtn { width: 100%; justify-content: center; }
-  .organoItem { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .organoName { width: 100%; font-size: 13px; font-weight: 600; }
-  .organoBarWrap { width: 100%; }
-  .organoCount { text-align: left; }
+.organoFill {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.6;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dateFilters {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background: var(--paper-card);
-  border: 1px solid var(--rule);
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .kpi {
+    padding: 16px 12px;
+  }
+
+  .kpiValue {
+    font-size: clamp(18px, 6vw, 26px);
+  }
+
+  .card {
+    padding: 18px 14px;
+  }
+
+  .periodoWrap {
+    padding: 12px;
+  }
+
+  .periodoSelect {
+    font-size: 14px;
+    min-width: 0;
+  }
 }
 
-.dateInputGroup {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dateInputGroup label {
-  font-family: var(--mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.dateInput {
-  background: var(--paper-card);
-  border: 1px solid var(--rule);
-  color: var(--ink);
-  padding: 12px 16px;
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 600;
-  min-height: 48px;
-  width: 100%;
-  border-radius: 8px;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239c9a92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.dateInput:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.dateRangeMeta {
-  font-size: 12px;
-  color: var(--ink-muted);
-  font-style: italic;
-  margin-left: auto;
-}
-
-.clearBtn {
-  font-family: var(--mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--rule);
-  color: var(--ink-faint);
-  padding: 10px 14px;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.clearBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+@media (max-width: 360px) {
+  .kpiGrid {
+    grid-template-columns: 1fr 1fr;
+  }
 }

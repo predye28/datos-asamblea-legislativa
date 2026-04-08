@@ -3,6 +3,16 @@ import { api } from '@/lib/api'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import styles from './detalle.module.css'
+function formatTitle(title?: string | null) {
+  if (!title) return 'Sin título';
+  const text = title.toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function formatName(name?: string | null) {
+  if (!name) return '';
+  return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
 
 export const revalidate = 300
 
@@ -52,7 +62,7 @@ export default async function ProyectoDetallePage({
               : <span className={styles.badgeActivo}>{estado_actual || 'En trámite'}</span>
             }
           </div>
-          <h1 className={styles.heroTitle}>{titulo || 'Sin título'}</h1>
+          <h1 className={styles.heroTitle}>{formatTitle(titulo)}</h1>
           {tipo_expediente && (
             <div className={styles.heroType}>{tipo_expediente}</div>
           )}
@@ -153,7 +163,31 @@ export default async function ProyectoDetallePage({
 
           {/* Sidebar */}
           <aside className={styles.sidebar}>
-            {/* Categorías temáticas */}
+            {/* Proponentes — PRIMERO */}
+            <section className={styles.sideCard}>
+              <div className={styles.sideTitle}>
+                Proponentes
+                <span className={styles.sectionCount}>{proponentes.length}</span>
+              </div>
+              <p className={styles.sideExplain}>Diputados que firmaron este proyecto</p>
+              <ul className={styles.propList}>
+                {proponentes.map((p, i) => (
+                  <li key={i} className={styles.propItem}>
+                    <Link
+                      href={`/diputados/${encodeURIComponent((p.nombre_completo || '').trim())}`}
+                      className={styles.propLink}
+                    >
+                      <span className={styles.propName}>
+                        {formatName(p.nombre_completo)}
+                      </span>
+                      <span className={styles.propArrow}>→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Categorías temáticas — SEGUNDO */}
             {categorias && categorias.length > 0 && (
               <section className={styles.sideCard}>
                 <div className={styles.sideTitle}>Tema{categorias.length !== 1 ? 's' : ''}</div>
@@ -172,30 +206,6 @@ export default async function ProyectoDetallePage({
                 </div>
               </section>
             )}
-
-            {/* Proponentes */}
-            <section className={styles.sideCard}>
-              <div className={styles.sideTitle}>
-                Proponentes
-                <span className={styles.sectionCount}>{proponentes.length}</span>
-              </div>
-              <p className={styles.sideExplain}>Diputados que firmaron este proyecto</p>
-              <ul className={styles.propList}>
-                {proponentes.map((p, i) => (
-                  <li key={i} className={styles.propItem}>
-                    <Link
-                      href={`/diputados?q=${encodeURIComponent(p.nombre_completo || '')}`}
-                      className={styles.propLink}
-                    >
-                      <span className={styles.propName}>
-                        {p.nombre_completo}
-                      </span>
-                      <span className={styles.propArrow}>→</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
 
             {/* Contexto educativo */}
             <section className={styles.sideCard}>

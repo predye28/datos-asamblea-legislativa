@@ -9,6 +9,12 @@ import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import styles from './proyectos.module.css'
 
+function formatTitle(title: string) {
+  if (!title) return 'Sin título';
+  const text = title.toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function ProyectoCard({ p }: { p: ProyectoResumen }) {
   const router = useRouter()
   return (
@@ -26,14 +32,18 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
         </div>
         <span className={styles.arrow}>→</span>
       </div>
-      <h2 className={styles.cardTitle}>{p.titulo || 'Sin título'}</h2>
+      <h2 className={styles.cardTitle}>{formatTitle(p.titulo || '')}</h2>
       <div className={styles.cardBottom}>
         <span className={styles.cardStat}>{p.total_proponentes} proponente{p.total_proponentes !== 1 ? 's' : ''}</span>
+        <span className={styles.bullet}>•</span>
         <span className={styles.cardStat}>{p.total_tramites} trámite{p.total_tramites !== 1 ? 's' : ''}</span>
         {p.fecha_inicio && (
-          <span className={styles.cardStat}>
-            {new Date(p.fecha_inicio).toLocaleDateString('es-CR', { year: 'numeric', month: 'short' })}
-          </span>
+          <>
+            <span className={styles.bullet}>•</span>
+            <span className={styles.cardStat}>
+              {new Date(p.fecha_inicio).toLocaleDateString('es-CR', { year: 'numeric', month: 'short' })}
+            </span>
+          </>
         )}
         {p.tipo_expediente && <span className={styles.cardType}>{p.tipo_expediente}</span>}
       </div>
@@ -87,6 +97,7 @@ function ProyectosContent() {
   const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
   const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || '')
   const [pagina,    setPagina]    = useState(1)
+  const [showCats,  setShowCats]  = useState(false)
 
   const [data,       setData]       = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
   const [tipos,      setTipos]      = useState<{ tipo_expediente: string; total: number }[]>([])
@@ -189,20 +200,31 @@ function ProyectosContent() {
 
           {/* Filtro de categorías */}
           {categorias.length > 0 && (
-            <div className={styles.catFilterRow}>
-              <button
-                className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
-                onClick={() => { setCategoria(''); setPagina(1) }}
-              >Todos los temas</button>
-              {categorias.map(cat => (
+            <div className={styles.catFilterContainer}>
+              <button 
+                type="button" 
+                className={styles.mobileCatToggle}
+                onClick={() => setShowCats(!showCats)}
+              >
+                {categoria ? `Tema: ${categorias.find(c => c.slug === categoria)?.nombre}` : 'Filtrar por Tema'}
+                <span className={`${styles.toggleIcon} ${showCats ? styles.toggleIconOpen : ''}`}>▼</span>
+              </button>
+              
+              <div className={`${styles.catFilterRow} ${showCats ? styles.catFilterRowOpen : ''}`}>
                 <button
-                  key={cat.slug}
-                  className={`${styles.catChip} ${categoria === cat.slug ? styles.catChipActive : ''}`}
-                  onClick={() => { setCategoria(cat.slug); setPagina(1) }}
-                >
-                  {cat.nombre}
-                </button>
-              ))}
+                  className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
+                  onClick={() => { setCategoria(''); setPagina(1); setShowCats(false); }}
+                >Todos los temas</button>
+                {categorias.map(cat => (
+                  <button
+                    key={cat.slug}
+                    className={`${styles.catChip} ${categoria === cat.slug ? styles.catChipActive : ''}`}
+                    onClick={() => { setCategoria(cat.slug); setPagina(1); setShowCats(false); }}
+                  >
+                    {cat.nombre}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

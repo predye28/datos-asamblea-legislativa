@@ -6,7 +6,8 @@
 .box {
   background: var(--paper-warm);
   border: 1px solid var(--rule);
-  padding: 32px 24px;
+  border-radius: 12px;
+  padding: 32px 20px;
 }
 
 @media (min-width: 768px) {
@@ -40,16 +41,33 @@
 
 .col {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
 }
 
 .number {
   font-family: var(--serif);
-  font-size: 56px;
+  font-size: 48px;
   font-weight: 700;
   color: var(--accent);
-  line-height: 1;
+  line-height: 0.9;
+  width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .col {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .number {
+    font-size: 56px;
+    width: auto;
+    text-align: left;
+    line-height: 1;
+  }
 }
 
 .text {

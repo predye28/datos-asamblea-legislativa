@@ -98,6 +98,24 @@ export interface DiputadoRanking {
   total_proyectos: number
 }
 
+export interface PerfilDiputado {
+  nombre_completo: string
+  total_proyectos: number
+  total_leyes: number
+  tasa_aprobacion: number
+  primer_proyecto: string
+  ultimo_proyecto: string
+  por_periodo: { periodo: string; total: number; leyes: number }[]
+  temas: { tema: string; slug: string; total: number }[]
+  ultimos_proyectos: {
+    numero_expediente: number
+    titulo: string | null
+    fecha_inicio: string | null
+    numero_ley: string | null
+    estado_actual: string | null
+  }[]
+}
+
 export interface ProyectosPorMes {
   anio: number
   mes: number
@@ -231,6 +249,9 @@ export const api = {
       if (params.q) qs.set('q', params.q)
       return apiFetch<{ datos: DiputadoRanking[]; total: number }>(`/metricas/diputados?${qs}`)
     },
+
+    perfilDiputado: (nombre: string) =>
+      apiFetch<PerfilDiputado>(`/metricas/diputados/${encodeURIComponent(nombre)}`),
   },
 
   categorias: {

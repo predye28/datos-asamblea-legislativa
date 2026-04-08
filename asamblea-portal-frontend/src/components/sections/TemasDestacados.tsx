@@ -25,10 +25,12 @@ function Bar({ label, total, max, slug, loading }: { label: string, total: numbe
   return (
     <Link href={`/proyectos?categoria=${slug}`} className={styles.barRow}>
       <div className={styles.barLabel} title={label}>{label}</div>
-      <div className={styles.barTrack}>
-         <div className={styles.barFill} ref={ref} />
+      <div className={styles.barTrackContainer}>
+        <div className={styles.barTrack}>
+           <div className={styles.barFill} ref={ref} />
+        </div>
+        <div className={styles.barValue}>{total}</div>
       </div>
-      <div className={styles.barValue}>{total}</div>
     </Link>
   )
 }

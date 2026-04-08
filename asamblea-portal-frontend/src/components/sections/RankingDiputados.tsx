@@ -62,7 +62,7 @@ export default function RankingDiputados() {
           datos.map((d, i) => (
             <Link
               key={d.nombre_completo}
-              href={`/diputados?q=${encodeURIComponent(d.apellidos || d.nombre_completo)}`}
+              href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
               className={styles.item}
             >
               <span className={`${styles.num} ${i < 3 ? styles.numAccent : ''}`}>
@@ -76,6 +76,13 @@ export default function RankingDiputados() {
           ))
         )}
       </div>
+
+      {/* CTA sutil */}
+      {!loading && datos.length > 0 && (
+        <Link href="/diputados" className={styles.verTodosCta}>
+          Ver ranking completo de diputados →
+        </Link>
+      )}
     </div>
   )
 }

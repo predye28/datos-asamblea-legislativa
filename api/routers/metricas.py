@@ -446,5 +446,111 @@ def diputados_ranking(desde: str = None, hasta: str = None, q: str = None):
         )
         for r in diputado_rows
     ]
-    
+
     return {"datos": datos, "total": len(datos)}
+
+
+@router.get("/metricas/diputados/{nombre_completo}", summary="Perfil detallado de un diputado")
+def perfil_diputado(nombre_completo: str):
+    """
+    Retorna el perfil completo de un diputado: métricas generales, proyectos por período,
+    tasa de aprobación, temas más frecuentes y últimos proyectos.
+    """
+    # Estrategia robusta: buscar por cada palara del nombre individualmente en UPPER
+    # Esto maneja tildes, mayusculas, y variaciones de formato
+    nombre_norm = nombre_completo.strip()
+    palabras = nombre_norm.split()
+
+    if len(palabras) >= 2:
+        # El scraper a veces guarda todo en "nombre" y deja "apellidos" NULL,
+        # así que concatenamos con CONCAT_WS que maneja los NULLs de forma segura.
+        # Buscamos que las primeras 2 palabras estén presentes en el nombre completo
+        search_condition = """
+            UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)
+            AND UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)
+        """
+        search_params_general = (
+            f"%{palabras[0]}%",
+            f"%{palabras[1]}%",
+        )
+    else:
+        search_condition = "UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)"
+        search_params_general = (f"%{nombre_norm}%",)
+
+    # ── 1. Métricas generales del diputado ────────────────────────────
+    general = fetchone(f"""
+        SELECT
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos,
+            COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS total_leyes,
+            MIN(p.fecha_inicio) AS primer_proyecto,
+            MAX(p.fecha_inicio) AS ultimo_proyecto
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        WHERE {search_condition}
+    """, search_params_general) or {}
+
+    # ── 2. Proyectos por período legislativo ──────────────────────────
+    por_periodo = fetchall(f"""
+        SELECT
+            CASE
+                WHEN p.fecha_inicio BETWEEN '2022-05-01' AND '2026-04-30' THEN '2022-2026'
+                WHEN p.fecha_inicio BETWEEN '2018-05-01' AND '2022-04-30' THEN '2018-2022'
+                WHEN p.fecha_inicio BETWEEN '2014-05-01' AND '2018-04-30' THEN '2014-2018'
+                WHEN p.fecha_inicio BETWEEN '2010-05-01' AND '2014-04-30' THEN '2010-2014'
+                ELSE 'Otro'
+            END AS periodo,
+            COUNT(DISTINCT pr.proyecto_id) AS total,
+            COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        WHERE ({search_condition})
+          AND p.fecha_inicio IS NOT NULL
+        GROUP BY periodo
+        ORDER BY periodo DESC
+    """, search_params_general)
+
+    # ── 3. Temas más frecuentes ────────────────────────────────────────
+    temas = fetchall(f"""
+        SELECT
+            c.nombre AS tema,
+            c.slug,
+            COUNT(DISTINCT pc.proyecto_id) AS total
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        JOIN proyecto_categorias pc ON pc.proyecto_id = p.id
+        JOIN categorias c ON c.id = pc.categoria_id
+        WHERE {search_condition}
+        GROUP BY c.nombre, c.slug
+        ORDER BY total DESC
+        LIMIT 5
+    """, search_params_general)
+
+    # ── 4. Últimos proyectos ──────────────────────────────────────────
+    ultimos = fetchall(f"""
+        SELECT DISTINCT
+            p.numero_expediente,
+            p.titulo,
+            p.fecha_inicio,
+            p.numero_ley
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        WHERE {search_condition}
+        ORDER BY p.fecha_inicio DESC NULLS LAST
+        LIMIT 10
+    """, search_params_general)
+
+    total = general.get("total_proyectos") or 0
+    total_leyes = general.get("total_leyes") or 0
+
+    return {
+        "nombre_completo": nombre_completo,
+        "total_proyectos": total,
+        "total_leyes": total_leyes,
+        "tasa_aprobacion": round((total_leyes / total * 100), 1) if total else 0.0,
+        "primer_proyecto": str(general.get("primer_proyecto") or ""),
+        "ultimo_proyecto": str(general.get("ultimo_proyecto") or ""),
+        "por_periodo": [dict(r) for r in por_periodo],
+        "temas": [dict(r) for r in temas],
+        "ultimos_proyectos": [dict(r) for r in ultimos],
+    }
+

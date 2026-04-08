@@ -9,17 +9,10 @@
 .card {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-top: 3px solid var(--rule); /* borde superior para indicar categoría */
+  border-radius: 12px;
   padding: 24px 20px;
   cursor: default;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   box-shadow: var(--shadow-sm);
-}
-
-.card:hover {
-  border-top-color: var(--accent);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
 /* Etiqueta de la tarjeta — más grande */
@@ -57,9 +50,12 @@
 }
 
 @media (max-width: 900px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
 }
-@media (max-width: 480px) {
-  .grid { grid-template-columns: 1fr; gap: 8px; }
-  .value { font-size: 32px; }
+
+@media (max-width: 500px) {
+  .card { padding: 16px 12px; }
+  .label { font-size: 10px; margin-bottom: 8px; }
+  .value { font-size: 28px; margin-bottom: 6px; }
+  .sub { font-size: 11px; }
 }

@@ -1,6 +1,7 @@
 .block {
   background: var(--paper-card);
   border: 1px solid var(--rule);
+  border-radius: 12px;
   padding: 32px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
@@ -115,6 +116,14 @@
   flex-shrink: 0;
 }
 
+.barTrackContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
 .barTrack {
   flex: 1;
   background: var(--paper);
@@ -166,8 +175,19 @@
   .header {
     flex-direction: column;
   }
+  .barRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px 0;
+  }
   .barLabel {
-    width: 140px;
-    font-size: 12px;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    color: var(--ink-muted);
   }
 }

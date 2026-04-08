@@ -1,11 +1,13 @@
 /* src/components/layout/Navbar.module.css */
 .header {
-  border-bottom: 3px solid var(--accent);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
-  background: var(--paper-card);
+  background: rgba(30, 41, 59, 0.85); /* var(--paper-card) con opacidad */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 200;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 /* ── Barra superior con logo y meta ── */
@@ -120,6 +122,8 @@
   z-index: 150;
   backdrop-filter: blur(2px);
   animation: fadeIn 0.2s ease;
+  cursor: pointer; /* IMPORTANTE: Necesario en iOS Safari para que detecte clics en divs */
+  -webkit-tap-highlight-color: transparent;
 }
 
 @keyframes fadeIn {

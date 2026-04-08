@@ -1,7 +1,6 @@
 .backBar {
-  background: var(--paper-warm);
-  border-bottom: 1px solid var(--rule);
-  padding: 12px 0;
+  background: transparent;
+  padding: 16px 0;
 }
 
 .back {
@@ -55,6 +54,7 @@
   color: #fff;
   padding: 5px 12px;
   letter-spacing: 0.06em;
+  border-radius: 4px;
 }
 
 .badgeActivo {
@@ -64,6 +64,7 @@
   color: rgba(248, 250, 252, 0.85);
   padding: 5px 12px;
   letter-spacing: 0.04em;
+  border-radius: 4px;
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -101,8 +102,10 @@
 .card {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  padding: 28px;
-  margin-bottom: 16px;
+  border-radius: 16px;
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
 }
 
 .sectionTitle {
@@ -219,29 +222,30 @@
 }
 
 .timelineOrgano {
-  font-family: var(--serif);
-  font-size: 15px;
-  font-weight: 700;
+  font-family: var(--body);
+  font-size: 16px;
+  font-weight: 600;
   margin-bottom: 4px;
+  color: var(--ink);
 }
 
 .timelineDates {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-faint);
-  margin-bottom: 4px;
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 8px;
 }
 
 .timelineTipo {
   display: inline-block;
-  font-family: var(--mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
   border: 1px solid var(--rule);
+  border-radius: 16px;
   color: var(--ink-muted);
-  background: var(--paper-warm);
+  background: var(--paper);
 }
 
 /* Docs */
@@ -276,8 +280,10 @@
 .sideCard {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  padding: 20px;
-  margin-bottom: 16px;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
 }
 
 .sideTitle {
@@ -355,10 +361,39 @@
 @media (max-width: 860px) {
   .layout {
     grid-template-columns: 1fr;
+    padding-top: 16px;
   }
+}
 
-  .sidebar {
-    order: -1;
+@media (max-width: 640px) {
+  .pageHero {
+    padding: 24px 0;
+  }
+  
+  .heroTitle {
+    max-width: 100%;
+    font-size: 26px;
+  }
+  
+  .card, .sideCard {
+    padding: 24px 16px;
+  }
+  
+  .dlRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 0;
+  }
+  
+  .dlRow dt {
+    width: 100%;
+    font-size: 12px;
+  }
+  
+  .dlRow dd {
+    font-size: 16px;
+    font-weight: 600;
   }
 }
 

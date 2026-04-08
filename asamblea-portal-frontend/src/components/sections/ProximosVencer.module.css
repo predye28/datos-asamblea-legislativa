@@ -5,6 +5,7 @@
   border-top: 1px solid var(--rule);
   border-right: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
+  border-radius: 12px;
   padding: 24px 28px;
   background: var(--paper-card);
   margin-bottom: 8px;

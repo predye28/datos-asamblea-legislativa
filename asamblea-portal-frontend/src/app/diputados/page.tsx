@@ -131,7 +131,7 @@ function DiputadosContent() {
                   className={styles.item}
                   onClick={() =>
                     router.push(
-                      `/proyectos?q=${encodeURIComponent(d.nombre_completo)}`,
+                      `/diputados/${encodeURIComponent(d.nombre_completo)}`,
                     )
                   }
                 >

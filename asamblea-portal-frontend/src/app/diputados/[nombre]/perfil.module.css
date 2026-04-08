@@ -1,0 +1,509 @@
+/* src/app/diputados/[nombre]/perfil.module.css */
+
+/* ── Back bar ─────────────────────────────────────────────────────── */
+.backBar {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+
+.backBtn {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+.backBtn:hover { color: var(--accent); }
+
+/* ── Hero ──────────────────────────────────────────────────────────── */
+.hero {
+  background: transparent;
+  color: var(--ink);
+  padding: 16px 20px 40px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.heroInner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--body);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+
+.heroText {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroKicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.heroName {
+  font-family: var(--serif);
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.heroSub {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.heroRange {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* ── Container ─────────────────────────────────────────────────────── */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Stat grid ─────────────────────────────────────────────────────── */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--rule);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+.statCard:hover {
+  border-top-color: var(--ink-faint);
+}
+
+.statCardAccent {
+  border-top-color: var(--accent);
+}
+
+.statCardAccent:hover {
+  border-top-color: var(--accent);
+}
+
+.statNum {
+  font-family: var(--serif);
+  font-size: clamp(28px, 6vw, 38px);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.statCardAccent .statNum {
+  color: var(--accent);
+}
+
+.statLabel {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── Card genérica ─────────────────────────────────────────────────── */
+.card {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  padding: 24px 24px;
+  margin-bottom: 32px;
+}
+
+.cardDesc {
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+/* ── Barras por período ─────────────────────────────────────────────── */
+.periodoBars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.periodoRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.periodoLabel {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.periodoBarWrap {
+  flex: 1;
+  height: 8px;
+  background: var(--paper-warm);
+  position: relative;
+  overflow: hidden;
+}
+
+.periodoBarFill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--ink-faint);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.periodoBarLey {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--accent);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.periodoCount {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Temas grid ─────────────────────────────────────────────────────── */
+.temasGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  padding: 16px;
+}
+
+.temaChip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.temaChip:hover {
+  background: var(--paper-warm);
+}
+
+.temaNombre {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  flex: 1;
+}
+
+.temaNumWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 40%;
+}
+
+.temaBarWrap {
+  flex: 1;
+  height: 6px;
+  background: var(--paper);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.temaBarFill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+.temaNum {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  width: 30px;
+  text-align: right;
+}
+
+/* ── Lista de proyectos (estilo ProyectoCard) ───────────────────────── */
+.proyectosGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.proyectoCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  padding: 24px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.proyectoCard:hover {
+  border-color: var(--accent);
+  background: var(--paper-warm);
+}
+
+.pcTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pcMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.pcExp {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+
+.pcBadgeLey {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.pcArrow {
+  color: var(--ink-faint);
+  font-size: 16px;
+  transition: transform 0.2s;
+}
+
+.proyectoCard:hover .pcArrow {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+.pcTitle {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+
+.pcBottom {
+  margin-top: auto;
+  border-top: 1px dashed var(--rule);
+  padding-top: 12px;
+}
+
+.pcDate {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+
+.verTodosBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 20px;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  text-decoration: none;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.verTodosBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Error state ─────────────────────────────────────────────────────── */
+.errorWrap {
+  padding: 60px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.errorIcon {
+  width: 64px;
+  height: 64px;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--ink-muted);
+}
+
+.errorWrap h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.errorWrap p {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+
+.backLink {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ── Responsive Mobile ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .heroInner {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+  }
+
+  .heroText {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .container {
+    padding: 20px 16px 80px; /* Menos espacio horizontal en celular */
+  }
+
+  .card {
+    padding: 16px; /* Reducir padding enorme */
+    margin-bottom: 24px;
+  }
+
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 24px;
+  }
+
+  .statCard {
+    padding: 20px 12px;
+  }
+
+  .statNum {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
+  .temasGrid {
+    grid-template-columns: 1fr;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+  }
+
+  .proyectoCard {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 400px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+}
