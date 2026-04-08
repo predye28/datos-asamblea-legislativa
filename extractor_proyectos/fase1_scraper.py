@@ -41,7 +41,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA = "Expedientes Legislativos - Consulta"
-PAGINAS_A_EXTRAER   = 3      # Siempre páginas 1, 2 y 3
+PAGINAS_A_EXTRAER   = 10      # Siempre páginas 1, 2 y 3
 REGISTROS_POR_PAG   = "10"   # Valor del dropdown de la grilla
 
 # Tiempos de espera (ms) — ajustados para ser conservadores

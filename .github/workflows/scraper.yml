@@ -8,7 +8,7 @@ on:
 jobs:
   fase1:
     runs-on: ubuntu-latest
-    timeout-minutes: 60   # Máximo 60 min — si tarda más, algo está muy mal
+    timeout-minutes: 120   # Máximo 120 min — si tarda más, algo está muy mal
  
     steps:
       - name: Checkout código
