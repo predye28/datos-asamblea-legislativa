@@ -50,7 +50,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 20    # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 10    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
 PAGINA_INICIO_FASE2  = 11     # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)
@@ -232,51 +232,51 @@ async def cambiar_registros_por_pagina(frame, page: Page, cantidad: str = "10") 
         log(f"Error configurando registros: {e}")
     return False
 
-async def preconfigurar_tabs_a_50(frame, page: Page) -> bool:
-    """
-    Navega a Tramitación y Proponentes, verifica si están en 50 registros 
-    y si no, los cambia. (Se llama por cada expediente).
-    """
+
+async def obtener_rowscount(frame) -> int:
+    try:
+        return await frame.evaluate("""() => {
+            const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
+            if (!contenedor) return 0;
+            const panel = [...contenedor.querySelectorAll('.jqx-tabs-content-element')].find(p => p.offsetParent !== null);
+            if (!panel) return 0;
+            const grilla = panel.querySelector("div[role='grid']");
+            if (!grilla) return 0;
+            const $ = window.$ || window.jQuery;
+            if (!$ || !$(grilla).jqxGrid) return 0;
+            try {
+                return $(grilla).jqxGrid('getdatainformation').rowscount || 0;
+            } catch(e) { return 0; }
+        }""")
+    except Exception:
+        return 0
+
+
+async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int):
     try:
         selector_dropdown = '.marco-subcontenedor.alto-completo .jqx-tabs-content-element:not([style*="display: none"]) .jqx-dropdownlist-content'
-
-        for tab in ["Tramitación", "Proponentes"]:
-            await clic_tab(frame, page, tab)
-            await page.wait_for_timeout(1500)
-            
-            drp = await frame.query_selector(selector_dropdown)
-            if drp:
-                texto_actual = await drp.inner_text()
-                if "50" not in texto_actual:
-                    await drp.click()
-                    await page.wait_for_timeout(500)
-                    
-                    opcion_50 = None
-                    # Usamos page.locator porque los menús suelen flotar en el viewport general
-                    # y filtramos agregando :visible al selector CSS
-                    loc = page.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
-                    
-                    if await loc.count() > 0:
-                        await loc.first.click(force=True)
-                        await page.wait_for_timeout(2000)
-                        log(f"  > Tab '{tab}' seteado a 50 registros.")
-                    else:
-                        # Si no lo halló en page, intentamos en el frame
-                        loc_f = frame.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
-                        if await loc_f.count() > 0:
-                            await loc_f.first.click(force=True)
-                            await page.wait_for_timeout(2000)
-                            log(f"  > Tab '{tab}' seteado a 50 registros (vía frame).")
-                        else:
-                            log(f"  > No se encontró la opción '50' visible para '{tab}'.")
-        # Devolver a General
-        await clic_tab(frame, page, "General")
-        await page.wait_for_timeout(500)
-        return True
+        drp = await frame.query_selector(selector_dropdown)
+        if not drp:
+            return
+        texto_actual = await drp.inner_text()
+        if "50" in texto_actual:
+            return
         
+        await drp.click()
+        await page.wait_for_timeout(500)
+        loc = page.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
+        if await loc.count() > 0:
+            await loc.first.click(force=True)
+            await page.wait_for_timeout(1500)
+            log(f"  > '{tab_name}' ampliado a 50 registros (tenía {rowscount}).")
+        else:
+            loc_f = frame.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
+            if await loc_f.count() > 0:
+                await loc_f.first.click(force=True)
+                await page.wait_for_timeout(1500)
+                log(f"  > '{tab_name}' ampliado a 50 (tenía {rowscount}, vía frame).")
     except Exception as e:
-        log(f"Error verificando tabs a 50: {e}")
-    return False
+        log(f"  > Error ajustando a 50 en {tab_name}: {e}")
 
 
 async def iniciar_sesion_completa(page: Page, pagina_destino: int):
@@ -448,6 +448,11 @@ async def extraer_tab_general(frame, page: Page) -> dict:
 async def extraer_tab_tramitacion(frame, page: Page) -> list:
     await clic_tab(frame, page, "Tramitación")
     await page.wait_for_timeout(700)
+    
+    rc = await obtener_rowscount(frame)
+    if rc > 10:
+        await asegurar_50_registros(frame, page, "Tramitación", rc)
+        
     tramitacion = []
     try:
         resultado = await frame.evaluate("""() => {
@@ -491,6 +496,11 @@ async def extraer_tab_tramitacion(frame, page: Page) -> list:
 async def extraer_tab_proponentes(frame, page: Page) -> list:
     await clic_tab(frame, page, "Proponentes")
     await page.wait_for_timeout(700)
+    
+    rc = await obtener_rowscount(frame)
+    if rc > 10:
+        await asegurar_50_registros(frame, page, "Proponentes", rc)
+        
     proponentes = []
     try:
         resultado = await frame.evaluate("""() => {
@@ -681,9 +691,6 @@ async def procesar_pagina(
             continue
 
         filas_exitosas += 1
-        
-        # Verificar y forzar 50 registros en este expediente
-        await preconfigurar_tabs_a_50(frame, page)
 
         general     = await extraer_tab_general(frame, page)
         tramitacion = await extraer_tab_tramitacion(frame, page)
