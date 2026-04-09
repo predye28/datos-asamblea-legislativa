@@ -232,6 +232,62 @@ async def cambiar_registros_por_pagina(frame, page: Page, cantidad: str = "10") 
         log(f"Error configurando registros: {e}")
     return False
 
+async def preconfigurar_tabs_a_50(frame, page: Page) -> bool:
+    """
+    Hace clic en la primera fila visible, navega a Tramitación y Proponentes, 
+    y cambia sus dropdowns a 50 de forma global.
+    """
+    log("Preconfigurando grillas inferiores (Tramitación/Proponentes) a 50 registros...")
+    try:
+        # Clic en la primera fila obligatoriamente para cargar las sub-grillas
+        await clicar_fila(frame, page, 0)
+        await page.wait_for_timeout(2000)
+
+        selector_dropdown = '.marco-subcontenedor.alto-completo .jqx-tabs-content-element:not([style*="display: none"]) .jqx-dropdownlist-content'
+
+        for tab in ["Tramitación", "Proponentes"]:
+            await clic_tab(frame, page, tab)
+            await page.wait_for_timeout(1500)
+            
+            drp = await frame.query_selector(selector_dropdown)
+            if drp:
+                texto_actual = await drp.inner_text()
+                if "50" not in texto_actual:
+                    await drp.click()
+                    await page.wait_for_timeout(500)
+                    
+                    opcion_50 = None
+                    # Usamos page.locator porque los menús suelen flotar en el viewport general
+                    # y filtramos agregando :visible al selector CSS
+                    loc = page.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
+                    
+                    if await loc.count() > 0:
+                        await loc.first.click(force=True)
+                        await page.wait_for_timeout(2000)
+                        log(f"  > Tab '{tab}' seteado a 50 registros.")
+                    else:
+                        # Si no lo halló en page, intentamos en el frame
+                        loc_f = frame.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
+                        if await loc_f.count() > 0:
+                            await loc_f.first.click(force=True)
+                            await page.wait_for_timeout(2000)
+                            log(f"  > Tab '{tab}' seteado a 50 registros (vía frame).")
+                        else:
+                            log(f"  > No se encontró la opción '50' visible para '{tab}'.")
+                else:
+                    log(f"  > Tab '{tab}' ya estaba en 50.")
+            else:
+                log(f"  > No se encontró el dropdown en '{tab}'.")
+
+        # Devolver a General
+        await clic_tab(frame, page, "General")
+        await page.wait_for_timeout(500)
+        return True
+        
+    except Exception as e:
+        log(f"Error preconfigurando tabs a 50: {e}")
+    return False
+
 
 async def iniciar_sesion_completa(page: Page, pagina_destino: int):
     """
@@ -806,6 +862,12 @@ async def main():
                 sys.exit(0)
 
             await cambiar_registros_por_pagina(frame, page, REGISTROS_POR_PAG)
+            #
+            #
+            # Preconfigurar tabs inferiores a 50 (idea del usuario)
+            await preconfigurar_tabs_a_50(frame, page)
+            #
+            #
             await page.wait_for_timeout(4_000)
 
             # Saltar a la página de inicio si no es la 1
