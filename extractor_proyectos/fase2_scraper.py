@@ -50,9 +50,9 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 3    # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 20    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
-PAGINA_INICIO_FASE2  = 5     # Fase 1 cubre 1-3, Fase 2 empieza en 4
+PAGINA_INICIO_FASE2  = 11     # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)
 MAX_REINTENTOS_SESION = 3     # Reintentos si la sesión se cae mid-run
 
@@ -234,15 +234,10 @@ async def cambiar_registros_por_pagina(frame, page: Page, cantidad: str = "10") 
 
 async def preconfigurar_tabs_a_50(frame, page: Page) -> bool:
     """
-    Hace clic en la primera fila visible, navega a Tramitación y Proponentes, 
-    y cambia sus dropdowns a 50 de forma global.
+    Navega a Tramitación y Proponentes, verifica si están en 50 registros 
+    y si no, los cambia. (Se llama por cada expediente).
     """
-    log("Preconfigurando grillas inferiores (Tramitación/Proponentes) a 50 registros...")
     try:
-        # Clic en la primera fila obligatoriamente para cargar las sub-grillas
-        await clicar_fila(frame, page, 0)
-        await page.wait_for_timeout(2000)
-
         selector_dropdown = '.marco-subcontenedor.alto-completo .jqx-tabs-content-element:not([style*="display: none"]) .jqx-dropdownlist-content'
 
         for tab in ["Tramitación", "Proponentes"]:
@@ -274,18 +269,13 @@ async def preconfigurar_tabs_a_50(frame, page: Page) -> bool:
                             log(f"  > Tab '{tab}' seteado a 50 registros (vía frame).")
                         else:
                             log(f"  > No se encontró la opción '50' visible para '{tab}'.")
-                else:
-                    log(f"  > Tab '{tab}' ya estaba en 50.")
-            else:
-                log(f"  > No se encontró el dropdown en '{tab}'.")
-
         # Devolver a General
         await clic_tab(frame, page, "General")
         await page.wait_for_timeout(500)
         return True
         
     except Exception as e:
-        log(f"Error preconfigurando tabs a 50: {e}")
+        log(f"Error verificando tabs a 50: {e}")
     return False
 
 
@@ -691,6 +681,10 @@ async def procesar_pagina(
             continue
 
         filas_exitosas += 1
+        
+        # Verificar y forzar 50 registros en este expediente
+        await preconfigurar_tabs_a_50(frame, page)
+
         general     = await extraer_tab_general(frame, page)
         tramitacion = await extraer_tab_tramitacion(frame, page)
         proponentes = await extraer_tab_proponentes(frame, page)
@@ -862,12 +856,6 @@ async def main():
                 sys.exit(0)
 
             await cambiar_registros_por_pagina(frame, page, REGISTROS_POR_PAG)
-            #
-            #
-            # Preconfigurar tabs inferiores a 50 (idea del usuario)
-            await preconfigurar_tabs_a_50(frame, page)
-            #
-            #
             await page.wait_for_timeout(4_000)
 
             # Saltar a la página de inicio si no es la 1
