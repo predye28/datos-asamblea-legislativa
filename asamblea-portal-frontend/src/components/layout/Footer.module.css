@@ -32,11 +32,15 @@
 
 .logo {
   font-family: var(--serif);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--ink);
-  white-space: nowrap;
+  text-decoration: none;
 }
+
+.logo span { color: var(--accent); }
 
 .tagline {
   font-size: 12px;
@@ -46,7 +50,7 @@
 }
 
 .label {
-  font-family: var(--mono);
+  font-family: var(--body);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -79,7 +83,7 @@ a.sourceLink:hover { color: var(--accent); }
   max-width: var(--max-w);
   margin: 0 auto;
   border-top: 1px solid var(--rule);
-  font-family: var(--mono);
+  font-family: var(--body);
   font-size: 10px;
   color: var(--ink-faint);
   text-transform: uppercase;

@@ -50,7 +50,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 30    # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 15    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
 PAGINA_INICIO_FASE2  = 11     # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)

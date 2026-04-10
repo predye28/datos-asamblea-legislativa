@@ -9,7 +9,7 @@
   margin-bottom: 40px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
   position: relative;
 }
@@ -80,28 +80,13 @@
 .filterControlsContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--rule);
+  gap: 12px;
 }
 
 .selectsRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex: 1;
-}
-
-@media (min-width: 768px) {
-  .selectsRow {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .selectsRow {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .selectWrapper {
@@ -448,22 +433,22 @@
 }
 
 /* Category filter chips */
-.catFilterContainer {
+.filterContainer {
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
-.mobileCatToggle {
+.filterToggle {
   display: flex;
   font-family: var(--body);
   font-weight: 600;
-  font-size: 16px;
-  padding: 16px 24px;
+  font-size: 15px;
+  padding: 14px 20px;
   background: var(--paper-card);
-  border: 2px solid var(--rule);
+  border: 1px solid var(--rule);
   color: var(--ink);
-  border-radius: 14px;
+  border-radius: 12px;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
@@ -471,7 +456,7 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
-.mobileCatToggle:hover {
+.filterToggle:hover {
   border-color: var(--accent);
   background: var(--paper-warm);
 }
@@ -486,7 +471,7 @@
   transform: rotate(180deg);
 }
 
-.catFilterRow {
+.filterRow {
   display: none;
   flex-direction: column;
   gap: 4px;
@@ -494,29 +479,28 @@
   background: var(--paper-card);
   border: 1px solid var(--rule);
   border-radius: 14px;
-  margin-top: 12px;
-  box-shadow: 0 15px 45px rgba(0,0,0,0.15);
+  margin-top: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  max-height: 280px; /* Reducido para forzar 'peek' de más elementos */
+  max-height: 350px;
   overflow-y: auto;
   z-index: 10;
-  position: relative;
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
   scrollbar-color: var(--rule) transparent;
 }
 
-/* Indicador de scroll mejorado */
-.catFilterContainer::after {
+/* Indicador de scroll */
+.filterContainer::after {
   content: '▼';
   position: absolute;
-  bottom: -10px;
+  bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 9px;
   color: var(--accent);
   background: var(--paper);
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 1px solid var(--rule);
   display: flex;
@@ -528,52 +512,33 @@
   z-index: 12;
 }
 
-.catFilterContainer:has(.catFilterRowOpen)::after {
+.filterContainer:has(.filterRowOpen)::after {
   opacity: 1;
-  bottom: 16px;
+  bottom: 8px;
 }
 
-/* Scrollbar premium */
-.catFilterRow::-webkit-scrollbar {
+.filterRow::-webkit-scrollbar {
   width: 6px;
 }
-.catFilterRow::-webkit-scrollbar-track {
+.filterRow::-webkit-scrollbar-track {
   background: transparent;
 }
-.catFilterRow::-webkit-scrollbar-thumb {
+.filterRow::-webkit-scrollbar-thumb {
   background: var(--rule);
   border-radius: 10px;
-  border: 3px solid var(--paper-card); /* Hace que se vea más delgada y premium */
-}
-.catFilterRow::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-faint);
+  border: 2px solid var(--paper-card);
 }
 
-@media (min-width: 768px) {
-  .catFilterRow {
-    display: none;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-}
-
-.catFilterRowOpen {
+.filterRowOpen {
   display: flex !important;
 }
 
+/* En desktop podemos usar grid si hay muchos elementos */
 @media (min-width: 768px) {
-  .catFilterRowOpen {
+  .filterRowOpen {
     display: grid !important;
-  }
-}
-
-.catFilterRow::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-@media (max-width: 640px) {
-  .catFilterRow {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 
@@ -582,11 +547,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.catChip {
+.chip {
   font-family: var(--body);
   font-weight: 500;
   font-size: 14px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
@@ -597,37 +562,37 @@
   align-items: center;
   justify-content: flex-start;
   text-align: left;
-  gap: 12px;
+  gap: 10px;
 }
 
-.catChip::before {
+.chip::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--ink-faint);
   transition: all 0.2s;
 }
 
-.catChip:hover { 
+.chip:hover { 
   background: var(--paper-warm); 
   color: var(--accent); 
 }
 
-.catChip:hover::before {
+.chip:hover::before {
   background: var(--accent);
-  transform: scale(1.5);
+  transform: scale(1.4);
 }
 
-.catChipActive { 
+.chipActive { 
   background: rgba(37, 99, 235, 0.08) !important; 
   color: var(--accent) !important; 
   font-weight: 600;
 }
 
-.catChipActive::before {
+.chipActive::before {
   background: var(--accent) !important;
-  transform: scale(1.5);
+  transform: scale(1.4);
 }
 
 /* Category tags on each card */

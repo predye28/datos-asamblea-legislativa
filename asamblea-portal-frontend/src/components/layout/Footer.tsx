@@ -1,4 +1,5 @@
 // src/components/layout/Footer.tsx
+import Link from 'next/link'
 import styles from './Footer.module.css'
 
 export default function Footer() {
@@ -6,7 +7,9 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.left}>
-          <span className={styles.logo}>La Asamblea al Día</span>
+          <Link href="/" className={styles.logo}>
+            La <span>Asamblea</span><br />al día
+          </Link>
           <span className={styles.separator}>·</span>
           <p className={styles.tagline}>
             Portal ciudadano independiente. Datos del SIL de la Asamblea Legislativa de Costa Rica.

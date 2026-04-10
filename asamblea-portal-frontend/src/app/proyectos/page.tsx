@@ -97,8 +97,8 @@ function ProyectosContent() {
   const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
   const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || '')
   const [pagina,    setPagina]    = useState(1)
-  const [showCats,  setShowCats]  = useState(false)
-  const catRef = useRef<HTMLDivElement>(null)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const filterRef = useRef<HTMLDivElement>(null)
 
   const [data,       setData]       = useState<{ datos: ProyectoResumen[]; paginacion: Paginacion } | null>(null)
   const [tipos,      setTipos]      = useState<{ tipo_expediente: string; total: number }[]>([])
@@ -115,8 +115,8 @@ function ProyectosContent() {
   // Cerrar al hacer click fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (catRef.current && !catRef.current.contains(event.target as Node)) {
-        setShowCats(false)
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setActiveFilter(null)
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -173,6 +173,7 @@ function ProyectosContent() {
   const clearFilters = () => {
     setQuery(''); setTipo(''); setAnio(''); setSoloLeyes(false)
     setOrden('reciente'); setCategoria(''); setPeriodo(''); setPagina(1)
+    setActiveFilter(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -218,66 +219,139 @@ function ProyectosContent() {
             <button type="submit" className={styles.searchBtn}>Buscar</button>
           </form>
 
-          {/* Filtro de categorías */}
-          {categorias.length > 0 && (
-            <div className={styles.catFilterContainer} ref={catRef}>
-              <button 
-                type="button" 
-                className={styles.mobileCatToggle}
-                onClick={() => setShowCats(!showCats)}
-              >
-                {categoria ? `Tema: ${categorias.find(c => c.slug === categoria)?.nombre}` : 'Filtrar por Tema'}
-                <span className={`${styles.toggleIcon} ${showCats ? styles.toggleIconOpen : ''}`}>▼</span>
-              </button>
-              
-              <div className={`${styles.catFilterRow} ${showCats ? styles.catFilterRowOpen : ''}`}>
-                <button
-                  className={`${styles.catChip} ${categoria === '' ? styles.catChipActive : ''}`}
-                  onClick={() => { setCategoria(''); handlePageChange(1); setShowCats(false); }}
-                >Todos los temas</button>
-                {categorias.map(cat => (
+          <div className={styles.filterControlsContainer} ref={filterRef}>
+            {/* Filtro de categorías */}
+            {categorias.length > 0 && (
+              <div className={styles.filterContainer}>
+                <button 
+                  type="button" 
+                  className={styles.filterToggle}
+                  onClick={() => setActiveFilter(activeFilter === 'tema' ? null : 'tema')}
+                >
+                  {categoria ? `Tema: ${categorias.find(c => c.slug === categoria)?.nombre}` : 'Filtrar por Tema'}
+                  <span className={`${styles.toggleIcon} ${activeFilter === 'tema' ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                
+                <div className={`${styles.filterRow} ${activeFilter === 'tema' ? styles.filterRowOpen : ''}`}>
                   <button
-                    key={cat.slug}
-                    className={`${styles.catChip} ${categoria === cat.slug ? styles.catChipActive : ''}`}
-                    onClick={() => { setCategoria(cat.slug); handlePageChange(1); setShowCats(false); }}
-                  >
-                    {cat.nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className={styles.filterControlsContainer}>
-            <div className={styles.selectsRow}>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={periodo} onChange={e => { setPeriodo(e.target.value); setAnio(''); handlePageChange(1) }}>
-                  <option value="">Cualquier período</option>
-                  {periodos.map(p => <option key={p.label} value={p.label}>Periodo {p.label}</option>)}
-                </select>
-              </div>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={anio} onChange={e => { setAnio(e.target.value); setPeriodo(''); handlePageChange(1) }}>
-                  <option value="">Año específico (Cualquiera)</option>
-                  {anios.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={tipo} onChange={e => { setTipo(e.target.value); handlePageChange(1) }}>
-                  <option value="">Tipo de expediente (Todos)</option>
-                  {tipos.map(t => (
-                    <option key={t.tipo_expediente} value={t.tipo_expediente}>
-                      {t.tipo_expediente} ({t.total})
-                    </option>
+                    className={`${styles.chip} ${categoria === '' ? styles.chipActive : ''}`}
+                    onClick={() => { setCategoria(''); handlePageChange(1); setActiveFilter(null); }}
+                  >Todos los temas</button>
+                  {categorias.map(cat => (
+                    <button
+                      key={cat.slug}
+                      className={`${styles.chip} ${categoria === cat.slug ? styles.chipActive : ''}`}
+                      onClick={() => { setCategoria(cat.slug); handlePageChange(1); setActiveFilter(null); }}
+                    >
+                      {cat.nombre}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={orden} onChange={e => { setOrden(e.target.value); handlePageChange(1) }}>
-                  <option value="reciente">Más recientes primero</option>
-                  <option value="antiguo">Más antiguos primero</option>
-                  <option value="expediente">Por número de expediente</option>
-                </select>
+            )}
+
+            <div className={styles.selectsRow}>
+              {/* Periodo */}
+              <div className={styles.filterContainer}>
+                <button 
+                  type="button" 
+                  className={styles.filterToggle}
+                  onClick={() => setActiveFilter(activeFilter === 'periodo' ? null : 'periodo')}
+                >
+                  {periodo ? `Período: ${periodo}` : 'Cualquier período'}
+                  <span className={`${styles.toggleIcon} ${activeFilter === 'periodo' ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                <div className={`${styles.filterRow} ${activeFilter === 'periodo' ? styles.filterRowOpen : ''}`}>
+                  <button
+                    className={`${styles.chip} ${periodo === '' ? styles.chipActive : ''}`}
+                    onClick={() => { setPeriodo(''); setAnio(''); handlePageChange(1); setActiveFilter(null); }}
+                  >Cualquier período</button>
+                  {periodos.map(p => (
+                    <button
+                      key={p.label}
+                      className={`${styles.chip} ${periodo === p.label ? styles.chipActive : ''}`}
+                      onClick={() => { setPeriodo(p.label); setAnio(''); handlePageChange(1); setActiveFilter(null); }}
+                    >Periodo {p.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Año */}
+              <div className={styles.filterContainer}>
+                <button 
+                  type="button" 
+                  className={styles.filterToggle}
+                  onClick={() => setActiveFilter(activeFilter === 'anio' ? null : 'anio')}
+                >
+                  {anio ? `Año: ${anio}` : 'Año específico'}
+                  <span className={`${styles.toggleIcon} ${activeFilter === 'anio' ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                <div className={`${styles.filterRow} ${activeFilter === 'anio' ? styles.filterRowOpen : ''}`}>
+                  <button
+                    className={`${styles.chip} ${anio === '' ? styles.chipActive : ''}`}
+                    onClick={() => { setAnio(''); setPeriodo(''); handlePageChange(1); setActiveFilter(null); }}
+                  >Cualquier año</button>
+                  {anios.map(a => (
+                    <button
+                      key={a}
+                      className={`${styles.chip} ${anio === String(a) ? styles.chipActive : ''}`}
+                      onClick={() => { setAnio(String(a)); setPeriodo(''); handlePageChange(1); setActiveFilter(null); }}
+                    >{a}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tipo */}
+              <div className={styles.filterContainer}>
+                <button 
+                  type="button" 
+                  className={styles.filterToggle}
+                  onClick={() => setActiveFilter(activeFilter === 'tipo' ? null : 'tipo')}
+                >
+                  {tipo ? `Tipo: ${tipo}` : 'Tipo de expediente'}
+                  <span className={`${styles.toggleIcon} ${activeFilter === 'tipo' ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                <div className={`${styles.filterRow} ${activeFilter === 'tipo' ? styles.filterRowOpen : ''}`}>
+                  <button
+                    className={`${styles.chip} ${tipo === '' ? styles.chipActive : ''}`}
+                    onClick={() => { setTipo(''); handlePageChange(1); setActiveFilter(null); }}
+                  >Todos los tipos</button>
+                  {tipos.map(t => (
+                    <button
+                      key={t.tipo_expediente}
+                      className={`${styles.chip} ${tipo === t.tipo_expediente ? styles.chipActive : ''}`}
+                      onClick={() => { setTipo(t.tipo_expediente); handlePageChange(1); setActiveFilter(null); }}
+                    >
+                      {t.tipo_expediente} ({t.total})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Orden */}
+              <div className={styles.filterContainer}>
+                <button 
+                  type="button" 
+                  className={styles.filterToggle}
+                  onClick={() => setActiveFilter(activeFilter === 'orden' ? null : 'orden')}
+                >
+                  {orden === 'reciente' ? 'Más recientes primero' : orden === 'antiguo' ? 'Más antiguos primero' : 'Por número de expediente'}
+                  <span className={`${styles.toggleIcon} ${activeFilter === 'orden' ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                <div className={`${styles.filterRow} ${activeFilter === 'orden' ? styles.filterRowOpen : ''}`}>
+                  <button
+                    className={`${styles.chip} ${orden === 'reciente' ? styles.chipActive : ''}`}
+                    onClick={() => { setOrden('reciente'); handlePageChange(1); setActiveFilter(null); }}
+                  >Más recientes primero</button>
+                  <button
+                    className={`${styles.chip} ${orden === 'antiguo' ? styles.chipActive : ''}`}
+                    onClick={() => { setOrden('antiguo'); handlePageChange(1); setActiveFilter(null); }}
+                  >Más antiguos primero</button>
+                  <button
+                    className={`${styles.chip} ${orden === 'expediente' ? styles.chipActive : ''}`}
+                    onClick={() => { setOrden('expediente'); handlePageChange(1); setActiveFilter(null); }}
+                  >Por número de expediente</button>
+                </div>
               </div>
             </div>
             

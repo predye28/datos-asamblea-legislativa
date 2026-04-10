@@ -22,7 +22,7 @@
 }
 
 .meta {
-  font-family: var(--mono);
+  font-family: var(--body);
   font-size: 11px;
   color: var(--ink-faint);
   letter-spacing: 0.04em;
@@ -59,7 +59,7 @@
 .nav::-webkit-scrollbar { display: none; }
 
 .link {
-  font-family: var(--mono);
+  font-family: var(--body);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -195,7 +195,7 @@
 
 /* Links del menú móvil */
 .mobileLink {
-  font-family: var(--mono);
+  font-family: var(--body);
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
