@@ -1,7 +1,7 @@
 """
 fase2_scraper.py
-──────────────────────────────────────────────────────────────────────
-Fase 2 — Backfill y actualización continua del SIL.
+----------------------------------------------------------------------
+Fase 2 - Backfill y actualización continua del SIL.
 
 Responsabilidad: recorrer TODAS las páginas del portal de forma
 gradual, guardando el progreso en PostgreSQL para poder pausar y
@@ -40,9 +40,9 @@ from playwright.async_api import async_playwright, Page
 
 from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guardar_checkpoint_db
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # CONFIGURACIÓN
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 URL_BASE = (
     "https://www.asamblea.go.cr/Centro_de_informacion/"
@@ -50,7 +50,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 10    # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 30    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
 PAGINA_INICIO_FASE2  = 11     # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)
@@ -65,13 +65,13 @@ ESPERA_CLIC_PAGINA   = 4_000
 IS_CI = os.getenv("CI", "false").lower() == "true"
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # ARGUMENTOS CLI
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 def parsear_args():
     parser = argparse.ArgumentParser(
-        description="Fase 2 — Backfill SIL Asamblea Legislativa"
+        description="Fase 2 - Backfill SIL Asamblea Legislativa"
     )
     parser.add_argument(
         "--max-paginas", type=int, default=None,
@@ -88,9 +88,9 @@ def parsear_args():
     return parser.parse_args()
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # UTILIDADES
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 def limpiar(v):
     """Elimina caracteres de control de una cadena."""
@@ -104,12 +104,12 @@ def limpiar(v):
 def log(msg: str):
     """Print con timestamp."""
     ts = datetime.now().strftime("%H:%M:%S")
-    print(f"[{ts}] {msg}", flush=True)
+    print(f"[{ts}] {msg}".encode('ascii', 'ignore').decode('ascii'), flush=True)
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # NAVEGACIÓN
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def esperar_frame_webpart(page: Page, timeout_ms: int = 60_000) -> bool:
     inicio = asyncio.get_event_loop().time()
@@ -136,7 +136,7 @@ async def navegar_a_expedientes(page: Page) -> bool:
     """
     for intento in range(5):
         if intento > 0:
-            log(f"Reintento {intento}/4 — recargando...")
+            log(f"Reintento {intento}/4 - recargando...")
             try:
                 await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
             except Exception:
@@ -252,29 +252,50 @@ async def obtener_rowscount(frame) -> int:
         return 0
 
 
-async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int):
+async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int, row_index: int):
+    """
+    Amplía la grilla de la pestaña actual a 50 registros usando clics en el UI.
+    Y SIEMPRE restaura el foco en el expediente original para seguridad.
+    """
     try:
-        selector_dropdown = '.marco-subcontenedor.alto-completo .jqx-tabs-content-element:not([style*="display: none"]) .jqx-dropdownlist-content'
+        selector_dropdown = (
+            '.marco-subcontenedor.alto-completo '
+            '.jqx-tabs-content-element:not([style*="display: none"]) '
+            '.jqx-dropdownlist-content'
+        )
         drp = await frame.query_selector(selector_dropdown)
         if not drp:
             return
+        
         texto_actual = await drp.inner_text()
         if "50" in texto_actual:
             return
         
+        log(f"  > Ampliando '{tab_name}' ({rowscount} registros)...")
         await drp.click()
-        await page.wait_for_timeout(500)
-        loc = page.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
-        if await loc.count() > 0:
-            await loc.first.click(force=True)
+        await page.wait_for_timeout(1000)
+        
+        # Intentamos localizar la opción '50' tanto en el frame como en la página principal
+        found = False
+        for ctx in [frame, page]:
+            opciones = ctx.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
+            if await opciones.count() > 0:
+                await opciones.last.click(force=True)
+                found = True
+                break
+        
+        if found:
             await page.wait_for_timeout(1500)
-            log(f"  > '{tab_name}' ampliado a 50 registros (tenía {rowscount}).")
         else:
-            loc_f = frame.locator(".jqx-item:visible, .jqx-listitem-element:visible").filter(has_text="50")
-            if await loc_f.count() > 0:
-                await loc_f.first.click(force=True)
-                await page.wait_for_timeout(1500)
-                log(f"  > '{tab_name}' ampliado a 50 (tenía {rowscount}, vía frame).")
+            log(f"  > No se encontró la opción '50' en menús visibles.")
+            
+        # RESTAURACIÓN: Volver a tocar el expediente (plan sugerido por usuario)
+        # Esto asegura que seguimos en el proyecto correcto aunque la grilla principal haya saltado.
+        log(f"  > Restaurando foco en expediente (fila {row_index})...")
+        await clicar_fila(frame, page, row_index)
+        await clic_tab(frame, page, tab_name)
+        await page.wait_for_timeout(600)
+            
     except Exception as e:
         log(f"  > Error ajustando a 50 en {tab_name}: {e}")
 
@@ -310,9 +331,9 @@ async def iniciar_sesion_completa(page: Page, pagina_destino: int):
     return frame, True
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # MODALES DE ERROR
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def cerrar_modal_error(frame, page: Page) -> bool:
     try:
@@ -341,9 +362,9 @@ async def cerrar_modal_error(frame, page: Page) -> bool:
         return False
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # LECTURA DE FILAS
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def obtener_info_filas(frame) -> list:
     info = []
@@ -384,9 +405,9 @@ async def clicar_fila(frame, page: Page, row_index: int) -> bool:
         return False
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # TABS DE DETALLE
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def clic_tab(frame, page: Page, texto: str) -> bool:
     for sel in [
@@ -445,13 +466,13 @@ async def extraer_tab_general(frame, page: Page) -> dict:
     return {k: limpiar(v) for k, v in datos.items()}
 
 
-async def extraer_tab_tramitacion(frame, page: Page) -> list:
+async def extraer_tab_tramitacion(frame, page: Page, row_index: int) -> list:
     await clic_tab(frame, page, "Tramitación")
     await page.wait_for_timeout(700)
     
     rc = await obtener_rowscount(frame)
     if rc > 10:
-        await asegurar_50_registros(frame, page, "Tramitación", rc)
+        await asegurar_50_registros(frame, page, "Tramitación", rc, row_index)
         
     tramitacion = []
     try:
@@ -493,13 +514,13 @@ async def extraer_tab_tramitacion(frame, page: Page) -> list:
     return tramitacion
 
 
-async def extraer_tab_proponentes(frame, page: Page) -> list:
+async def extraer_tab_proponentes(frame, page: Page, row_index: int) -> list:
     await clic_tab(frame, page, "Proponentes")
     await page.wait_for_timeout(700)
     
     rc = await obtener_rowscount(frame)
     if rc > 10:
-        await asegurar_50_registros(frame, page, "Proponentes", rc)
+        await asegurar_50_registros(frame, page, "Proponentes", rc, row_index)
         
     proponentes = []
     try:
@@ -539,9 +560,9 @@ async def extraer_tab_proponentes(frame, page: Page) -> list:
     return proponentes
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # PAGINACIÓN
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def ir_a_pagina_directa(frame, page: Page, numero: int) -> bool:
     """Navega directo a una página escribiendo en el input de paginación."""
@@ -640,9 +661,9 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
     return False
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # PROCESAR UNA PÁGINA
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def procesar_pagina(
     page: Page,
@@ -667,9 +688,9 @@ async def procesar_pagina(
         return "error_portal"
 
     total = len(filas)
-    log(f"{'─'*55}")
-    log(f"PÁGINA {num_pagina} — {total} expedientes")
-    log(f"{'─'*55}")
+    log(f"{'-'*55}")
+    log(f"PÁGINA {num_pagina} - {total} expedientes")
+    log(f"{'-'*55}")
 
     filas_exitosas = 0
 
@@ -693,8 +714,8 @@ async def procesar_pagina(
         filas_exitosas += 1
 
         general     = await extraer_tab_general(frame, page)
-        tramitacion = await extraer_tab_tramitacion(frame, page)
-        proponentes = await extraer_tab_proponentes(frame, page)
+        tramitacion = await extraer_tab_tramitacion(frame, page, row_idx)
+        proponentes = await extraer_tab_proponentes(frame, page, row_idx)
 
         # Si después de varias filas exitosas los tabs desaparecen → sesión caída
         if filas_exitosas > 2 and len(general) == 0 and len(tramitacion) == 0:
@@ -726,9 +747,9 @@ async def procesar_pagina(
     return "ok"
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # EXPORTAR EXCEL
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 def exportar_excel(proyectos: list, nombre: str):
     h_fill = PatternFill("solid", fgColor="1F4E79")
@@ -787,9 +808,9 @@ def exportar_excel(proyectos: list, nombre: str):
     log(f"Excel guardado: {nombre}")
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # MAIN
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 async def main():
     args = parsear_args()
@@ -810,10 +831,10 @@ async def main():
     pagina_fin = pagina_inicio + max_pags - 1
 
     log("=" * 55)
-    log("FASE 2 — Backfill SIL · Asamblea Legislativa CR")
+    log("FASE 2 - Backfill SIL - Asamblea Legislativa CR")
     log("=" * 55)
     log(f"Inicio:        {inicio:%Y-%m-%d %H:%M:%S}")
-    log(f"Rango:         páginas {pagina_inicio} → {pagina_fin}")
+    log(f"Rango:         páginas {pagina_inicio} -> {pagina_fin}")
     log(f"Máx por run:   {max_pags} páginas")
     log("=" * 55)
 
@@ -873,7 +894,7 @@ async def main():
                     await browser.close()
                     sys.exit(0)
 
-            # ── Loop principal ─────────────────────────────────────────
+            # -- Loop principal -----------------------------------------
             paginas_procesadas = 0
 
             while paginas_procesadas < max_pags:
@@ -886,7 +907,7 @@ async def main():
 
                 resultado = await procesar_pagina(page, frame, pagina_actual, proyectos)
 
-                # ── Error de sesión → intentar reiniciar ──────────────
+                # -- Error de sesión → intentar reiniciar --------------
                 if resultado == "error_sesion":
                     log(f"Error de sesión en página {pagina_actual}. Intentando reiniciar...")
                     reintento_ok = False
@@ -908,12 +929,12 @@ async def main():
 
                     continue  # Reintentar la misma página
 
-                # ── Error de portal → parar sin avanzar checkpoint ────
+                # -- Error de portal → parar sin avanzar checkpoint ----
                 elif resultado == "error_portal":
                     log(f"Error de portal en página {pagina_actual}. Deteniendo run.")
                     break
 
-                # ── Página OK ─────────────────────────────────────────
+                # -- Página OK -----------------------------------------
                 paginas_procesadas += 1
                 log(f"Progreso: {paginas_procesadas}/{max_pags} páginas este run.")
 
@@ -928,7 +949,7 @@ async def main():
                         log("Sin más páginas disponibles. Ciclo completo.")
                         ciclo_completo = True
                     else:
-                        # La página actual ya fue procesada OK — el checkpoint
+                        # La página actual ya fue procesada OK - el checkpoint
                         # debe apuntar a la SIGUIENTE para no repetir trabajo.
                         pagina_actual += 1
                         log(f"No se pudo avanzar de página. Checkpoint en página {pagina_actual}.")
@@ -944,11 +965,11 @@ async def main():
         # NO hacemos 'raise' aquí para que pueda sincronizar a la DB lo que ya se descargó.
 
     stats = {}
-    # ── Sync y exportación (PRIMERO SINCRONIZAMOS) ─────────────────────
+    # -- Sync y exportación (PRIMERO SINCRONIZAMOS) ---------------------
     if proyectos:
-        log("─" * 55)
+        log("-" * 55)
         log("SINCRONIZACIÓN CON BASE DE DATOS")
-        log("─" * 55)
+        log("-" * 55)
         try:
             crear_tablas()
             stats = sync_proyectos(proyectos)
@@ -959,7 +980,7 @@ async def main():
     else:
         log("No se extrajeron proyectos en este run.")
 
-    # ── Guardar checkpoint (SEGUNDO, SOLO SI SYNC FUE EXITOSO) ─────────
+    # -- Guardar checkpoint (SEGUNDO, SOLO SI SYNC FUE EXITOSO) ---------
     if ciclo_completo:
         proxima = PAGINA_INICIO_FASE2
         log(f"Ciclo completo. Próxima ejecución empezará en página {proxima}.")
@@ -984,7 +1005,7 @@ async def main():
     log("=" * 55)
     log("RESUMEN FASE 2")
     log("=" * 55)
-    log(f"Rango procesado:    páginas {pagina_inicio}–{pagina_actual}")
+    log(f"Rango procesado:    páginas {pagina_inicio}-{pagina_actual}")
     log(f"Páginas procesadas: {paginas_procesadas}")
     log(f"Proyectos extraídos:{len(proyectos)}")
     log(f"DB sincronizados:   {stats.get('actualizados', 0)}")
