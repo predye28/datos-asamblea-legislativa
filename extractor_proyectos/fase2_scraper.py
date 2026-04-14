@@ -50,7 +50,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA  = "Expedientes Legislativos - Consulta"
-MAX_PAGINAS_POR_RUN  = 15    # Páginas a procesar por ejecución
+MAX_PAGINAS_POR_RUN  = 5    # Páginas a procesar por ejecución
 REGISTROS_POR_PAG    = "10"   # Dropdown de la grilla
 PAGINA_INICIO_FASE2  = 11     # Fase 1 cubre 1-3, Fase 2 empieza en 4
 MAX_PAGINA_TOTAL     = 2200   # Estimado de páginas totales (21.000 exp / 10)
@@ -470,37 +470,34 @@ async def extraer_tab_tramitacion(frame, page: Page, row_index: int) -> list:
     await clic_tab(frame, page, "Tramitación")
     await page.wait_for_timeout(700)
     
-    rc = await obtener_rowscount(frame)
-    if rc > 10:
-        await asegurar_50_registros(frame, page, "Tramitación", rc, row_index)
-        
     tramitacion = []
     try:
-        resultado = await frame.evaluate("""() => {
-            const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
-            if (!contenedor) return null;
-            const panel = [...contenedor.querySelectorAll('.jqx-tabs-content-element')]
-                .find(p => p.offsetParent !== null);
-            if (!panel) return null;
-            const grilla = panel.querySelector("div[role='grid']");
-            if (!grilla) return null;
-            const $ = window.$ || window.jQuery;
-            if (!$ || !$(grilla).jqxGrid) return null;
-            const n = $(grilla).jqxGrid('getdatainformation').rowscount;
-            if (n === 0) return [];
-            const filas = [];
-            for (let i = 0; i < n; i++) {
-                const r = $(grilla).jqxGrid('getrowdata', i);
-                if (!r) continue;
-                filas.push({
+        # Extraer usando paginación si es necesario
+        resultado = await extraer_grilla_paginada(
+            frame, page, "Tramitación", row_index, 
+            """() => {
+                const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
+                if (!contenedor) return null;
+                const panel = [...contenedor.querySelectorAll('.jqx-tabs-content-element')]
+                    .find(p => p.offsetParent !== null);
+                if (!panel) return null;
+                const grilla = panel.querySelector("div[role='grid']");
+                if (!grilla) return null;
+                const $ = window.$ || window.jQuery;
+                if (!$ || !$(grilla).jqxGrid) return null;
+                
+                // Obtenemos solo los registros que están actualmente visibles/cargados en la página
+                const rows = $(grilla).jqxGrid('getrows'); 
+                if (!rows || rows.length === 0) return [];
+                
+                return rows.map(r => ({
                     organo:        String(r.Nombre_Corto        ?? ''),
                     descripcion:   String(r.Descripcion_Tramite ?? ''),
                     fecha_inicio:  String(r.Fecha_Inicio        ?? '').split(' ')[0],
                     fecha_termino: String(r.Fecha_Termino       ?? '').split(' ')[0],
-                });
-            }
-            return filas;
-        }""")
+                }));
+            }"""
+        )
         if resultado:
             for f in resultado:
                 tramitacion.append({
@@ -518,46 +515,86 @@ async def extraer_tab_proponentes(frame, page: Page, row_index: int) -> list:
     await clic_tab(frame, page, "Proponentes")
     await page.wait_for_timeout(700)
     
-    rc = await obtener_rowscount(frame)
-    if rc > 10:
-        await asegurar_50_registros(frame, page, "Proponentes", rc, row_index)
-        
     proponentes = []
     try:
-        resultado = await frame.evaluate("""() => {
-            const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
-            if (!contenedor) return null;
-            const panel = [...contenedor.querySelectorAll('.jqx-tabs-content-element')]
-                .find(p => p.offsetParent !== null);
-            if (!panel) return null;
-            const grilla = panel.querySelector("div[role='grid']");
-            if (!grilla) return null;
-            const $ = window.$ || window.jQuery;
-            if (!$ || !$(grilla).jqxGrid) return null;
-            const n = $(grilla).jqxGrid('getdatainformation').rowscount;
-            if (n === 0) return [];
-            const filas = [];
-            for (let i = 0; i < n; i++) {
-                const r = $(grilla).jqxGrid('getrowdata', i);
-                if (!r) continue;
-                filas.push({
+        resultado = await extraer_grilla_paginada(
+            frame, page, "Proponentes", row_index,
+            """() => {
+                const contenedor = document.querySelector('.marco-subcontenedor.alto-completo');
+                if (!contenedor) return null;
+                const panel = [...contenedor.querySelectorAll('.jqx-tabs-content-element')]
+                    .find(p => p.offsetParent !== null);
+                if (!panel) return null;
+                const grilla = panel.querySelector("div[role='grid']");
+                if (!grilla) return null;
+                const $ = window.$ || window.jQuery;
+                if (!$ || !$(grilla).jqxGrid) return null;
+                
+                const rows = $(grilla).jqxGrid('getrows');
+                if (!rows || rows.length === 0) return [];
+                
+                return rows.map(r => ({
                     firma:          String(r.Secuencia_Firma ?? ''),
                     nombre:         String(r.Nombre         ?? ''),
                     administracion: String(r.Administracion ?? ''),
-                });
-            }
-            return filas;
-        }""")
+                }));
+            }"""
+        )
         if resultado:
             for f in resultado:
                 proponentes.append({
-                    "Firma":          limpiar(f["firma"]),
+                "Firma":          limpiar(f["firma"]),
                     "Nombre":         limpiar(f["nombre"]),
                     "Administración": limpiar(f["administracion"]),
                 })
     except Exception as e:
         log(f"  Error tab Proponentes: {e}")
     return proponentes
+
+
+async def extraer_grilla_paginada(frame, page, tab_name, row_index, extractor_js: str) -> list:
+    """
+    Función genérica para extraer datos de una grilla con paginación optimizada.
+    """
+    total_datos = []
+    rc = await obtener_rowscount(frame)
+
+    if rc > 10:
+        await asegurar_50_registros(frame, page, tab_name, rc, row_index)
+        rc = await obtener_rowscount(frame)
+        
+    intentos = 0
+    max_pags = 10
+    
+    while intentos < max_pags:
+        datos_pagina = await frame.evaluate(extractor_js)
+        if not datos_pagina:
+            break
+            
+        total_datos.extend(datos_pagina)
+        log(f"    > {tab_name}: página {intentos + 1} extraída ({len(total_datos)}/{rc if rc < 1000000 else '?'})")
+            
+        # -- LÓGICA DE SALIDA --
+        # Salir si ya capturamos todo o si la página no está llena
+        if (0 < rc < 1000000 and len(total_datos) >= rc) or len(datos_pagina) < 50:
+            break
+            
+        selector_sig = (
+            '.marco-subcontenedor.alto-completo '
+            '.jqx-tabs-content-element:not([style*="display: none"]) '
+            '.glyphicon-forward[title="Página siguiente"]'
+        )
+        
+        btn_sig = await frame.query_selector(selector_sig)
+        if not btn_sig:
+            break
+            
+        log(f"    > Cargando siguiente página...")
+        await btn_sig.click()
+        await page.wait_for_timeout(2500)
+        intentos += 1
+        
+    return total_datos
 
 
 # ----------------------------------------------------------------------
