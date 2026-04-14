@@ -53,7 +53,7 @@ export default async function ProyectoDetallePage({
       </div>
 
       {/* Header */}
-      <div className={`${styles.pageHero} ${es_ley ? styles.pageHeroLey : ''}`}>
+      <div className={`${styles.pageHero} ${es_ley ? styles.pageHeroLey : ''} animate-fadeup`}>
         <div className="container">
           <div className={styles.heroMeta}>
             <span className={styles.expNum}>Expediente {num}</span>
