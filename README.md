@@ -68,3 +68,30 @@ https://dashboard.render.com/web/srv-d74ol094tr6s73cth550
 
 
 comprar dominio cloudflare
+
+
+cosas por mejoras:
+
+_______________________________________
+Radar de Comisiones Investigadoras — "¿Qué se está investigando?"
+Por qué es útil: Las 31 Comisiones Especiales Investigadoras son de alto interés ciudadano.
+
+Métricas propuestas:
+
+Lista activa de Comisiones Investigadoras con su estado actual (en qué trámite están).
+Temas investigados (clasificados por categoría).
+Cuántas terminaron con informe vs. se disolvieron sin resultados.
+Datos disponibles: proyectos.tipo_expediente = "PROCEDIMIENTO COMISIONES ESPECIALES INVESTIGADORAS".
+_________________________________________________7. 🔮 Estado Real del Proyecto — "¿Está vivo o muerto?"
+Por qué es útil: Actualmente la app muestra "En trámite" para casi todo. Pero "en trámite" puede significar "activo en comisión" o "archivado hace 2 años".
+
+Métricas propuestas (nuevo campo calculado estado_calculado):
+
+CONVERTIDO EN LEY — tiene numero_ley
+ACTIVO EN PLENARIO — último trámite es en Plenario
+EN COMISIÓN — último trámite es en una comisión
+ARCHIVADO — último trámite es ARCHIVO DEL EXPEDIENTE
+POR VENCER — vence en menos de 90 días sin ser ley
+VENCIDO — la fecha de vencimiento_cuatrienal ya pasó
+Esto enriquecería massivamente la visualización de cada proyecto y la tabla de listado. 
+_________________________________________________

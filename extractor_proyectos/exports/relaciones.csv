@@ -1,0 +1,6 @@
+"constraint_name","tabla_origen","columna_origen","tabla_destino","columna_destino","on_delete"
+"documentos_proyecto_id_fkey","documentos","proyecto_id","proyectos","id","CASCADE"
+"proponentes_proyecto_id_fkey","proponentes","proyecto_id","proyectos","id","CASCADE"
+"proyecto_categorias_categoria_id_fkey","proyecto_categorias","categoria_id","categorias","id","CASCADE"
+"proyecto_categorias_proyecto_id_fkey","proyecto_categorias","proyecto_id","proyectos","id","CASCADE"
+"tramitacion_proyecto_id_fkey","tramitacion","proyecto_id","proyectos","id","CASCADE"
