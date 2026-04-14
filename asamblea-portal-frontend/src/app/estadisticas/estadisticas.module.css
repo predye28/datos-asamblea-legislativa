@@ -134,15 +134,36 @@
 
 /* ── Eficacia por tema ───────────────────────────────────────────── */
 .eficaciaList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
 .eficaciaItem {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  padding: 16px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.eficaciaItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.eficaciaItem::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--cat-color);
+  opacity: 0.8;
 }
 
 .eficaciaHeader {
@@ -150,12 +171,13 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
+  padding-left: 4px;
 }
 
 .eficaciaTema {
   font-family: var(--body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
   flex: 1;
   min-width: 0;
@@ -171,21 +193,34 @@
 .eficaciaStats {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 13px;
+  font-family: var(--body);
   color: var(--ink-muted);
+  padding-left: 4px;
+}
+
+.eficaciaStats span:first-child {
+  font-weight: 500;
+}
+
+.eficaciaStats span:last-child {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .eficaciaBar {
-  height: 6px;
+  height: 10px;
   background: var(--paper);
-  border-radius: 3px;
+  border-radius: 5px;
   overflow: hidden;
+  margin-top: 4px;
+  margin-left: 4px;
 }
 
 .eficaciaFill {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 5px;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ── Tipo de expediente ──────────────────────────────────────────── */
@@ -304,6 +339,10 @@
 
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+  .eficaciaList {
+    grid-template-columns: 1fr;
+  }
+
   .kpiGrid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;

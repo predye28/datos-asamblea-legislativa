@@ -2,6 +2,7 @@
 // src/app/estadisticas/page.tsx
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import Link from 'next/link'
 import { api, MetricasResponse } from '@/lib/api'
 import { getAllLegislativePeriods } from '@/lib/periodos'
 import SectionRule from '@/components/ui/SectionRule'
@@ -110,7 +111,7 @@ export default function EstadisticasPage() {
 
         {/* ── Temas en debate ─────────────────────────────────────── */}
         <SectionRule label="Temas en debate" />
-        <TemasDestacados />
+        <TemasDestacados desde={desde} hasta={hasta} periodoLabel={periodo ? `período ${periodo}` : undefined} />
 
         {/* ── Tasa de éxito por tema ──────────────────────────────── */}
         <SectionRule label="Eficacia por tema" />
@@ -119,35 +120,91 @@ export default function EstadisticasPage() {
             ¿Qué porcentaje de los proyectos propuestos en cada tema logran convertirse en ley?
           </p>
           <div className={styles.eficaciaList}>
-            {data.por_categoria.filter(c => c.total > 5).slice(0, 8).map((c, i) => (
-              <div key={c.slug} className={styles.eficaciaItem}>
-                <div className={styles.eficaciaHeader}>
-                  <span className={styles.eficaciaTema}>{c.categoria}</span>
-                  <span className={styles.eficaciaPct} style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}>
-                    {c.tasa_aprobacion}%
-                  </span>
+            {[...data.por_categoria]
+              .filter(c => c.total > 5)
+              .sort((a, b) => b.tasa_aprobacion - a.tasa_aprobacion)
+              .slice(0, 8)
+              .map((c, i) => {
+              const catColor = CAT_COLORS[i % CAT_COLORS.length]
+              return (
+                <div 
+                  key={c.slug} 
+                  className={styles.eficaciaItem}
+                  style={{ '--cat-color': catColor } as React.CSSProperties}
+                >
+                  <div className={styles.eficaciaHeader}>
+                    <span className={styles.eficaciaTema}>{c.categoria}</span>
+                    <span className={styles.eficaciaPct} style={{ color: catColor }}>
+                      {c.tasa_aprobacion}%
+                    </span>
+                  </div>
+                  <div className={styles.eficaciaStats}>
+                    <span>{c.total.toLocaleString('es-CR')} proyectos</span>
+                    <span>{c.leyes_aprobadas} leyes</span>
+                  </div>
+                  <div className={styles.eficaciaBar}>
+                    <div
+                      className={styles.eficaciaFill}
+                      style={{
+                        width: `${c.tasa_aprobacion}%`,
+                        background: catColor,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className={styles.eficaciaStats}>
-                  <span>{c.total.toLocaleString('es-CR')} proyectos</span>
-                  <span>{c.leyes_aprobadas} leyes</span>
-                </div>
-                <div className={styles.eficaciaBar}>
-                  <div
-                    className={styles.eficaciaFill}
-                    style={{
-                      width: `${c.tasa_aprobacion}%`,
-                      background: CAT_COLORS[i % CAT_COLORS.length],
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
+        {/* ── Top Diputados por Eficacia ──────────────────────────── */}
+        {data.top_diputados_eficacia && data.top_diputados_eficacia.length > 0 && (
+          <>
+            <SectionRule label="Diputados Destacados (Proyectos convertidos en Ley)" />
+            <div className={styles.card}>
+              <p className={styles.cardDesc}>
+                Diputados con mayor éxito aprobando sus propuestas. Se consideran únicamente proponentes con al menos 5 proyectos presentados.
+              </p>
+              <div className={styles.eficaciaList}>
+                {data.top_diputados_eficacia.map((d, i) => {
+                  const nombreFormateado = d.nombre_completo.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                  return (
+                    <Link
+                      href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
+                      key={d.nombre_completo + i} 
+                      className={styles.eficaciaItem}
+                      style={{ '--cat-color': 'var(--accent)', textDecoration: 'none' } as React.CSSProperties}
+                    >
+                      <div className={styles.eficaciaHeader}>
+                        <span className={styles.eficaciaTema}>{nombreFormateado}</span>
+                        <span className={styles.eficaciaPct} style={{ color: 'var(--accent)' }}>
+                          {d.tasa_aprobacion}%
+                        </span>
+                      </div>
+                      <div className={styles.eficaciaStats}>
+                        <span>{d.total_proyectos} propuestos</span>
+                        <span>{d.leyes_aprobadas} aprobados</span>
+                      </div>
+                      <div className={styles.eficaciaBar}>
+                        <div
+                          className={styles.eficaciaFill}
+                          style={{
+                            width: `${d.tasa_aprobacion}%`,
+                            background: 'var(--accent)',
+                          }}
+                        />
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
         {/* ── Próximos a vencer ───────────────────────────────────── */}
         <SectionRule label="Proyectos próximos a vencer" />
-        <ProximosVencer clientMode={true} />
+        <ProximosVencer clientMode={true} maxItems={5} />
 
         {/* ── Timeline mensual ────────────────────────────────────── */}
         <TimelineInteractiva datosIniciales={por_mes} />

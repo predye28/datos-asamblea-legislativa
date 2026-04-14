@@ -35,23 +35,28 @@ function Bar({ label, total, max, slug, loading }: { label: string, total: numbe
   )
 }
 
-export default function TemasDestacados() {
+export default function TemasDestacados({ desde, hasta, periodoLabel }: { desde?: string, hasta?: string, periodoLabel?: string }) {
   const periodos = getPeriodos()
   const [periodoIdx, setPeriodoIdx] = useState(DEFAULT_PERIODO)
   const [datos, setDatos] = useState<{ categoria: string; slug: string; total: number; porcentaje: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const desde = periodos[periodoIdx].desde()
+    // Si hay un filtro desde fuera (desde/hasta), lo usamos y deshabilitamos el selector local
+    const useGlobalInfo = !!(desde || hasta)
+    const filtroDesde = useGlobalInfo ? desde : periodos[periodoIdx].desde()
+    const filtroHasta = useGlobalInfo ? hasta : undefined
+
     setLoading(true)
     api.metricas
-      .general({ desde })
+      .general({ desde: filtroDesde, hasta: filtroHasta })
       .then(r => setDatos(r.por_categoria.slice(0, 7))) // Mostrar top 7 categorías
       .catch(() => setDatos([]))
       .finally(() => setLoading(false))
-  }, [periodoIdx])
+  }, [periodoIdx, desde, hasta])
 
   const maxTotal = datos.length > 0 ? Math.max(...datos.map(d => d.total)) : 100
+  const isGlobalFilterActive = !!(desde || hasta)
 
   return (
     <div className={styles.block}>
@@ -60,22 +65,31 @@ export default function TemasDestacados() {
         <div className={styles.headerLeft}>
           <div className={styles.title}>Temas más discutidos</div>
           <div className={styles.sub}>
-            Clasificación automática de proyectos de ley según temática.
-            Descubrí en qué está trabajando la Asamblea.
+            Clasificación automática de proyectos de ley según temática.{' '}
+            {isGlobalFilterActive && periodoLabel ? (
+              <span style={{color: 'var(--accent)'}}>
+                Mostrando datos para el <strong>{periodoLabel}</strong>.
+              </span>
+            ) : (
+              'Descubrí en qué está trabajando la Asamblea.'
+            )}
           </div>
         </div>
-        <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período">
-          {periodos.map((p, i) => (
-            <button
-               key={p.label}
-               className={`${styles.periodoBtn} ${i === periodoIdx ? styles.periodoBtnActive : ''}`}
-               onClick={() => setPeriodoIdx(i)}
-               aria-pressed={i === periodoIdx}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        
+        {!isGlobalFilterActive && (
+          <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período">
+            {periodos.map((p, i) => (
+              <button
+                 key={p.label}
+                 className={`${styles.periodoBtn} ${i === periodoIdx ? styles.periodoBtnActive : ''}`}
+                 onClick={() => setPeriodoIdx(i)}
+                 aria-pressed={i === periodoIdx}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Gráfico */}

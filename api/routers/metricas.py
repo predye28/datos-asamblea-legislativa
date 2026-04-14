@@ -19,7 +19,9 @@ from models import (
     ProyectosPorMes,
     DiputadoRanking,
     OrganoActividad,
+    OrganoActividad,
     ProyectosPorCategoria,
+    DiputadoEficacia,
 )
 
 router = APIRouter()
@@ -239,11 +241,41 @@ def metricas(
         for r in cat_rows
     ]
 
+    # ── 4.5. Top 10 diputados por eficacia (Leyes / Proyectos) ─────────
+    diputado_eficacia_rows = fetchall(f"""
+        SELECT
+            pr.apellidos,
+            pr.nombre,
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos,
+            COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+        FROM proponentes pr
+        JOIN proyectos p ON p.id = pr.proyecto_id
+        {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND (pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)
+        GROUP BY pr.apellidos, pr.nombre
+        HAVING COUNT(DISTINCT pr.proyecto_id) >= 5
+        ORDER BY (COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END)::float / NULLIF(COUNT(DISTINCT pr.proyecto_id), 0)) DESC, total_proyectos DESC
+        LIMIT 10
+    """, tuple(params))
+
+    top_diputados_eficacia = [
+        DiputadoEficacia(
+            apellidos=r["apellidos"] or "",
+            nombre=r["nombre"] or "",
+            nombre_completo=(f"{r['apellidos'] or ''} {r['nombre'] or ''}").strip(),
+            total_proyectos=r["total_proyectos"],
+            leyes_aprobadas=r["leyes_aprobadas"],
+            tasa_aprobacion=round((r["leyes_aprobadas"] / r["total_proyectos"] * 100) if r["total_proyectos"] else 0.0, 1),
+        )
+        for r in diputado_eficacia_rows
+    ]
+
     res = MetricasResponse(
         general=general,
         por_tipo=por_tipo,
         por_mes=por_mes,
         top_diputados=top_diputados,
+        top_diputados_eficacia=top_diputados_eficacia,
         organos_activos=organos_activos,
         por_categoria=por_categoria,
     )

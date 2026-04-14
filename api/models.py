@@ -134,11 +134,21 @@ class ProyectosPorCategoria(BaseModel):
     tasa_aprobacion: float = 0.0
 
 
+class DiputadoEficacia(BaseModel):
+    apellidos: str
+    nombre:    str
+    nombre_completo: str
+    total_proyectos: int
+    leyes_aprobadas: int
+    tasa_aprobacion: float
+
+
 class MetricasResponse(BaseModel):
     general:          MetricaGeneral
     por_tipo:         list[ProyectosPorTipo]
     por_mes:          list[ProyectosPorMes]       # últimos 12 meses
     top_diputados:    list[DiputadoRanking]        # top 10
+    top_diputados_eficacia: list[DiputadoEficacia] = [] # top 10 eficaces
     organos_activos:  list[OrganoActividad]        # top 10 más activos
     por_categoria:    list[ProyectosPorCategoria]  # top temas
 

@@ -134,11 +134,21 @@ export interface ProyectosPorTipo {
   porcentaje: number
 }
 
+export interface DiputadoEficacia {
+  apellidos: string
+  nombre: string
+  nombre_completo: string
+  total_proyectos: number
+  leyes_aprobadas: number
+  tasa_aprobacion: number
+}
+
 export interface MetricasResponse {
   general: MetricaGeneral
   por_tipo: { tipo: string; total: number; porcentaje: number }[]
   por_mes: ProyectosPorMes[]
   top_diputados: DiputadoRanking[]
+  top_diputados_eficacia?: DiputadoEficacia[]
   organos_activos: { organo: string; total_tramites: number }[]
   por_categoria: { categoria: string; slug: string; total: number; porcentaje: number; leyes_aprobadas: number; tasa_aprobacion: number }[]
 }

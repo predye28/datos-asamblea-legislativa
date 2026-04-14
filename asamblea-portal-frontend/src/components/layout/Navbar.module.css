@@ -124,6 +124,8 @@
   animation: fadeIn 0.2s ease;
   cursor: pointer; /* IMPORTANTE: Necesario en iOS Safari para que detecte clics en divs */
   -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 @keyframes fadeIn {

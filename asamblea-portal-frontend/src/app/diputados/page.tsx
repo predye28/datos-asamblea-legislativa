@@ -1,10 +1,10 @@
 "use client";
 // src/app/diputados/page.tsx
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { api, DiputadoRanking } from "@/lib/api";
-import { getPeriodos } from "@/lib/periodos";
+import { getPeriodos, getAllLegislativePeriods } from "@/lib/periodos";
 import SectionRule from "@/components/ui/SectionRule";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import Hero from "@/components/sections/Hero";
@@ -13,14 +13,32 @@ import styles from "./diputados.module.css";
 function DiputadosContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const periodos = getPeriodos();
 
-  const [periodoIdx, setPeriodoIdx] = useState(1); // 1 = 6 meses
+  const periodosRapidos = getPeriodos().slice(0, 3);
+  const periodosHistoricos = getAllLegislativePeriods();
+
+  const [activeLabel, setActiveLabel] = useState<string>(periodosRapidos[1].label);
+  const [desdeFiltro, setDesdeFiltro] = useState<string>(periodosRapidos[1].desde());
+  const [hastaFiltro, setHastaFiltro] = useState<string>("");
+
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [diputados, setDiputados] = useState<DiputadoRanking[]>([]);
   const [loading, setLoading] = useState(true);
   const [verTodos, setVerTodos] = useState(false);
+  
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Debounce para la búsqueda (300ms)
   useEffect(() => {
@@ -31,13 +49,12 @@ function DiputadosContent() {
   // Cargar diputados desde el nuevo endpoint
   useEffect(() => {
     setLoading(true);
-    const desde = periodos[periodoIdx].desde();
     api.metricas
-      .diputados({ desde, q: debouncedQuery })
+      .diputados({ desde: desdeFiltro, hasta: hastaFiltro, q: debouncedQuery })
       .then((res) => setDiputados(res.datos))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [periodoIdx, debouncedQuery]);
+  }, [desdeFiltro, hastaFiltro, debouncedQuery]);
 
   // Lógica de visualización
   const maxProyectos = diputados[0]?.total_proyectos || 1;
@@ -71,34 +88,68 @@ function DiputadosContent() {
           }
         />
         <div className={styles.controlsLayout}>
-          <div
-            className={styles.periodoSelector}
-            role="group"
-            aria-label="Filtrar por período"
-          >
-            {periodos.map((p, i) => (
-              <button
-                key={p.label}
-                className={`${styles.periodoBtn} ${i === periodoIdx ? styles.periodoBtnActive : ""}`}
-                onClick={() => {
-                  setPeriodoIdx(i);
-                  setVerTodos(false);
-                  setQuery("");
-                }}
-                aria-pressed={i === periodoIdx}
-                disabled={isBuscando}
-                style={{ opacity: isBuscando ? 0.5 : 1 }}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className={styles.filterGroup}>
+            <div
+              className={styles.periodoSelector}
+              role="group"
+              aria-label="Filtrar por período"
+            >
+              {periodosRapidos.map((p) => (
+                <button
+                  key={p.label}
+                  className={`${styles.periodoBtn} ${p.label === activeLabel ? styles.periodoBtnActive : ""}`}
+                  onClick={() => {
+                    setActiveLabel(p.label);
+                    setDesdeFiltro(p.desde());
+                    setHastaFiltro("");
+                    setVerTodos(false);
+                    setQuery("");
+                  }}
+                  aria-pressed={p.label === activeLabel}
+                  disabled={isBuscando}
+                  style={{ opacity: isBuscando ? 0.5 : 1 }}
+                >
+                  {p.label}
+                </button>
+              ))}
+
+              <div className={styles.dropdownContainer} ref={dropdownRef}>
+                <button
+                  className={`${styles.filterToggle} ${activeLabel.startsWith('Período') ? styles.filterToggleActive : ""}`}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  disabled={isBuscando}
+                  style={{ opacity: isBuscando ? 0.5 : 1, width: '100%' }}
+                >
+                  <span>{activeLabel.startsWith('Período') ? activeLabel : 'Períodos históricos'}</span>
+                  <span className={`${styles.toggleIcon} ${isDropdownOpen ? styles.toggleIconOpen : ''}`}>▼</span>
+                </button>
+                <div className={`${styles.dropdownList} ${isDropdownOpen ? styles.dropdownListOpen : ''}`}>
+                  {periodosHistoricos.map(p => (
+                    <button 
+                      key={p.label} 
+                      className={`${styles.dropdownChip} ${activeLabel === `Período ${p.label}` ? styles.dropdownChipActive : ''}`}
+                      onClick={() => {
+                        setActiveLabel(`Período ${p.label}`);
+                        setDesdeFiltro(p.desde);
+                        setHastaFiltro(p.hasta);
+                        setVerTodos(false);
+                        setQuery("");
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      Período {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className={styles.searchWrap}>
             <input
               className={styles.searchInput}
               type="text"
-              placeholder="Escribe el nombre de cualquier diputado histórico..."
+              placeholder="Buscar diputado por nombre..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

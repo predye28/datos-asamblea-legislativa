@@ -1,24 +1,28 @@
 /* src/components/sections/ProximosVencer.module.css */
 
+.wrapper {
+  margin-bottom: 32px;
+}
+
+/* El bloque contenedor que le da el aspecto de 'cuadro' premium */
 .block {
-  border-left: 4px solid var(--accent-warm);
-  border-top: 1px solid var(--rule);
-  border-right: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 24px 28px;
   background: var(--paper-card);
-  margin-bottom: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 14px; /* Un poco mas redondeado para premium */
+  padding: 32px;
   box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.wrapperDedicado {
+  margin-bottom: 40px;
 }
 
 .blockHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
 }
 
 .kicker {
@@ -32,9 +36,9 @@
 
 .title {
   font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-size: clamp(20px, 4vw, 24px);
+  font-weight: 800;
+  margin-bottom: 4px;
   color: var(--ink);
 }
 
@@ -43,163 +47,325 @@
   color: var(--ink-muted);
   font-style: italic;
   line-height: 1.7;
+  max-width: 650px;
   margin: 0;
 }
 
-/* Selector de días */
-.filtrosDias {
+/* Custom Filter Dropdown (Tomado de proyectos) */
+.filterContainer {
   display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 32px;
 }
 
-.filtroDia {
-  font-family: var(--mono);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 8px 14px;
-  min-height: 40px;
+.filterToggle {
   display: flex;
-  align-items: center;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 20px;
+  background: var(--paper-card);
   border: 1px solid var(--rule);
+  color: var(--ink);
+  border-radius: 12px;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.filterToggle:hover {
+  border-color: var(--accent);
+  background: var(--paper-warm);
+}
+
+.toggleIcon {
+  font-size: 10px;
+  color: var(--ink-muted);
+  transition: transform 0.3s ease;
+}
+
+.toggleIconOpen {
+  transform: rotate(180deg);
+}
+
+.filterRow {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.filterRowOpen {
+  display: flex !important;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chip {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--ink-muted);
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.filtroDia:hover {
-  border-color: var(--accent-warm);
-  color: var(--accent-warm);
-}
-
-.filtroDiaActive {
-  background: var(--accent-warm);
-  color: #fff;
-  border-color: var(--accent-warm);
-}
-
-.list { display: flex; flex-direction: column; }
-
-/* Item de la lista */
-.item {
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 4px;
-  border-bottom: 1px solid var(--rule);
-  text-decoration: none;
-  color: var(--ink);
-  transition: background 0.12s, padding-left 0.15s;
-  cursor: pointer;
-  min-height: 56px;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
 }
 
-.item:last-child { border-bottom: none; }
-.item:hover { background: var(--paper-warm); border-radius: 4px; }
-
-/* Columna izquierda: días + label */
-.diasWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  min-width: 52px;
+.chip::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  transition: all 0.2s;
 }
 
-.dias {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-  padding: 5px 10px;
-  width: 100%;
-  text-align: center;
-  border-radius: 2px;
+.chip:hover { 
+  background: var(--paper-warm); 
+  color: var(--accent); 
 }
 
-.urgencyLabel {
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.chip:hover::before {
+  background: var(--accent);
+  transform: scale(1.4);
+}
+
+.chipActive { 
+  background: rgba(37, 99, 235, 0.08) !important; 
+  color: var(--accent) !important; 
   font-weight: 600;
 }
 
-.info {
+.chipActive::before {
+  background: var(--accent) !important;
+  transform: scale(1.4);
+}
+
+.filterContainerWrapper {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.resultsCount {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-top: -16px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Grid de cards */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.card {
+  background: var(--paper-card);
+  padding: 24px 28px;
+  cursor: pointer;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+}
+
+.card:hover {
+  background: var(--urgency-bg, var(--paper-warm));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  border-color: var(--urgency-color, var(--accent));
+}
+
+.cardBorder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--urgency-color, var(--rule));
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.urgencyBadge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  background: var(--urgency-color, var(--ink));
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .expNum {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.expTitle {
-  font-size: 15px;
-  color: var(--ink);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Metadata: estado y proponente */
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.metaItem {
+.badge {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 4px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 300px;
+}
+
+.badgeWarn {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
 }
 
 .arrow {
   font-family: var(--mono);
   font-size: 14px;
   color: var(--ink-faint);
-  flex-shrink: 0;
   transition: transform 0.15s, color 0.15s;
 }
 
-.item:hover .arrow { transform: translateX(4px); color: var(--accent); }
+.card:hover .arrow { 
+  transform: translateX(4px); 
+  color: var(--urgency-color, var(--accent)); 
+}
 
-/* Estados */
-.loadingMsg, .emptyMsg {
+.cardTitle {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+  color: var(--ink);
+  transition: color 0.2s ease;
+}
+
+.card:hover .cardTitle {
+  color: var(--urgency-color, var(--accent));
+}
+
+.cardBottom {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cardStat {
   font-family: var(--mono);
   font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.bullet {
   color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.cardType {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-left: auto;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 24px 0;
+  letter-spacing: 0.04em;
+}
+
+.emptyMsg {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-faint);
+  padding: 40px 0;
   text-align: center;
+  background: var(--paper-card);
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+}
+
+.verMasWrap {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.verMasBtn {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.verMasBtn:hover {
+  background: rgba(37, 99, 235, 0.05);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 640px) {
-  .block {
-    padding: 18px 16px;
-  }
-  .blockHeader { flex-direction: column; }
-  .filtrosDias { width: 100%; }
-  .metaItem { max-width: 180px; }
-  .expTitle { font-size: 14px; }
-  .title { font-size: 18px; }
+  .blockHeader { flex-direction: column; align-items: stretch; }
+  .filtrosDias { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+  .filtroDia { font-size: 13px; padding: 8px 12px; white-space: nowrap; }
+  .card { padding: 20px 16px; }
+  .cardTitle { font-size: 16px; margin-bottom: 12px; }
 }

@@ -24,7 +24,11 @@ export default function Navbar() {
 
   // Bloquea el scroll del body cuando el menú está abierto
   useEffect(() => {
-    document.body.style.overflow = menuAbierto ? 'hidden' : ''
+    if (menuAbierto) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
     return () => { document.body.style.overflow = '' }
   }, [menuAbierto])
 
@@ -83,7 +87,7 @@ export default function Navbar() {
       >
         {/* Header del menú móvil */}
         <div className={styles.mobileMenuHeader}>
-          <span className={styles.mobileMenuTitle}>La <span style={{ color: 'var(--accent)' }}>Asamblea</span></span>
+          <span className={styles.mobileMenuTitle}>La <span style={{ color: 'var(--accent)' }}>Asamblea</span> al día</span>
           <button
             className={styles.mobileMenuClose}
             onClick={() => setMenuAbierto(false)}

@@ -30,7 +30,7 @@ export default function HomePage() {
         <TemasDestacados />
 
         <SectionRule label="Expedientes en trámite" />
-        <ProximosVencer clientMode={true} />
+        <ProximosVencer clientMode={true} maxItems={5} />
 
         <TimelineInteractiva />
 
