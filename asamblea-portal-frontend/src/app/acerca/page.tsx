@@ -6,8 +6,8 @@ export default function AcercaPage() {
     <div>
       <Hero
         kicker="Sobre el proyecto"
-        headline={<>Información legislativa,<br />al alcance de todos</>}
-        deck="Este portal procesa la información oficial de la Asamblea Legislativa para presentarla en un formato accesible. Nuestro objetivo es que cualquier ciudadano pueda seguir el proceso de creación de leyes en Costa Rica."
+        headline={<>Acercando la información legislativa<br />a la ciudadanía</>}
+        deck="Somos un proyecto sin fines de lucro que complementa el esfuerzo de transparencia de la Asamblea Legislativa. Tomamos los datos que ellos publican en el Sistema de Información Legislativa (SIL) y los presentamos en un formato más visual y accesible para facilitar la consulta ciudadana."
       />
 
       <div className="container">
@@ -19,37 +19,39 @@ export default function AcercaPage() {
             {/* Por qué existe */}
             <section className={styles.section}>
               <div className={styles.pullQuote}>
-                "Accesibilidad de datos para una ciudadanía informada."
+                "Queremos que la información pública que la Asamblea ya comparte sea aún más fácil de consultar para todos."
               </div>
               <p>
-                La Asamblea Legislativa publica de forma transparente toda su actividad: expedientes,
-                firmas de diputaciones y el avance por comisiones. Esta información es pública y esencial
-                para la vida democrática del país.
+                La Asamblea Legislativa de Costa Rica publica de forma transparente toda su actividad
+                a través del Sistema de Información Legislativa (SIL): expedientes, firmas de diputaciones,
+                avance por comisiones y más. Es un esfuerzo valioso de transparencia institucional.
               </p>
               <p>
-                Este proyecto existe para facilitar esa consulta. Tomamos los datos oficiales del
-                Sistema de Información Legislativa (SIL) y los organizamos para que cualquier persona
-                pueda entender el estado actual de las leyes que se discuten en el Plenario.
+                Nuestro proyecto nació para complementar ese esfuerzo. Tomamos esos mismos datos públicos
+                y los organizamos de manera visual e intuitiva, para que cualquier persona —sin importar
+                su formación— pueda consultar y entender el trabajo legislativo del país con facilidad.
               </p>
             </section>
 
             {/* Propósito */}
             <section className={styles.section}>
-              <h2 className={styles.h2}>El propósito es solo informar</h2>
+              <h2 className={styles.h2}>Nuestro compromiso: informar con respeto</h2>
               <p>
-                Este portal no tiene agenda política. No apoya ni critica a ningún partido,
-                diputado ni proyecto en particular. No editorializamos sobre si una ley es buena o mala.
+                Esta plataforma no tiene agenda política. No apoya ni critica a ningún partido,
+                diputado ni proyecto en particular. Reconocemos y valoramos el trabajo que realiza
+                la Asamblea Legislativa y su compromiso con la transparencia.
               </p>
               <p>
-                Creemos que los ciudadanos merecen tener acceso fácil a datos oficiales para
-                sacar sus <em>propias conclusiones</em>. Lo que hagás con esa información es tuyo.
+                Nuestro único objetivo es que más personas puedan consultar y comprender esa información.
+                Creemos que una ciudadanía informada fortalece la democracia. Los datos son públicos:
+                acá los presentamos de forma organizada para que vos saqés tus <em>propias conclusiones</em>.
               </p>
               <div className={styles.principios}>
                 {[
-                  ['Solo datos oficiales', 'Toda la información viene directamente del SIL de la Asamblea Legislativa.'],
-                  ['Sin editoriales', 'Mostramos qué pasó, no qué debería pasar. El juicio es tuyo.'],
+                  ['Datos oficiales del SIL', 'Toda la información proviene directamente del sistema público de la Asamblea Legislativa.'],
+                  ['Sin editoriales', 'Presentamos los datos tal como la Asamblea los publica. El análisis es tuyo.'],
                   ['Código abierto', 'El scraper, la API y el portal están disponibles públicamente.'],
-                  ['Sin publicidad', 'Este proyecto no tiene fines comerciales ni intereses económicos.'],
+                  ['Sin fines de lucro', 'Este proyecto no tiene intereses comerciales ni económicos. Es un aporte ciudadano.'],
                 ].map(([titulo, desc]) => (
                   <div key={titulo} className={styles.principio}>
                     <div className={styles.principioTitle}>{titulo}</div>
@@ -63,17 +65,17 @@ export default function AcercaPage() {
             <section className={styles.section}>
               <h2 className={styles.h2}>Cómo funciona</h2>
               <p>
-                El portal es completamente automatizado. Cada noche, un sistema extrae los datos
-                directamente del sitio web de la Asamblea, los procesa y los guarda en una base de datos.
+                El portal funciona de forma automatizada. Nuestro sistema consulta periódicamente los datos
+                que la Asamblea publica en el SIL, los procesa y los presenta en este portal.
               </p>
 
               <div className={styles.archFlow}>
                 {[
-                  ['①', 'Recolectamos la información', 'Un sistema automático revisa diariamente la Asamblea Legislativa y obtiene los proyectos, sus autores y estado.'],
-                  ['②', 'La información se mantiene actualizada', 'Si un proyecto cambia, se actualiza automáticamente. Si aparece uno nuevo, se agrega.'],
-                  ['③', 'Guardamos todo de forma organizada', 'La información se almacena estructuradamente para poder consultarla fácilmente.'],
-                  ['④', 'La hacemos fácil de consultar', 'Podés buscar proyectos, filtrarlos por diputado o tema, y explorar lo que está pasando.'],
-                  ['⑤', 'La mostramos de forma clara', 'Transformamos datos complejos en información simple para que cualquier persona pueda entenderla.'],
+                  ['①', 'Consultamos la información pública', 'Nuestro sistema lee periódicamente los datos que la Asamblea Legislativa publica en el SIL.'],
+                  ['②', 'La mantenemos actualizada', 'Si un proyecto cambia de estado o aparece uno nuevo, se refleja automáticamente en nuestro portal.'],
+                  ['③', 'La organizamos de forma estructurada', 'Los datos se almacenan ordenadamente para facilitar búsquedas, filtros y consultas rápidas.'],
+                  ['④', 'La hacemos fácil de explorar', 'Podés buscar proyectos, filtrarlos por diputado o tema, y navegar lo que está pasando.'],
+                  ['⑤', 'La presentamos de forma visual', 'Transformamos los datos en gráficos e indicadores para que cualquier persona pueda entenderlos.'],
                 ].map(([icon, title, desc]) => (
                   <div key={title} className={styles.archStep}>
                     <div className={styles.archIcon}>{icon}</div>
@@ -101,18 +103,19 @@ export default function AcercaPage() {
 
             {/* Limitaciones */}
             <section className={styles.section}>
-              <h2 className={styles.h2}>Limitaciones importantes</h2>
+              <h2 className={styles.h2}>Consideraciones importantes</h2>
               <div className={styles.limitaciones}>
                 <p>
-                  <strong>Los datos dependen del SIL.</strong> Si la Asamblea no registra algo,
-                  nosotros tampoco lo tenemos. La calidad de los datos es la de la fuente original.
+                  <strong>Los datos provienen del SIL.</strong> Nuestro portal refleja fielmente lo que
+                  la Asamblea publica. Si algún dato aún no se ha registrado en el sistema oficial,
+                  tampoco aparecerá acá.
                 </p>
                 <p>
-                  <strong>No es en tiempo real.</strong> La actualización es diaria.
-                  Si algo cambió hoy, lo verás mañana.
+                  <strong>No es en tiempo real.</strong> La actualización es periódica.
+                  Puede haber un desfase de horas o un día con respecto al sitio oficial.
                 </p>
                 <p>
-                  <strong>No interpretamos la ley.</strong> No somos abogados ni politólogos.
+                  <strong>No interpretamos la ley.</strong> Este portal es informativo, no jurídico.
                   Si necesitás asesoría legal, consultá una fuente calificada.
                 </p>
               </div>

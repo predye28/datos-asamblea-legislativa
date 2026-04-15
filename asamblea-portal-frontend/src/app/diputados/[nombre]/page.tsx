@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatName, formatTitle, cleanText, formatQuantity } from "@/lib/utils";
 import SectionRule from "@/components/ui/SectionRule";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import styles from "./perfil.module.css";
@@ -39,13 +40,7 @@ interface PerfilDiputado {
   ultimos_proyectos: ProyectoResumen[];
 }
 
-function formatName(name: string) {
-  return name
-    .toLowerCase()
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+
 
 function fmtFecha(d: string | null) {
   if (!d) return "—";
@@ -70,20 +65,22 @@ function PeriodoBar({ datos, max }: { datos: PeriodoData[]; max: number }) {
     <div className={styles.periodoBars}>
       {datos.map((p) => (
         <div key={p.periodo} className={styles.periodoRow}>
-          <span className={styles.periodoLabel}>{p.periodo}</span>
-          <div className={styles.periodoBarWrap}>
+          <div className={styles.periodoInfo}>
+            <span className={styles.periodoLabel}>{p.periodo}</span>
+            <span className={styles.periodoCount}>{formatQuantity(p.total, 'proyecto', 'proyectos')}</span>
+          </div>
+          <div className={styles.gaugeTrack}>
             <div
-              className={styles.periodoBarFill}
+              className={styles.gaugeFill}
               style={{ width: `${Math.round((p.total / max) * 100)}%` }}
             />
             {p.leyes > 0 && (
               <div
-                className={styles.periodoBarLey}
+                className={styles.gaugeLey}
                 style={{ width: `${Math.round((p.leyes / max) * 100)}%` }}
               />
             )}
           </div>
-          <span className={styles.periodoCount}>{p.total}</span>
         </div>
       ))}
     </div>
@@ -118,7 +115,7 @@ export default function PerfilDiputadoPage() {
 
   if (loading) {
     return (
-      <div style={{ paddingBottom: 80, paddingTop: 40 }}>
+      <div style={{ paddingBottom: 40, paddingTop: 40 }}>
         <LoadingIndicator text="Buscando registros del diputado..." fillSpace={true} />
       </div>
     );
@@ -165,16 +162,16 @@ export default function PerfilDiputadoPage() {
         <SectionRule label="Métricas principales" />
         <div className={styles.statGrid}>
           <div className={styles.statCard}>
-            <span className={styles.statNum}>{perfil.total_proyectos}</span>
             <span className={styles.statLabel}>Proyectos propuestos</span>
+            <span className={styles.statNum}>{perfil.total_proyectos}</span>
           </div>
-          <div className={`${styles.statCard} ${styles.statCardAccent}`}>
+          <div className={`${styles.statCard} ${styles.statCardPositive}`}>
+            <span className={styles.statLabel}>Leyes aprobadas</span>
             <span className={styles.statNum}>{perfil.total_leyes}</span>
-            <span className={styles.statLabel}>Convertidos en ley</span>
           </div>
-          <div className={`${styles.statCard} ${perfil.tasa_aprobacion >= 10 ? styles.statCardAccent : ""}`}>
-            <span className={styles.statNum}>{perfil.tasa_aprobacion}%</span>
+          <div className={`${styles.statCard} ${perfil.tasa_aprobacion >= 15 ? styles.statCardAccent : ""}`}>
             <span className={styles.statLabel}>Eficacia legislativa</span>
+            <span className={styles.statNum}>{perfil.tasa_aprobacion}%</span>
           </div>
         </div>
 
@@ -200,17 +197,17 @@ export default function PerfilDiputadoPage() {
                   <Link
                     key={t.slug}
                     href={`/proyectos?categoria=${t.slug}`}
-                    className={styles.temaChip}
+                    className={styles.temaCard}
                   >
-                    <span className={styles.temaNombre}>{t.tema}</span>
-                    <div className={styles.temaNumWrap}>
-                      <div className={styles.temaBarWrap}>
-                        <div
-                          className={styles.temaBarFill}
-                          style={{ width: `${Math.round((t.total / maxTema) * 100)}%` }}
-                        />
-                      </div>
-                      <span className={styles.temaNum}>{t.total}</span>
+                    <div className={styles.temaHeader}>
+                      <span className={styles.temaNombre}>{cleanText(t.tema)}</span>
+                      <span className={styles.temaCount}>{t.total}</span>
+                    </div>
+                    <div className={styles.gaugeTrackSmall}>
+                      <div
+                        className={styles.gaugeFillAccent}
+                        style={{ width: `${Math.round((t.total / maxTema) * 100)}%` }}
+                      />
                     </div>
                   </Link>
                 ))}
@@ -231,12 +228,12 @@ export default function PerfilDiputadoPage() {
                 >
                   <div className={styles.pcTop}>
                     <div className={styles.pcMeta}>
-                      <span className={styles.pcExp}>Exp. {p.numero_expediente}</span>
+                      <span className={styles.pcExp}>Expediente {p.numero_expediente}</span>
                       {p.numero_ley && <span className={styles.pcBadgeLey}>✓ Ley {p.numero_ley}</span>}
                     </div>
                     <span className={styles.pcArrow}>→</span>
                   </div>
-                  <h3 className={styles.pcTitle}>{p.titulo ? (p.titulo.charAt(0).toUpperCase() + p.titulo.slice(1).toLowerCase()) : 'Sin título'}</h3>
+                  <h3 className={styles.pcTitle}>{formatTitle(p.titulo)}</h3>
                   <div className={styles.pcBottom}>
                     <span className={styles.pcDate}>Presentado en {fmtFecha(p.fecha_inicio)}</span>
                   </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, type ProximoVencer } from '@/lib/api'
+import { cleanText, formatTitle, formatName } from '@/lib/utils'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import styles from './ProximosVencer.module.css'
 
@@ -27,19 +28,9 @@ function urgencyColorRgba(dias: number, alpha: number) {
 }
 
 function urgencyLabel(dias: number) {
-  if (dias <= 30) return 'Crítico'
-  if (dias <= 60) return 'Urgente'
-  return 'Próximo'
-}
-
-function formatTitle(title: string | null) {
-  if (!title) return 'Sin título';
-  const text = title.toLowerCase();
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function formatName(name: string) {
-  return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (dias <= 30) return 'Vence PRONTO (Menos de 30 días)'
+  if (dias <= 60) return 'Vencimiento próximo (60 días)'
+  return 'En plazo de vigencia'
 }
 
 function formatProponentes(texto: string | null) {
@@ -163,41 +154,30 @@ export default function ProximosVencer({
                 onClick={() => router.push(`/proyecto/${p.numero_expediente}`)}
                 style={{ '--urgency-color': colorHex, '--urgency-bg': colorRgba } as React.CSSProperties}
               >
-                <div className={styles.cardBorder} />
+                <div className={styles.cardIndicator} />
                 <div className={styles.cardHeader}>
                   <div className={styles.cardHeaderTop}>
-                    <span className={styles.urgencyBadge}>
-                      Quedan {p.dias_restantes} días — {urgencyLabel(p.dias_restantes)}
-                    </span>
-                    <span className={styles.expNum}>Exp. {p.numero_expediente}</span>
+                    <div className={styles.urgencyMeta}>
+                      <span className={styles.urgencyBadge}>
+                        {urgencyLabel(p.dias_restantes)}
+                      </span>
+                      <span className={styles.daysLeft}>Faltan {p.dias_restantes} días</span>
+                    </div>
+                    <span className={styles.expNum}>EXP. {p.numero_expediente}</span>
                   </div>
-                  <h2 className={styles.cardTitle}>{formatTitle(p.titulo || '')}</h2>
+                  <h2 className={styles.cardTitle}>{formatTitle(p.titulo)}</h2>
                 </div>
 
                 <div className={styles.cardInfo}>
                   {p.proponentes_resumen && (
                     <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Proponente:</span>
+                      <span className={styles.infoLabel}>Proponente principal</span>
                       <span className={styles.infoValue}>{formatProponentes(p.proponentes_resumen)}</span>
                     </div>
                   )}
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Estado:</span>
-                    <div className={styles.tagsContainer}>
-                      <span className={styles.badge}>
-                        Sin convertir en ley
-                      </span>
-                      {p.estado_actual && (
-                        <span className={styles.badge}>
-                          {formatTitle(p.estado_actual.slice(0, 40))}
-                        </span>
-                      )}
-                      {p.tipo_expediente && (
-                        <span className={styles.badge}>
-                          {formatTitle(p.tipo_expediente)}
-                        </span>
-                      )}
-                    </div>
+                    <span className={styles.infoLabel}>Ubicación actual</span>
+                    <span className={styles.infoValue}>{cleanText(p.estado_actual) || 'En secretaría'}</span>
                   </div>
                 </div>
               </article>

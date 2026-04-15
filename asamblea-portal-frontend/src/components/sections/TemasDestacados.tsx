@@ -3,14 +3,24 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { getPeriodos } from '@/lib/periodos'
+import { getPeriodos, getAllLegislativePeriods } from '@/lib/periodos'
+import { cleanText } from '@/lib/utils'
 import styles from './TemasDestacados.module.css'
 
-const DEFAULT_PERIODO = 1 // "6 meses"
 
-function Bar({ label, total, max, slug, loading }: { label: string, total: number, max: number, slug: string, loading: boolean }) {
+const COLORS = [
+  '#3B82F6', // Blue
+  '#10B981', // Emerald
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#06B6D4', // Cyan
+  '#EC4899', // Pink
+  '#14B8A6'  // Teal
+]
+
+function TemaCard({ label, total, leyes, pct, slug, color, loading }: { label: string, total: number, leyes: number, pct: number, slug: string, color: string, loading: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  const pct = max > 0 ? (total / max) * 100 : 0
 
   useEffect(() => {
     if (!loading && ref.current) {
@@ -22,40 +32,103 @@ function Bar({ label, total, max, slug, loading }: { label: string, total: numbe
     }
   }, [pct, loading])
 
+  const displayLeyes = leyes || 0
+  const displayPct = pct || 0
+
   return (
-    <Link href={`/proyectos?categoria=${slug}`} className={styles.barRow}>
-      <div className={styles.barLabel} title={label}>{label}</div>
-      <div className={styles.barTrackContainer}>
-        <div className={styles.barTrack}>
-           <div className={styles.barFill} ref={ref} />
+    <Link href={`/proyectos?categoria=${slug}`} className={styles.cardWrapper}>
+      <div className={styles.cardHeader}>
+        <div className={styles.cardTitle} title={cleanText(label)}>{cleanText(label)}</div>
+        <div className={styles.cardBadge} style={{ backgroundColor: color }}>
+          {displayPct.toFixed(1).replace(/\.0$/, '')}% éxito
         </div>
-        <div className={styles.barValue}>{total}</div>
+      </div>
+
+      <div className={styles.cardMetrics}>
+        <div className={styles.metricItem}>
+          <span className={styles.metricValue}>{total}</span>
+          <span className={styles.metricLabel}>Propuestos</span>
+        </div>
+        <div className={styles.metricItemRight}>
+          <span className={styles.metricValue}>{displayLeyes}</span>
+          <span className={styles.metricLabel}>Leyes</span>
+        </div>
+      </div>
+
+      <div className={styles.gaugeContainer}>
+        <div className={styles.gaugeLabel}>Eficiencia legislativa</div>
+        <div className={styles.gaugeTrack}>
+          <div 
+            className={styles.gaugeFill} 
+            ref={ref} 
+            style={{ 
+              backgroundColor: color,
+              boxShadow: `0 0 12px ${color}44`
+            }} 
+          />
+        </div>
       </div>
     </Link>
   )
 }
 
-export default function TemasDestacados({ desde, hasta, periodoLabel }: { desde?: string, hasta?: string, periodoLabel?: string }) {
-  const periodos = getPeriodos()
-  const [periodoIdx, setPeriodoIdx] = useState(DEFAULT_PERIODO)
-  const [datos, setDatos] = useState<{ categoria: string; slug: string; total: number; porcentaje: number }[]>([])
+export default function TemasDestacados({ desde, hasta, periodoLabel }: { desde?: string, hasta?: string, periodoLabel?: string }) {  
+  const [selectedPreset, setSelectedPreset] = useState<'este_mes' | '6_meses' | 'este_anio' | 'periodo'>('periodo')
+  const [selectedPeriodo, setSelectedPeriodo] = useState(() => getAllLegislativePeriods()[0].label)
+  const [isOpen, setIsOpen] = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
+
+  const [datos, setDatos] = useState<{ categoria: string; slug: string; total: number; porcentaje: number; leyes_aprobadas: number; tasa_aprobacion: number }[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Cerrar al hacer click fuera
   useEffect(() => {
-    // Si hay un filtro desde fuera (desde/hasta), lo usamos y deshabilitamos el selector local
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const periodos = getPeriodos()
+    const todosLosPeriodos = getAllLegislativePeriods()
+
     const useGlobalInfo = !!(desde || hasta)
-    const filtroDesde = useGlobalInfo ? desde : periodos[periodoIdx].desde()
-    const filtroHasta = useGlobalInfo ? hasta : undefined
+    let filtroDesde = undefined
+    let filtroHasta = undefined
+
+    if (useGlobalInfo) {
+      filtroDesde = desde
+      filtroHasta = hasta
+    } else {
+      if (selectedPreset === 'este_mes') {
+        filtroDesde = periodos[0].desde()
+      } else if (selectedPreset === '6_meses') {
+        filtroDesde = periodos[1].desde()
+      } else if (selectedPreset === 'este_anio') {
+        filtroDesde = periodos[2].desde()
+      } else if (selectedPreset === 'periodo') {
+        const p = todosLosPeriodos.find(x => x.label === selectedPeriodo) || todosLosPeriodos[0]
+        filtroDesde = p.desde
+        filtroHasta = p.hasta
+      }
+    }
 
     setLoading(true)
     api.metricas
       .general({ desde: filtroDesde, hasta: filtroHasta })
-      .then(r => setDatos(r.por_categoria.slice(0, 7))) // Mostrar top 7 categorías
+      .then(r => {
+        // Ordenar por tasa de aprobación (Calidad antes que Cantidad)
+        const sorted = [...r.por_categoria].sort((a, b) => b.tasa_aprobacion - a.tasa_aprobacion)
+        setDatos(sorted.slice(0, 8))
+      })
       .catch(() => setDatos([]))
       .finally(() => setLoading(false))
-  }, [periodoIdx, desde, hasta])
+  }, [selectedPreset, selectedPeriodo, desde, hasta])
 
-  const maxTotal = datos.length > 0 ? Math.max(...datos.map(d => d.total)) : 100
   const isGlobalFilterActive = !!(desde || hasta)
 
   return (
@@ -65,49 +138,77 @@ export default function TemasDestacados({ desde, hasta, periodoLabel }: { desde?
         <div className={styles.headerLeft}>
           <div className={styles.title}>Temas más discutidos</div>
           <div className={styles.sub}>
-            Clasificación automática de proyectos de ley según temática.{' '}
-            {isGlobalFilterActive && periodoLabel ? (
+            ¿Qué porcentaje de los proyectos propuestos en cada tema logran convertirse en ley?{' '}
+            {isGlobalFilterActive && periodoLabel && (
               <span style={{color: 'var(--accent)'}}>
-                Mostrando datos para el <strong>{periodoLabel}</strong>.
+                <br />Resultados para el <strong>{periodoLabel}</strong>.
               </span>
-            ) : (
-              'Descubrí en qué está trabajando la Asamblea.'
             )}
           </div>
         </div>
         
         {!isGlobalFilterActive && (
-          <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período">
-            {periodos.map((p, i) => (
-              <button
-                 key={p.label}
-                 className={`${styles.periodoBtn} ${i === periodoIdx ? styles.periodoBtnActive : ''}`}
-                 onClick={() => setPeriodoIdx(i)}
-                 aria-pressed={i === periodoIdx}
+          <div className={styles.periodoSelector} role="group" aria-label="Filtrar por período" ref={filterRef}>
+            <button 
+              className={`${styles.periodoBtn} ${selectedPreset === 'este_mes' ? styles.periodoBtnActive : ''}`} 
+              onClick={() => setSelectedPreset('este_mes')}
+            >
+              ESTE MES
+            </button>
+            <button 
+              className={`${styles.periodoBtn} ${selectedPreset === '6_meses' ? styles.periodoBtnActive : ''}`} 
+              onClick={() => setSelectedPreset('6_meses')}
+            >
+              6 MESES
+            </button>
+            <button 
+              className={`${styles.periodoBtn} ${selectedPreset === 'este_anio' ? styles.periodoBtnActive : ''}`} 
+              onClick={() => setSelectedPreset('este_anio')}
+            >
+              ESTE AÑO
+            </button>
+            <div className={styles.filterContainer}>
+              <button 
+                 className={`${styles.filterToggle} ${selectedPreset === 'periodo' ? styles.periodoBtnActive : ''}`} 
+                 onClick={() => { setIsOpen(!isOpen); setSelectedPreset('periodo') }}
               >
-                {p.label}
+                PERÍODO {selectedPeriodo}
+                <span className={`${styles.toggleIcon} ${isOpen ? styles.toggleIconOpen : ''}`}>▼</span>
               </button>
-            ))}
+              <div className={`${styles.filterRow} ${isOpen ? styles.filterRowOpen : ''}`}>
+                {getAllLegislativePeriods().map(p => (
+                  <button 
+                    key={p.label}
+                    className={`${styles.chip} ${selectedPeriodo === p.label ? styles.chipActive : ''}`}
+                    onClick={() => { setSelectedPeriodo(p.label); setSelectedPreset('periodo'); setIsOpen(false); }}
+                  >
+                    Periodo {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Gráfico */}
-      <div className={styles.chart}>
+      {/* Grilla */}
+      <div className={styles.grid}>
         {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-             <div key={i} className={styles.skeleton} />
+          Array.from({ length: 8 }).map((_, i) => (
+             <div key={i} className={styles.cardSkeleton} />
           ))
         ) : datos.length === 0 ? (
           <div className={styles.empty}>No hay proyectos registrados en este período.</div>
         ) : (
-          datos.map(d => (
-             <Bar
+          datos.map((d, i) => (
+             <TemaCard
                key={d.slug}
                slug={d.slug}
                label={d.categoria}
                total={d.total}
-               max={maxTotal}
+               leyes={d.leyes_aprobadas}
+               pct={d.tasa_aprobacion}
+               color={COLORS[i % COLORS.length]}
                loading={loading}
              />
           ))

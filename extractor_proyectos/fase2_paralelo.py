@@ -44,7 +44,7 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 20   # Total de páginas a procesar en este run
+TOTAL_PAGINAS_POR_RUN = 50   # Total de páginas a procesar en este run
 N_WORKERS             = 4      # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════

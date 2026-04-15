@@ -40,114 +40,301 @@
 }
 
 .periodoBtn {
-  background: transparent;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 18px;
   border: 1px solid var(--rule);
-  padding: 6px 14px;
-  color: var(--ink-muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  transition: all 0.2s ease;
-  border-radius: 6px;
+  background: var(--paper-card);
+  color: var(--ink);
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  white-space: nowrap;
 }
 
 .periodoBtn:hover {
+  border-color: var(--accent);
   background: var(--paper-warm);
   color: var(--accent);
-  border-color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .periodoBtnActive {
   background: var(--accent);
   color: #fff !important;
   border-color: var(--accent);
-  box-shadow: 0 4px 10px -4px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
 }
 
-/* Gráfico de barras horizontales */
-.chart {
+.filterContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  position: relative;
 }
 
-.barRow {
+.filterToggle {
+  display: flex;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 18px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  border-radius: 10px;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.filterToggle:hover {
+  border-color: var(--accent);
+  background: var(--paper-warm);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.toggleIcon {
+  font-size: 10px;
+  color: inherit;
+  transition: transform 0.3s ease;
+  margin-left: 8px;
+}
+
+.toggleIconOpen {
+  transform: rotate(180deg);
+}
+
+.filterRow {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  margin-top: 8px;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 220px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  z-index: 20;
+  max-height: 280px;
+  overflow-y: auto;
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.filterRowOpen {
+  display: flex !important;
+}
+
+.chip {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
   display: flex;
   align-items: center;
-  text-decoration: none;
-  gap: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 6px 8px;
-  margin: 0 -8px;
-  border-radius: 6px;
+  gap: 8px;
 }
 
-.barRow:hover {
+.chip::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.chip:hover {
   background: var(--paper-warm);
-  transform: translateX(6px);
-}
-
-.barRow:hover .barLabel {
   color: var(--accent);
 }
 
-.barRow:hover .barFill {
+.chip:hover::before {
   background: var(--accent);
+  transform: scale(1.4);
 }
 
-.barLabel {
-  width: 190px;
-  font-size: 14px;
+.chipActive {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
   font-weight: 600;
-  color: var(--ink);
-  text-align: right;
-  transition: color 0.2s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
 }
 
-.barTrackContainer {
+.chipActive::before {
+  background: var(--accent);
+  transform: scale(1.4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.cardWrapper {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-  min-width: 0;
-}
-
-.barTrack {
-  flex: 1;
-  background: var(--paper);
-  height: 24px;
-  border-radius: 2px;
+  flex-direction: column;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
-.barFill {
-  height: 100%;
-  background: var(--rule);
-  transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s;
+.cardWrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-premium);
+  border-color: var(--accent);
 }
 
-.barValue {
-  width: 50px;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--ink-muted);
-  text-align: left;
-  flex-shrink: 0;
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  gap: 12px;
 }
 
-.skeleton {
+.cardTitle {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.cardBadge {
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.cardMetrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.metricItem {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.metricValue {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.metricLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.metricItemRight {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.metricItemRight .metricValue {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--positive);
+}
+
+.gaugeContainer {
+  margin-top: auto;
+}
+
+.gaugeLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+
+.gaugeTrack {
   width: 100%;
-  height: 24px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+
+.gaugeFill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--radius-pill);
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.gaugeFill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(rgba(255,255,255,0.1), transparent);
+}
+
+.cardSkeleton {
+  width: 100%;
+  height: 130px;
   background: var(--paper);
-  border-radius: 2px;
+  border-radius: 10px;
   animation: pulse 1.5s infinite;
 }
 
@@ -177,25 +364,11 @@
 
 @media (max-width: 640px) {
   .block { padding: 20px 14px; }
-  .barRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    padding: 10px 0;
-    margin: 0; /* Eliminar margen negativo en móvil */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
-  .barRow:hover { transform: none; }
-  .barRow:active { background: var(--paper-warm); border-radius: 4px; }
-  .barLabel {
-    width: 100%;
-    text-align: left;
-    font-size: 13px;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    color: var(--ink);
-  }
-  .barTrack {
-    height: 18px;
+  .cardWrapper {
+    padding: 16px 20px;
   }
 }

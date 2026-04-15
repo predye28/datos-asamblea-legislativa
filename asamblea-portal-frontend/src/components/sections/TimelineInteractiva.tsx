@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import SectionRule from '@/components/ui/SectionRule'
+
 import TimelineChart from '@/components/sections/TimelineChart'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import { api, type ProyectosPorMes, type DetallesMes } from '@/lib/api'
@@ -32,7 +32,7 @@ export default function TimelineInteractiva({ datosIniciales }: Props) {
 
   return (
     <>
-      <SectionRule label="Proyectos presentados por mes — últimos 12 meses" />
+      <h2 className="section-title" style={{ marginTop: 80 }}>Proyectos presentados por mes</h2>
       <TimelineChart data={datos} onClickBar={handleMonthClick} />
 
       {/* Detalle mes seleccionado */}
@@ -40,7 +40,7 @@ export default function TimelineInteractiva({ datosIniciales }: Props) {
         <LoadingIndicator text="Analizando proyectos del mes..." />
       )}
       {detalleMes && !loadingMes && (
-        <div style={{ background: 'var(--paper-card)', border: '1px solid var(--rule)', borderTop: '3px solid var(--accent-warm)', padding: 28, marginTop: 12, boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ background: 'var(--paper-card)', border: '1px solid var(--rule)', borderRadius: 12, padding: 28, marginTop: 16, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: 'var(--ink)' }}>
             Detalle de {detalleMes.mes_nombre} {detalleMes.anio}
           </div>

@@ -266,23 +266,28 @@
 
 .item {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
   padding: 24px;
   background: var(--paper-card);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid var(--rule);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   text-decoration: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  box-shadow: var(--shadow-sm);
 }
 
 .item:hover { 
-  background: var(--paper);
+  background: var(--paper-warm);
   border-color: var(--accent);
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-premium);
+}
+
+.itemMain {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .rank {
@@ -304,24 +309,37 @@
 }
 
 .name {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--ink);
   letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
-.barWrap {
-  height: 6px;
-  background: var(--paper-warm);
-  border-radius: 3px;
+.gaugeTrack {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-pill);
   overflow: hidden;
+  border: 1px solid var(--rule);
 }
 
-.barFill {
+.gaugeFill {
   height: 100%;
-  background: var(--accent);
-  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
+  border-radius: var(--radius-pill);
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.gaugeFill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(rgba(255,255,255,0.1), transparent);
 }
 
 .count { 
@@ -331,7 +349,7 @@
 
 .countNum {
   font-family: var(--serif);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   display: block;
   line-height: 1;
@@ -339,10 +357,11 @@
 }
 
 .countLabel {
-  font-family: var(--mono);
-  font-size: 10px;
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   color: var(--ink-faint);
   margin-top: 4px;
 }

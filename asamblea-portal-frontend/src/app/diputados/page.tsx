@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { api, DiputadoRanking } from "@/lib/api";
 import { getPeriodos, getAllLegislativePeriods } from "@/lib/periodos";
+import { formatName, cleanText } from "@/lib/utils";
 import SectionRule from "@/components/ui/SectionRule";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import Hero from "@/components/sections/Hero";
@@ -17,9 +18,9 @@ function DiputadosContent() {
   const periodosRapidos = getPeriodos().slice(0, 3);
   const periodosHistoricos = getAllLegislativePeriods();
 
-  const [activeLabel, setActiveLabel] = useState<string>(periodosRapidos[1].label);
-  const [desdeFiltro, setDesdeFiltro] = useState<string>(periodosRapidos[1].desde());
-  const [hastaFiltro, setHastaFiltro] = useState<string>("");
+  const [activeLabel, setActiveLabel] = useState<string>(`Período ${periodosHistoricos[0].label}`);
+  const [desdeFiltro, setDesdeFiltro] = useState<string>(periodosHistoricos[0].desde);
+  const [hastaFiltro, setHastaFiltro] = useState<string>(periodosHistoricos[0].hasta);
 
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -68,7 +69,7 @@ function DiputadosContent() {
   const hayMas = diputados.length > 10 && !mostrarTodos;
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 40 }}>
       <Hero
         kicker="Actividad parlamentaria"
         headline="Registro de iniciativas por diputado"
@@ -173,38 +174,32 @@ function DiputadosContent() {
         ) : (
           <div className={styles.list}>
             {visibleDiputados.map((d, i) => {
-              const barPct = Math.round(
-                (d.total_proyectos / maxProyectos) * 100,
-              );
+              const barPct = Math.round((d.total_proyectos / maxProyectos) * 100);
               return (
                 <div
                   key={`${d.nombre_completo}-${i}`}
                   className={styles.item}
-                  onClick={() =>
-                    router.push(
-                      `/diputados/${encodeURIComponent(d.nombre_completo)}`,
-                    )
-                  }
+                  onClick={() => router.push(`/diputados/${encodeURIComponent(d.nombre_completo)}`)}
                 >
-                  <span
-                    className={`${styles.rank} ${i < 3 && !isBuscando ? styles.rankTop : ""}`}
-                  >
-                    {i + 1}
-                  </span>
-                  <div className={styles.info}>
-                    <div className={styles.name}>{d.nombre_completo}</div>
-                    <div className={styles.barWrap}>
-                      <div
-                        className={styles.barFill}
-                        style={{ width: `${barPct}%` }}
-                      />
+                  <div className={styles.itemMain}>
+                    <span className={`${styles.rank} ${i < 3 && !isBuscando ? styles.rankTop : ""}`}>
+                      {i + 1}
+                    </span>
+                    <div className={styles.info}>
+                      <div className={styles.name}>{formatName(d.nombre_completo)}</div>
+                      <div className={styles.gaugeTrack}>
+                        <div
+                          className={styles.gaugeFill}
+                          style={{ width: `${barPct}%` }}
+                        />
+                      </div>
                     </div>
+                    <div className={styles.count}>
+                      <span className={styles.countNum}>{d.total_proyectos}</span>
+                      <span className={styles.countLabel}>Proyectos</span>
+                    </div>
+                    <span className={styles.arrow}>→</span>
                   </div>
-                  <div className={styles.count}>
-                    <span className={styles.countNum}>{d.total_proyectos}</span>
-                    <span className={styles.countLabel}>proyectos</span>
-                  </div>
-                  <span className={styles.arrow}>→</span>
                 </div>
               );
             })}

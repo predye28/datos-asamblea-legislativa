@@ -5,7 +5,7 @@ import ProximosVencer from '@/components/sections/ProximosVencer'
 
 export default function VencimientosPage() {
   return (
-    <div style={{ paddingBottom: 80, flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ paddingBottom: 40, flex: 1, display: 'flex', flexDirection: 'column' }}>
       {/* 
         Usamos un diseño de header simple sin Hero para mantener foco
         o usamos un Hero como en proyectos

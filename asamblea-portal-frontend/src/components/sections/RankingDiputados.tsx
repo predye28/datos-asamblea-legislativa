@@ -1,13 +1,12 @@
 'use client'
-// src/components/sections/RankingDiputados.tsx
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
-import type { DiputadoRanking } from '@/lib/api'
+import { api, type DiputadoRanking } from '@/lib/api'
 import { getPeriodos } from '@/lib/periodos'
+import { formatName, cleanText } from '@/lib/utils'
 import styles from './RankingDiputados.module.css'
 
-const DEFAULT_PERIODO = 1 // "6 meses"
+const DEFAULT_PERIODO = 3 // Período legislativo actual
 
 export default function RankingDiputados() {
   const periodos = getPeriodos()
@@ -49,31 +48,48 @@ export default function RankingDiputados() {
         </div>
       </div>
 
-      {/* Lista */}
+      {/* Lista con Gauges Premium */}
       <div className={styles.list}>
         {loading ? (
-          // Skeleton
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={styles.skeleton} />
           ))
         ) : datos.length === 0 ? (
           <div className={styles.empty}>Sin actividad para este período</div>
         ) : (
-          datos.map((d, i) => (
-            <Link
-              key={d.nombre_completo}
-              href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
-              className={styles.item}
-            >
-              <span className={`${styles.num} ${i < 3 ? styles.numAccent : ''}`}>
-                {i + 1}
-              </span>
-              <div className={styles.name}>
-                <strong>{d.nombre_completo}</strong>
-              </div>
-              <span className={styles.badge}>{d.total_proyectos} proyectos</span>
-            </Link>
-          ))
+          datos.map((d, i) => {
+            const maxProjects = datos[0]?.total_proyectos || 1
+            const relativePct = (d.total_proyectos / maxProjects) * 100
+
+            return (
+              <Link
+                key={d.nombre_completo}
+                href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
+                className={styles.item}
+              >
+                <div className={styles.itemMain}>
+                  <span className={`${styles.num} ${i < 3 ? styles.numAccent : ''}`}>
+                    {i + 1}
+                  </span>
+                  <div className={styles.info}>
+                    <div className={styles.name}>
+                      {formatName(d.nombre_completo)}
+                    </div>
+                    <div className={styles.meta}>
+                      {d.total_proyectos} proyectos presentados
+                    </div>
+                  </div>
+                </div>
+                
+                <div className={styles.gaugeTrack}>
+                  <div 
+                    className={styles.gaugeFill} 
+                    style={{ width: `${relativePct}%` }}
+                  />
+                </div>
+              </Link>
+            )
+          })
         )}
       </div>
 

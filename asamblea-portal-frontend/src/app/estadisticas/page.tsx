@@ -44,7 +44,7 @@ export default function EstadisticasPage() {
   }, [])
 
   if (!data) return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 40 }}>
       <LoadingIndicator text="Calculando estadísticas en tiempo real..." fillSpace={true} />
     </div>
   )
@@ -52,11 +52,15 @@ export default function EstadisticasPage() {
   const { general, por_tipo, por_mes, organos_activos } = data
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 40 }}>
       <Hero
         kicker="Análisis de datos"
         headline="Estadísticas legislativas"
         deck="Una mirada profunda a los patrones y tendencias de la Asamblea. Datos oficiales."
+        actions={[
+          { label: 'Explorar proyectos →', href: '/proyectos', type: 'primary' },
+          { label: 'Explorar diputados', href: '/diputados', type: 'secondary' }
+        ]}
       />
 
       <div className="container">

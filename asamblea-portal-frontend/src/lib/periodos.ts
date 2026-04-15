@@ -53,6 +53,9 @@ export const getAllLegislativePeriods = () => {
   
   // Generar periodos hasta que el startYear supere al año actual
   while (startYear <= currentYear) {
+    if (startYear === currentYear && now.getMonth() < 4) {
+      break;
+    }
     const endYear = startYear + 4
     periods.push({
       label: `${startYear}-${endYear}`,

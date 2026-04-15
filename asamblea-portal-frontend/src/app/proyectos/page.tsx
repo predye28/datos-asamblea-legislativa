@@ -4,16 +4,13 @@ import { useState, useEffect, useCallback, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api, ProyectoResumen, Paginacion, Categoria } from '@/lib/api'
 import { getAllLegislativePeriods } from '@/lib/periodos'
+import { cleanText, formatTitle } from '@/lib/utils'
 import LoadingIndicator from '@/components/ui/LoadingIndicator'
 import SectionRule from '@/components/ui/SectionRule'
 import Hero from '@/components/sections/Hero'
 import styles from './proyectos.module.css'
 
-function formatTitle(title: string) {
-  if (!title) return 'Sin título';
-  const text = title.toLowerCase();
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
+
 
 function ProyectoCard({ p }: { p: ProyectoResumen }) {
   const router = useRouter()
@@ -32,7 +29,7 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
         </div>
         <span className={styles.arrow}>→</span>
       </div>
-      <h2 className={styles.cardTitle}>{formatTitle(p.titulo || '')}</h2>
+      <h2 className={styles.cardTitle}>{formatTitle(p.titulo)}</h2>
       <div className={styles.cardBottom}>
         <span className={styles.cardStat}>{p.total_proponentes} proponente{p.total_proponentes !== 1 ? 's' : ''}</span>
         <span className={styles.bullet}>•</span>
@@ -50,7 +47,7 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
       {p.categorias && p.categorias.length > 0 && (
         <div className={styles.cardCats}>
           {p.categorias.map(cat => (
-            <span key={cat.slug} className={styles.catTag}>{cat.nombre}</span>
+            <span key={cat.slug} className={styles.catTag}>{cleanText(cat.nombre)}</span>
           ))}
         </div>
       )}
@@ -89,13 +86,17 @@ function ProyectosContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
+  // periodos disponibles
+  const periodosDisponibles = getAllLegislativePeriods()
+  const currentPeriodLabel = periodosDisponibles[0]?.label || ''
+
   const [query,     setQuery]     = useState(searchParams.get('q') || '')
   const [tipo,      setTipo]      = useState(searchParams.get('tipo') || '')
   const [anio,      setAnio]      = useState(searchParams.get('anio') || '')
   const [soloLeyes, setSoloLeyes] = useState(searchParams.get('solo_leyes') === 'true')
   const [orden,     setOrden]     = useState(searchParams.get('orden') || 'reciente')
   const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
-  const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || '')
+  const [periodo,   setPeriodo]   = useState(searchParams.get('periodo') || currentPeriodLabel)
   const [pagina,    setPagina]    = useState(1)
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const filterRef = useRef<HTMLDivElement>(null)
@@ -184,7 +185,7 @@ function ProyectosContent() {
     const parts: string[] = []
     if (categoria) {
       const cat = categorias.find(c => c.slug === categoria)
-      if (cat) parts.push(cat.nombre)
+      if (cat) parts.push(cleanText(cat.nombre))
     }
     if (query.trim()) parts.push(`"${query.trim()}"`)
     if (periodo) parts.push(`período ${periodo}`)
@@ -196,11 +197,15 @@ function ProyectosContent() {
   })()
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 40 }}>
       <Hero
         kicker="Proyectos de ley"
         headline="Todos los proyectos de la Asamblea"
         deck="Explorá, filtrá y buscá entre todos los proyectos registrados. Cada uno es una propuesta que alguien presentó para convertirse en ley."
+        actions={[
+          { label: 'Explorar diputados →', href: '/diputados', type: 'primary' },
+          { label: 'Ver estadísticas', href: '/estadisticas', type: 'secondary' }
+        ]}
       />
 
       <div className="container">
@@ -228,7 +233,7 @@ function ProyectosContent() {
                   className={styles.filterToggle}
                   onClick={() => setActiveFilter(activeFilter === 'tema' ? null : 'tema')}
                 >
-                  {categoria ? `Tema: ${categorias.find(c => c.slug === categoria)?.nombre}` : 'Filtrar por Tema'}
+                  {categoria ? `Tema: ${cleanText(categorias.find(c => c.slug === categoria)?.nombre)}` : 'Filtrar por Tema'}
                   <span className={`${styles.toggleIcon} ${activeFilter === 'tema' ? styles.toggleIconOpen : ''}`}>▼</span>
                 </button>
                 
@@ -243,7 +248,7 @@ function ProyectosContent() {
                       className={`${styles.chip} ${categoria === cat.slug ? styles.chipActive : ''}`}
                       onClick={() => { setCategoria(cat.slug); handlePageChange(1); setActiveFilter(null); }}
                     >
-                      {cat.nombre}
+                      {cleanText(cat.nombre)}
                     </button>
                   ))}
                 </div>
@@ -322,7 +327,7 @@ function ProyectosContent() {
                       className={`${styles.chip} ${tipo === t.tipo_expediente ? styles.chipActive : ''}`}
                       onClick={() => { setTipo(t.tipo_expediente); handlePageChange(1); setActiveFilter(null); }}
                     >
-                      {t.tipo_expediente} ({t.total})
+                      {cleanText(t.tipo_expediente)} ({t.total})
                     </button>
                   ))}
                 </div>

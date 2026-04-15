@@ -1,10 +1,9 @@
 import styles from './InfoAsamblea.module.css'
-import SectionRule from '@/components/ui/SectionRule'
 
 export default function InfoAsamblea() {
   return (
     <div className={styles.wrapper}>
-      <SectionRule label="Lo que necesitas saber" />
+      <h2 className="section-title" style={{ marginTop: 80 }}>Lo que necesitas saber</h2>
       <div className={styles.box}>
         <div className={styles.header}>
           <div className={styles.title}>¿Cómo funciona la Asamblea Legislativa?</div>

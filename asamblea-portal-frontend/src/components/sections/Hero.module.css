@@ -2,7 +2,7 @@
 .hero {
   background: #0F172A;    /* azul marino oscuro — más institucional */
   color: #F8FAFC;
-  padding: 72px 0;
+  padding: 48px 0;
   position: relative;
   overflow: hidden;
 }
@@ -69,11 +69,64 @@
 }
 
 .deck {
-  font-size: 17px;        /* era 16px */
-  color: #CBD5E1;         /* gris azulado claro para mejor contraste sobre marino */
+  font-size: 17px;
+  color: #CBD5E1;
   max-width: 580px;
   line-height: 1.75;
   font-weight: 400;
+  margin-bottom: 32px;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.ctaPrimary:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+}
+
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: transparent;
+  color: #CBD5E1;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(203, 213, 225, 0.3);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.ctaSecondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(203, 213, 225, 0.5);
+  color: #fff;
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
@@ -86,9 +139,12 @@
   .inner { padding: 0 20px; }
   .kicker { font-size: 11px; margin-bottom: 14px; }
   .headline { font-size: clamp(24px, 6vw, 36px); margin-bottom: 16px; }
-  .deck { font-size: 14px; line-height: 1.65; }
+  .deck { font-size: 14px; line-height: 1.65; margin-bottom: 24px; }
+  .actions { gap: 12px; }
+  .ctaPrimary, .ctaSecondary { padding: 12px 20px; font-size: 14px; }
 }
 
 @media (max-width: 400px) {
   .hero { padding: 32px 0 28px; }
+  .actions { flex-direction: column; align-items: stretch; }
 }

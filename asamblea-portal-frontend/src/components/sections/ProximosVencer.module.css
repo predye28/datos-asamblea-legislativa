@@ -8,7 +8,7 @@
 .block {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px; /* Un poco mas redondeado para premium */
+  border-radius: var(--radius-lg);
   padding: 32px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
@@ -26,10 +26,11 @@
 }
 
 .kicker {
-  font-family: var(--mono);
-  font-size: 12px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   color: var(--accent-warm);
   margin-bottom: 6px;
 }
@@ -197,12 +198,12 @@
 
 .card {
   background: var(--paper-card);
-  padding: 24px 28px;
+  padding: 24px 30px;
   cursor: pointer;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--rule);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
   text-decoration: none;
@@ -210,19 +211,20 @@
 }
 
 .card:hover {
-  background: var(--urgency-bg, var(--paper-warm));
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-premium);
   border-color: var(--urgency-color, var(--accent));
 }
 
-.cardBorder {
+.cardIndicator {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 6px;
   background: var(--urgency-color, var(--rule));
+  box-shadow: 2px 0 10px var(--urgency-color);
+  opacity: 0.8;
 }
 
 .cardHeader {
@@ -240,22 +242,38 @@
   flex-wrap: wrap;
 }
 
+.urgencyMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .urgencyBadge {
   font-family: var(--body);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 800;
   color: white;
-  background: var(--urgency-color, var(--ink));
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: var(--urgency-color, var(--accent));
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
   letter-spacing: 0.02em;
+  width: fit-content;
+}
+
+.daysLeft {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .expNum {
   font-family: var(--body);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  margin-left: auto;
 }
 
 .badge {
@@ -369,4 +387,5 @@
   .cardTitle { font-size: 18px; }
   .infoRow { flex-direction: column; gap: 4px; }
   .infoLabel { width: auto; font-size: 11px; }
+  .expNum { margin-left: 0; margin-top: 8px; }
 }

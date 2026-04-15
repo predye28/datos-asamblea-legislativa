@@ -16,15 +16,16 @@ export default function StatCards() {
   useEffect(() => {
     setLoading(true)
     const periodos = getPeriodos()
-    const fecha6Meses = periodos[1].desde() // index 1 es '6 meses'
+    const currentPeriod = periodos[3]
+    const fechaPeriodo = currentPeriod.desde()
 
     Promise.all([
       api.metricas.general(),
-      api.metricas.general({ desde: fecha6Meses })
-    ]).then(([todas, meses6]) => {
+      api.metricas.general({ desde: fechaPeriodo })
+    ]).then(([todas, periodoData]) => {
       setGeneral({
         ...todas.general,
-        total_diputados_activos: meses6.general.total_diputados_activos
+        total_diputados_activos: periodoData.general.total_diputados_activos
       })
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -61,17 +62,17 @@ export default function StatCards() {
       label: 'Diputados activos',
       ref: refDip,
       color: 'accent',
-      sub: 'En los últimos 6 meses',
-      tooltip: 'Muestra la cantidad de diputados con al menos una iniciativa presentada recientemente',
+      sub: 'En el período 2022-2026',
+      tooltip: 'Muestra la cantidad de diputados con al menos una iniciativa presentada en el período actual',
     },
   ]
 
   return (
     <div className={styles.grid}>
       {cards.map(c => (
-        <div key={c.label} className={styles.card} title={c.tooltip}>
+        <div key={c.label} className={`${styles.card} ${styles[c.color]}`} title={c.tooltip}>
           <div className={styles.label}>{c.label}</div>
-          <div className={`${styles.value} ${styles[c.color]}`}>
+          <div className={styles.value}>
             {loading ? (
               <LoadingIndicator small />
             ) : (

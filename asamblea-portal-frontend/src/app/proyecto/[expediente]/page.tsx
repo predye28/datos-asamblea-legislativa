@@ -1,18 +1,8 @@
-// src/app/proyecto/[expediente]/page.tsx
 import { api } from '@/lib/api'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { formatTitle, formatName, formatQuantity, cleanText } from '@/lib/utils'
 import styles from './detalle.module.css'
-function formatTitle(title?: string | null) {
-  if (!title) return 'Sin título';
-  const text = title.toLowerCase();
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function formatName(name?: string | null) {
-  if (!name) return '';
-  return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
 
 export const revalidate = 300
 
@@ -44,7 +34,7 @@ export default async function ProyectoDetallePage({
   } = proyecto
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: 40 }}>
       {/* Back */}
       <div className={styles.backBar}>
         <div className="container">
@@ -58,13 +48,13 @@ export default async function ProyectoDetallePage({
           <div className={styles.heroMeta}>
             <span className={styles.expNum}>Expediente {num}</span>
             {es_ley
-              ? <span className={styles.badgeLey}>✓ Convertido en Ley {numero_ley}</span>
-              : <span className={styles.badgeActivo}>{estado_actual || 'En trámite'}</span>
+              ? <span className={styles.badgeLey}>✓ Ley {numero_ley}</span>
+              : <span className={styles.badgeActivo}>{cleanText(estado_actual) || 'En trámite'}</span>
             }
           </div>
           <h1 className={styles.heroTitle}>{formatTitle(titulo)}</h1>
           {tipo_expediente && (
-            <div className={styles.heroType}>{tipo_expediente}</div>
+            <div className={styles.heroType}>{cleanText(tipo_expediente)}</div>
           )}
         </div>
       </div>
@@ -75,43 +65,52 @@ export default async function ProyectoDetallePage({
           {/* Main column */}
           <div className={styles.main}>
 
-            {/* Datos maestros */}
+            {/* Datos maestros — Mosaic Layout */}
             <section className={styles.card}>
-              <div className={styles.sectionTitle}>Datos del proyecto</div>
-              <dl className={styles.dl}>
-                <div className={styles.dlRow}>
-                  <dt>Fecha de inicio</dt>
-                  <dd>{fmtFecha(fecha_inicio)}</dd>
+              <div className={styles.sectionTitle}>Detalles del expediente</div>
+              <div className={styles.mosaicGrid}>
+                <div className={styles.infoTile}>
+                  <label>Fecha de inicio</label>
+                  <span>{fmtFecha(fecha_inicio)}</span>
                 </div>
-                <div className={styles.dlRow}>
-                  <dt>Vencimiento cuatrienal</dt>
-                  <dd className={!es_ley && vencimiento_cuatrienal ? styles.vencWarning : ''}>
+                
+                <div className={styles.infoTile}>
+                  <label>Vencimiento cuatrienal</label>
+                  <span className={!es_ley && vencimiento_cuatrienal ? styles.vencWarning : ''}>
                     {fmtFecha(vencimiento_cuatrienal)}
                     {!es_ley && vencimiento_cuatrienal && (() => {
                       const dias = Math.ceil((new Date(vencimiento_cuatrienal).getTime() - Date.now()) / 86400000)
                       return dias < 90 ? ` (${dias} días)` : ''
                     })()}
-                  </dd>
+                  </span>
                 </div>
+
                 {numero_ley && (
-                  <div className={styles.dlRow}>
-                    <dt>Número de ley</dt>
-                    <dd>{numero_ley}</dd>
+                  <div className={styles.infoTile}>
+                    <label>Número de Ley</label>
+                    <span className={styles.positiveValue}>{numero_ley}</span>
                   </div>
                 )}
+                
                 {fecha_publicacion && (
-                  <div className={styles.dlRow}>
-                    <dt>Fecha de publicación</dt>
-                    <dd>{fmtFecha(fecha_publicacion)}</dd>
+                  <div className={styles.infoTile}>
+                    <label>Fecha de publicación</label>
+                    <span>{fmtFecha(fecha_publicacion)}</span>
                   </div>
                 )}
+
                 {numero_gaceta && (
-                  <div className={styles.dlRow}>
-                    <dt>Número de gaceta</dt>
-                    <dd>{numero_gaceta}</dd>
+                  <div className={styles.infoTile}>
+                    <label>Gaceta Oficial</label>
+                    <span>#{numero_gaceta}</span>
                   </div>
                 )}
-              </dl>
+                
+                <div className={styles.infoTile}>
+                  <label>Tipo de proyecto</label>
+                  <span>{cleanText(tipo_expediente) || 'Ley Regular'}</span>
+                </div>
+              </div>
             </section>
 
             {/* Tramitación — línea de tiempo */}
@@ -119,7 +118,7 @@ export default async function ProyectoDetallePage({
               <section className={styles.card}>
                 <div className={styles.sectionTitle}>
                   Historial de tramitación
-                  <span className={styles.sectionCount}>{tramitacion.length} pasos</span>
+                  <span className={styles.sectionCount}>{formatQuantity(tramitacion.length, 'paso', 'pasos')}</span>
                 </div>
                 <p className={styles.sectionExplain}>
                   El recorrido que hizo este proyecto por las comisiones y órganos de la Asamblea.
@@ -132,13 +131,13 @@ export default async function ProyectoDetallePage({
                         {i < tramitacion.length - 1 && <div className={styles.timelineConnector} />}
                       </div>
                       <div className={styles.timelineContent}>
-                        <div className={styles.timelineOrgano}>{t.organo || '—'}</div>
+                        <div className={styles.timelineOrgano}>{cleanText(t.organo) || 'Órgano no especificado'}</div>
                         <div className={styles.timelineDates}>
                           {fmtFecha(t.fecha_inicio)}
                           {t.fecha_termino && ` → ${fmtFecha(t.fecha_termino)}`}
                         </div>
                         {t.tipo_tramite && (
-                          <div className={styles.timelineTipo}>{t.tipo_tramite}</div>
+                          <div className={styles.timelineTipo}>{cleanText(t.tipo_tramite)}</div>
                         )}
                       </div>
                     </div>
@@ -199,7 +198,7 @@ export default async function ProyectoDetallePage({
                       href={`/proyectos?categoria=${cat.slug}`}
                       className={styles.catLink}
                     >
-                      {cat.nombre}
+                      {cleanText(cat.nombre)}
                       <span className={styles.propArrow}>→</span>
                     </Link>
                   ))}
