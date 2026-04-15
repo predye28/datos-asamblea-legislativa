@@ -61,12 +61,12 @@ const OPCIONES_DIAS = [
   { label: 'En los próximos 180 días', value: 180 },
 ]
 
-export default function ProximosVencer({ 
-  datos: datosProp, 
-  clientMode = false, 
-  maxItems, 
+export default function ProximosVencer({
+  datos: datosProp,
+  clientMode = false,
+  maxItems,
   esPaginaDedicada = false,
-  hideHeader = false 
+  hideHeader = false
 }: Props) {
   const router = useRouter()
   // Si no es página dedicada, por defecto buscamos en rango amplio para asegurar siempre encontrar los 5 más cercanos
@@ -82,7 +82,7 @@ export default function ProximosVencer({
     setLoading(true)
     api.metricas.proximosVencer(diasFiltro)
       .then(r => setDatos(r.datos))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [diasFiltro, clientMode])
 
@@ -105,21 +105,21 @@ export default function ProximosVencer({
       {!esPaginaDedicada && !hideHeader && (
         <div className={styles.blockHeader}>
           <div>
-            <div className={styles.kicker}>Seguimiento de vigencia</div>
+            {/* <div className={styles.kicker}>Seguimiento de vigencia</div> */}
             <div className={styles.title}>Expedientes próximos a vencer</div>
             <p className={styles.explanation}>
-              Según el Reglamento de la Asamblea, los proyectos tienen un plazo cuatrienal de vigencia. 
+              Según el Reglamento de la Asamblea, los proyectos tienen un plazo cuatrienal de vigencia.
               Aquí se muestran las 5 iniciativas más próximas a cumplir su periodo y ser enviadas al archivo.
             </p>
           </div>
         </div>
       )}
-      
+
       {esPaginaDedicada && clientMode && (
         <div className={styles.filterContainerWrapper}>
           <div className={styles.filterContainer} onClick={e => e.stopPropagation()}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={styles.filterToggle}
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
@@ -153,10 +153,10 @@ export default function ProximosVencer({
       ) : (
         <div className={styles.grid}>
           {datosAMostrar.map(p => {
-             const colorHex = urgencyColorHex(p.dias_restantes)
-             const colorRgba = urgencyColorRgba(p.dias_restantes, 0.1)
-             
-             return (
+            const colorHex = urgencyColorHex(p.dias_restantes)
+            const colorRgba = urgencyColorRgba(p.dias_restantes, 0.1)
+
+            return (
               <article
                 key={p.numero_expediente}
                 className={styles.card}
@@ -164,36 +164,40 @@ export default function ProximosVencer({
                 style={{ '--urgency-color': colorHex, '--urgency-bg': colorRgba } as React.CSSProperties}
               >
                 <div className={styles.cardBorder} />
-                <div className={styles.cardTop}>
-                  <div className={styles.cardMeta}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardHeaderTop}>
                     <span className={styles.urgencyBadge}>
                       Quedan {p.dias_restantes} días — {urgencyLabel(p.dias_restantes)}
                     </span>
                     <span className={styles.expNum}>Exp. {p.numero_expediente}</span>
-                    <span className={`${styles.badge} ${styles.badgeWarn}`}>
-                      Sin convertir en ley
-                    </span>
                   </div>
-                  <span className={styles.arrow}>→</span>
+                  <h2 className={styles.cardTitle}>{formatTitle(p.titulo || '')}</h2>
                 </div>
-                
-                <h2 className={styles.cardTitle}>{formatTitle(p.titulo || '')}</h2>
-                
-                <div className={styles.cardBottom}>
+
+                <div className={styles.cardInfo}>
                   {p.proponentes_resumen && (
-                    <span className={styles.cardStat}>
-                      Proponente: {formatProponentes(p.proponentes_resumen)}
-                    </span>
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Proponente:</span>
+                      <span className={styles.infoValue}>{formatProponentes(p.proponentes_resumen)}</span>
+                    </div>
                   )}
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {p.estado_actual && (
-                      <span className={styles.badge} style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
-                        {formatTitle(p.estado_actual.slice(0, 40))}
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Estado:</span>
+                    <div className={styles.tagsContainer}>
+                      <span className={styles.badge}>
+                        Sin convertir en ley
                       </span>
-                    )}
-                    {p.tipo_expediente && (
-                      <span className={styles.cardType}>{formatTitle(p.tipo_expediente)}</span>
-                    )}
+                      {p.estado_actual && (
+                        <span className={styles.badge}>
+                          {formatTitle(p.estado_actual.slice(0, 40))}
+                        </span>
+                      )}
+                      {p.tipo_expediente && (
+                        <span className={styles.badge}>
+                          {formatTitle(p.tipo_expediente)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </article>
@@ -201,10 +205,10 @@ export default function ProximosVencer({
           })}
         </div>
       )}
-      
+
       {!loading && !esPaginaDedicada && datosFiltrados.length > (maxItems || 0) && (
         <div className={styles.verMasWrap}>
-          <button 
+          <button
             className={styles.verMasBtn}
             onClick={() => router.push('/vencimientos')}
           >

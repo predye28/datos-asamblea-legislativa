@@ -33,6 +33,7 @@ export default function Navbar() {
   }, [menuAbierto])
 
   return (
+    <>
     <header className={styles.header}>
       <div className={styles.top}>
         <span className={styles.meta}>Costa Rica · Datos oficiales · Actualizado diariamente</span>
@@ -70,47 +71,47 @@ export default function Navbar() {
           </Link>
         ))}
       </nav>
-
-      {/* Overlay oscuro detrás del menú móvil */}
-      {menuAbierto && (
-        <div
-          className={styles.overlay}
-          onClick={() => setMenuAbierto(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Menú móvil desplegable */}
-      <nav
-        className={`${styles.mobileMenu} ${menuAbierto ? styles.mobileMenuOpen : ''}`}
-        aria-label="Menú móvil"
-      >
-        {/* Header del menú móvil */}
-        <div className={styles.mobileMenuHeader}>
-          <span className={styles.mobileMenuTitle}>La <span style={{ color: 'var(--accent)' }}>Asamblea</span> al día</span>
-          <button
-            className={styles.mobileMenuClose}
-            onClick={() => setMenuAbierto(false)}
-            aria-label="Cerrar menú"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Links del menú */}
-        <div className={styles.mobileMenuLinks}>
-          {links.map(l => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
-            >
-              {l.label}
-              {pathname === l.href && <span className={styles.activeDot} />}
-            </Link>
-          ))}
-        </div>
-      </nav>
     </header>
+
+    {/* Overlay oscuro y Menú móvil desplegable (FUERA del header para que position: fixed funcione bien sin importar los filtros CSS del header) */}
+    {menuAbierto && (
+      <div
+        className={styles.overlay}
+        onClick={() => setMenuAbierto(false)}
+        aria-hidden="true"
+      />
+    )}
+
+    <nav
+      className={`${styles.mobileMenu} ${menuAbierto ? styles.mobileMenuOpen : ''}`}
+      aria-label="Menú móvil"
+    >
+      {/* Header del menú móvil */}
+      <div className={styles.mobileMenuHeader}>
+        <span className={styles.mobileMenuTitle}>La <span style={{ color: 'var(--accent)' }}>Asamblea</span> al día</span>
+        <button
+          className={styles.mobileMenuClose}
+          onClick={() => setMenuAbierto(false)}
+          aria-label="Cerrar menú"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Links del menú */}
+      <div className={styles.mobileMenuLinks}>
+        {links.map(l => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
+          >
+            {l.label}
+            {pathname === l.href && <span className={styles.activeDot} />}
+          </Link>
+        ))}
+      </div>
+    </nav>
+    </>
   )
 }
