@@ -35,11 +35,30 @@ export default function Navbar() {
   return (
     <>
     <header className={styles.header}>
-      <div className={styles.top}>
-        <span className={styles.meta}>Costa Rica · Datos oficiales · Actualizado diariamente</span>
-        <Link href="/" className={styles.title}>
-          La <span>Asamblea</span><br />al día
-        </Link>
+      <div className={styles.container}>
+        <div className={styles.logoGroup}>
+          <Link href="/" className={styles.logo}>
+            <svg className={styles.gem} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L4.5 9.5L12 22L19.5 9.5L12 2Z" />
+            </svg>
+            <span className={styles.logoText}>
+              La <span className={styles.accentText}>Asamblea</span> al día
+            </span>
+          </Link>
+        </div>
+
+        {/* Nav desktop — barra horizontal integrada */}
+        <nav className={styles.nav} aria-label="Navegación principal">
+          {links.map(l => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
 
         {/* Botón hamburguesa — solo visible en móvil */}
         <button
@@ -52,25 +71,7 @@ export default function Navbar() {
           <span className={`${styles.hamburgerLine} ${menuAbierto ? styles.open2 : ''}`} />
           <span className={`${styles.hamburgerLine} ${menuAbierto ? styles.open3 : ''}`} />
         </button>
-
-        {/* Meta derecha — solo desktop */}
-        <span className={styles.meta} suppressHydrationWarning>
-          {new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </span>
       </div>
-
-      {/* Nav desktop — barra horizontal */}
-      <nav className={styles.nav} aria-label="Navegación principal">
-        {links.map(l => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
-          >
-            {l.label}
-          </Link>
-        ))}
-      </nav>
     </header>
 
     {/* Overlay oscuro y Menú móvil desplegable (FUERA del header para que position: fixed funcione bien sin importar los filtros CSS del header) */}

@@ -9,14 +9,14 @@ import styles from './TemasDestacados.module.css'
 
 
 const COLORS = [
-  '#3B82F6', // Blue
-  '#10B981', // Emerald
+  '#D30001', // Ruby Red
+  '#FFDA6B', // Ruby Gold
+  '#E11D48', // Crimson
+  '#B45309', // Amber Dark
+  '#991B1B', // Red Dark
   '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5CF6', // Purple
-  '#06B6D4', // Cyan
-  '#EC4899', // Pink
-  '#14B8A6'  // Teal
+  '#7F1D1D', // Maroon
+  '#D97706'  // Orange-Gold
 ]
 
 function TemaCard({ label, total, leyes, pct, slug, color, loading }: { label: string, total: number, leyes: number, pct: number, slug: string, color: string, loading: boolean }) {

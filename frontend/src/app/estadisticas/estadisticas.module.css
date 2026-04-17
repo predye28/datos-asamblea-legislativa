@@ -1,0 +1,598 @@
+.page {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  background: var(--paper);
+  padding: 64px 0 52px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--rule);
+}
+
+.heroDots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(2, 158, 185, 0.22) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.heroText {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroEyebrow {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.heroTitle {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.heroDesc {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink-muted);
+  max-width: 480px;
+  line-height: 1.65;
+}
+
+.heroFilters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Main layout ── */
+.main {
+  padding: 48px 0 96px;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── Section header ── */
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.sectionTitle {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.sectionSub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.divider {
+  height: 1px;
+  background: var(--rule);
+  margin: 48px 0;
+}
+
+/* ── KPI grid ── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.kpiCard {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+.kpiCardAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 16px 16px 0 0;
+}
+
+.kpiEyebrow {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  opacity: 0.7;
+}
+
+.kpiBig {
+  font-family: var(--serif);
+  font-size: clamp(36px, 3.5vw, 48px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.kpiLabel {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.kpiSub {
+  font-family: var(--body);
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+/* ── Two-column grid ── */
+.cols2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.panel {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+/* ── Bar rows (horizontal) ── */
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.barItemLabel {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  grid-column: 1;
+}
+
+.barItemTrack {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  grid-column: 1 / -1;
+}
+
+.barItemFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.barItemValue {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  grid-column: 2;
+  text-align: right;
+}
+
+.barItemRate {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  grid-column: 2;
+  text-align: right;
+}
+
+/* ── Diputado ranking row ── */
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.rankRow:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(6, 182, 212, 0.04);
+  transform: translateX(3px);
+}
+
+.rankBadge {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rankBadgeGold {
+  background: rgba(2, 158, 185, 0.18);
+  color: var(--gold);
+  border: 1px solid rgba(2, 158, 185, 0.3);
+}
+
+.rankBadgeSilver {
+  background: rgba(188, 188, 188, 0.1);
+  color: #bcbcbc;
+  border: 1px solid rgba(188, 188, 188, 0.2);
+}
+
+.rankBadgeBronze {
+  background: rgba(0, 121, 143, 0.1);
+  color: #00798f;
+  border: 1px solid rgba(0, 121, 143, 0.2);
+}
+
+.rankBadgePlain {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+}
+
+.rankName {
+  flex: 1;
+  font-family: var(--body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rankVal {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.rankValSub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+/* ── Laws by year (vertical bars) ── */
+.timelineWrap {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.timelineChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.timelineCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 28px;
+}
+
+.timelineBar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: rgba(6, 182, 212, 0.35);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  transition: background 0.15s;
+  min-height: 3px;
+}
+
+.timelineCol:hover .timelineBar {
+  background: rgba(6, 182, 212, 0.65);
+}
+
+.timelineYear {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  transform: rotate(-45deg);
+  transform-origin: top center;
+  margin-top: 6px;
+}
+
+.timelineVal {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--ink-faint);
+  margin-bottom: 2px;
+}
+
+/* ── Tipos / Organs grid ── */
+.cols3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+/* ── Type pill tags ── */
+.typeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.typeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.typeLabel {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.typePct {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-dim);
+  flex-shrink: 0;
+}
+
+.typeBar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.typeBarFill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--gold), rgba(2, 158, 185, 0.4));
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Organs table ── */
+.organList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.organRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.organName {
+  font-family: var(--body);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.organCount {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+/* ── Skeleton ── */
+.skPanel {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.skLine {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 12px;
+}
+
+.skKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.skKpi {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skBig {
+  height: 44px;
+  width: 60%;
+}
+
+.skMid {
+  width: 80%;
+}
+
+.skShort {
+  width: 45%;
+  height: 10px;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .cols3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .heroInner {
+    padding: 0 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cols2 {
+    grid-template-columns: 1fr;
+  }
+
+  .cols3 {
+    grid-template-columns: 1fr;
+  }
+
+  .skKpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .hero {
+    padding: 40px 0 36px;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skKpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpiBig {
+    font-size: 38px;
+  }
+}

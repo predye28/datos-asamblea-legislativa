@@ -1,150 +1,128 @@
 /* src/components/sections/Hero.module.css */
 .hero {
-  background: #0F172A;    /* azul marino oscuro — más institucional */
-  color: #F8FAFC;
-  padding: 48px 0;
+  background: var(--paper);
+  padding: 80px 0 40px; /* Reduced bottom padding to bring blocks closer */
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Detalle decorativo sutil — círculos que no distraen */
-.hero::before {
-  content: '';
-  position: absolute;
-  top: -80px; right: -60px;
-  width: 360px; height: 360px;
-  border: 1px solid rgba(59, 130, 246, 0.12);
-  border-radius: 50%;
-  pointer-events: none;
+.animationWrapper {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  z-index: 10;
 }
 
-.hero::after {
-  content: '';
-  position: absolute;
-  bottom: -80px; right: 100px;
-  width: 240px; height: 240px;
-  border: 1px solid rgba(59, 130, 246, 0.06);
-  border-radius: 50%;
-  pointer-events: none;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.inner {
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: 0 40px;
+.hub {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ── Badge Central ── */
+.badge {
+  background: var(--accent);
+  padding: 60px 40px;
+  min-width: 320px;
+  text-align: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 20px 40px rgba(211, 0, 1, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 4px solid rgba(255, 255, 255, 0.1);
   position: relative;
 }
 
-/* Kicker — texto guía antes del título */
-.kicker {
+.badgeLabel {
   font-family: var(--mono);
-  font-size: 13px;        /* era 11px — ahora legible */
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #60A5FA;         /* azul claro sobre fondo oscuro — buen contraste */
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 12px;
 }
 
-/* Línea decorativa antes del kicker */
-.kicker::before {
-  content: '';
-  display: inline-block;
-  width: 24px;
-  height: 2px;
-  background: #3B82F6;
-  flex-shrink: 0;
-}
-
-.headline {
+.title {
   font-family: var(--serif);
-  font-size: clamp(28px, 5.5vw, 52px);
-  font-weight: 700;
-  line-height: 1.1;
-  color: inherit;
-  max-width: 78%;
-  margin-bottom: 24px;
-}
-
-.deck {
-  font-size: 17px;
-  color: #CBD5E1;
-  max-width: 580px;
-  line-height: 1.75;
-  font-weight: 400;
-  margin-bottom: 32px;
-}
-
-.actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.ctaPrimary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 28px;
-  background: var(--accent);
+  font-size: clamp(32px, 5vw, 42px);
+  font-weight: 900;
   color: #fff;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.title span {
+  font-size: 1.1em;
+  display: block;
+  margin-top: 4px;
+}
+
+.version {
+  margin-top: 20px;
   font-family: var(--body);
-  font-size: 15px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 12px;
+  border-radius: 4px;
   font-weight: 600;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 
-.ctaPrimary:hover {
-  background: var(--accent-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+/* ── Decoración Radiante ── */
+.particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
-.ctaSecondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 24px;
-  background: transparent;
-  color: #CBD5E1;
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 500;
-  border: 1px solid rgba(203, 213, 225, 0.3);
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.25s ease;
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent-warm);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: pulse 3s infinite ease-in-out;
 }
 
-.ctaSecondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(203, 213, 225, 0.5);
-  color: #fff;
-  transform: translateY(-2px);
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.5); opacity: 0.8; }
 }
 
-@media (max-width: 768px) {
-  .headline { max-width: 100%; }
-  .deck { font-size: 15px; max-width: 100%; }
-}
+/* Posiciones de partículas */
+.particle:nth-child(1) { top: -40px; left: 50%; animation-delay: 0s; }
+.particle:nth-child(2) { top: 20%; right: -60px; animation-delay: 0.2s; }
+.particle:nth-child(3) { bottom: 20%; right: -60px; animation-delay: 0.4s; }
+.particle:nth-child(4) { bottom: -40px; left: 50%; animation-delay: 0.6s; }
+.particle:nth-child(5) { bottom: 20%; left: -60px; animation-delay: 0.8s; }
+.particle:nth-child(6) { top: 20%; left: -60px; animation-delay: 1s; }
+.particle:nth-child(7) { top: -80px; left: 20%; animation-delay: 1.2s; width: 4px; height: 4px; }
+.particle:nth-child(8) { top: -80px; right: 20%; animation-delay: 1.4s; width: 4px; height: 4px; }
+.particle:nth-child(9) { bottom: -80px; left: 20%; animation-delay: 1.6s; width: 4px; height: 4px; }
+.particle:nth-child(10) { bottom: -80px; right: 20%; animation-delay: 1.8s; width: 4px; height: 4px; }
 
+/* ── Responsive ── */
 @media (max-width: 640px) {
-  .hero { padding: 44px 0 40px; }
-  .inner { padding: 0 20px; }
-  .kicker { font-size: 11px; margin-bottom: 14px; }
-  .headline { font-size: clamp(24px, 6vw, 36px); margin-bottom: 16px; }
-  .deck { font-size: 14px; line-height: 1.65; margin-bottom: 24px; }
-  .actions { gap: 12px; }
-  .ctaPrimary, .ctaSecondary { padding: 12px 20px; font-size: 14px; }
-}
-
-@media (max-width: 400px) {
-  .hero { padding: 32px 0 28px; }
-  .actions { flex-direction: column; align-items: stretch; }
+  .hero { padding: 60px 0 20px; }
+  .badge { min-width: 280px; padding: 40px 24px; }
+  .title { font-size: 32px; }
+  .particles { display: none; }
 }

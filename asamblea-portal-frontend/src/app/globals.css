@@ -9,41 +9,41 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── Colores de texto (Siempre oscuro) ── */
-  --ink:        #F8FAFC;  /* Un poco más brillante */
-  --ink-muted:  #CBD5E1;  /* Antes #94A3B8 (más contraste) */
-  --ink-faint:  #94A3B8;  /* Antes #64748B (más contraste) */
+  /* ── Colores de texto (Siempre claro sobre fondo oscuro) ── */
+  --ink:         #F9F9F9;  /* Blanco suave */
+  --ink-muted:   #BCBCBC;  /* Gris claro */
+  --ink-faint:   #888888;  /* Gris medio */
 
-  /* ── Fondos ── */
-  --paper:      #0F172A;
-  --paper-warm: #1E293B;
-  --paper-card: #1E293B;
-  --rule:       #334155;
+  /* ── Fondos (Paleta Ruby.org) ── */
+  --paper:       #1D1815;  /* Carbón oscuro */
+  --paper-warm:  #2B2521;  /* Marrón muy oscuro */
+  --paper-card:  #231F1C;  /* Fondo de tarjetas */
+  --rule:        #3D332D;  /* Bordes y líneas */
 
-  /* ── Colores de acento ── */
-  --accent:     #3B82F6;
-  --accent-dark:#2563EB;
-  --accent-warm:#F59E0B; /* Más vivo */
-  --positive:   #22C55E;
-  --blue:       #3B82F6;
+  /* ── Colores de acento (Ruby Red) ── */
+  --accent:      #D30001;  /* Rojo Ruby */
+  --accent-dark: #B10000;
+  --accent-warm: #FFDA6B;  /* Dorado para detalles secundarios */
+  --positive:    #22C55E;
+  --blue:        #3B82F6;
 
-  /* ── Tipografía (Actualizada para máxima claridad) ── */
-  --serif: 'Outfit', 'Inter', system-ui, sans-serif; /* Títulos modernos y legibles */
-  --body:  'Inter', system-ui, sans-serif;           /* Cuerpo sans-serif para accesibilidad universal */
+  /* ── Tipografía ── */
+  --serif: 'Outfit', 'Inter', system-ui, sans-serif;
+  --body:  'Inter', system-ui, sans-serif;
   --mono:  'IBM Plex Mono', monospace;
 
   /* ── Layout ── */
-  --max-w: 960px;
+  --max-w: 1100px; /* Un poco más ancho para el estilo Ruby */
 
-  /* ── Sombras (Ajustadas para fondo oscuro) ── */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.5),  0 2px 4px rgba(0,0,0,0.3);
-  --shadow-premium: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 8px 15px -8px rgba(0, 0, 0, 0.3);
+  /* ── Sombras ── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-premium: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
   
   /* ── Bordes y Radio ── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-pill: 40px;
 }
 

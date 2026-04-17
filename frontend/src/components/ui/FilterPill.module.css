@@ -1,0 +1,130 @@
+.pillWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px 7px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+  outline: none;
+}
+
+.pillBtn:hover {
+  border-color: rgba(20, 184, 166, 0.35);
+  background: rgba(20, 184, 166, 0.06);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.pillActive {
+  border-color: rgba(20, 184, 166, 0.65);
+  background: rgba(20, 184, 166, 0.14);
+  color: #5EEAD4;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  animation: pillActivate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.pillOpen {
+  border-color: rgba(20, 184, 166, 0.6);
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+.pillChevron {
+  display: flex;
+  color: var(--ink-faint);
+  transition: transform 0.2s, color 0.2s;
+}
+
+.pillActive .pillChevron,
+.pillOpen .pillChevron {
+  color: #5EEAD4;
+}
+
+.pillChevronUp {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown panel ── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  max-width: 280px;
+  background: #1e1d1b;
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  border-radius: 14px;
+  padding: 6px;
+  z-index: 300;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: dropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+}
+
+.dropdownItemActive {
+  background: rgba(20, 184, 166, 0.15);
+  color: #5EEAD4;
+  font-weight: 600;
+}
+
+.dropdownItemActive:hover {
+  background: rgba(20, 184, 166, 0.2);
+}
+
+.dropdownCheck {
+  font-size: 11px;
+  color: #5EEAD4;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+@keyframes pillActivate {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.93); }
+  65%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}

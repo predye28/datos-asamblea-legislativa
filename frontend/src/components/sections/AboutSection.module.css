@@ -1,0 +1,180 @@
+.section {
+  padding: 96px 0;
+  position: relative;
+  /* Sits WAY above while hero/blocks load, then crashes down */
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1s ease;
+  opacity: 0;
+  transform: translateY(-180px) scale(0.97);
+  z-index: 1;
+}
+
+.section.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Dot grid removed - now handled by page canvas */
+
+.container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--body);
+  font-size: 16px;
+  color: var(--ink-muted);
+}
+
+.subtitle strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ── Pillars 2×2 ── */
+.pillarsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px 72px;
+  margin-bottom: 80px;
+}
+
+.pillar {
+  position: relative;
+}
+
+.pillarHeading {
+  font-family: var(--serif);
+  font-size: clamp(38px, 4vw, 58px);
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  display: inline-block;
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-underline-offset: 10px;
+  text-decoration-thickness: 2px;
+  margin-bottom: 20px;
+}
+
+.pillarSubtitle {
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.pillarBody {
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-muted);
+}
+
+/* ── Principle quote cards ── */
+.principlesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  border-top: 1px solid var(--rule);
+  padding-top: 56px;
+}
+
+.principle {
+  position: relative;
+  background: #181c1e;
+  border: 1px solid rgba(2, 158, 185, 0.2);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px 28px 28px;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.25s, box-shadow 0.25s;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.principle:hover {
+  border-color: rgba(2, 158, 185, 0.5);
+  border-left-color: var(--gold);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Header row: " + title inline ── */
+.principleTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.quoteChar {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 52px;
+  line-height: 0.72;
+  color: var(--gold);
+  font-weight: 900;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.principleTitle {
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  padding-top: 4px;
+}
+
+/* ── Quote body text ── */
+.quoteText {
+  font-family: var(--body);
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--ink-muted);
+  flex: 1;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .pillarsGrid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+@media (max-width: 700px) {
+  .container {
+    padding: 64px 20px 72px;
+  }
+
+  .principlesGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .quoteText {
+    font-size: 14px;
+  }
+}

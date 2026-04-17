@@ -1,0 +1,472 @@
+.page {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  background: var(--paper);
+  padding: 64px 0 52px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--rule);
+}
+
+.heroDots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(2, 158, 185, 0.22) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.heroText {
+  margin-bottom: 32px;
+}
+
+.heroEyebrow {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.heroTitle {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.heroDesc {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink-muted);
+  max-width: 480px;
+  line-height: 1.65;
+}
+
+/* ── Search ── */
+.searchWrap {
+  position: relative;
+  max-width: 520px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  display: flex;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 14px 44px 14px 50px;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-faint);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+  background: rgba(6, 182, 212, 0.06);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.searchClear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+}
+
+.searchClear:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Filters bar ── */
+.filtersBar {
+  background: var(--paper-warm);
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 78px;
+  z-index: 100;
+}
+
+.filtersInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filtersLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.filtersSep {
+  width: 1px;
+  height: 22px;
+  background: var(--rule);
+  flex-shrink: 0;
+  margin: 0 6px;
+  opacity: 0.7;
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-faint);
+  background: transparent;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.clearBtn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* ── Main ── */
+.main {
+  padding: 40px 0 80px;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── Results row ── */
+.resultsRow {
+  margin-bottom: 24px;
+}
+
+.resultsCount {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.activeFilter {
+  color: var(--gold);
+}
+
+/* ── List ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Diputado card ── */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 20px 24px;
+  transition: border-color 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Rank badge ── */
+.rank {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rankGold {
+  background: rgba(2, 158, 185, 0.18);
+  color: var(--gold);
+  border: 1px solid rgba(2, 158, 185, 0.35);
+}
+
+.rankSilver {
+  background: rgba(188, 188, 188, 0.12);
+  color: #BCBCBC;
+  border: 1px solid rgba(188, 188, 188, 0.25);
+}
+
+.rankBronze {
+  background: rgba(0, 121, 143, 0.12);
+  color: #00798f;
+  border: 1px solid rgba(0, 121, 143, 0.25);
+}
+
+.rankPlain {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+}
+
+/* ── Card body ── */
+.cardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-family: var(--body);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s;
+}
+
+.card:hover .cardName {
+  color: #fff;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--accent), rgba(6, 182, 212, 0.6));
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.barCount {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+}
+
+.barLabel {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+/* ── Arrow ── */
+.cardArrow {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.card:hover .cardArrow {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+/* ── Skeleton ── */
+.skeleton {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.skBox {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+
+.skBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skLine {
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skName {
+  width: 60%;
+  height: 14px;
+}
+
+.skBar {
+  width: 90%;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Empty ── */
+.empty {
+  text-align: center;
+  padding: 80px 40px;
+}
+
+.emptyTitle {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.emptyDesc {
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink-faint);
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .heroInner {
+    padding: 0 20px;
+  }
+
+  .container {
+    padding: 0 20px;
+  }
+
+  .filtersInner {
+    padding: 12px 20px;
+  }
+
+  .filtersLabel {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 40px 0 36px;
+  }
+
+  .main {
+    padding: 28px 0 60px;
+  }
+
+  .card {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .cardName {
+    font-size: 14px;
+  }
+
+  .rank {
+    width: 36px;
+    height: 36px;
+    font-size: 11px;
+  }
+}

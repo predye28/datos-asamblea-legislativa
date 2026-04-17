@@ -1,255 +1,204 @@
 /* src/components/layout/Navbar.module.css */
 .header {
-  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
-  background: rgba(15, 23, 42, 0.92); /* Mejor opacidad en móvil */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 200;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  background: #1D1815;
+  border-bottom: 2px solid #3D332D;
+  z-index: 1000;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Barra superior con logo y meta ── */
-.top {
+.container {
+  max-width: var(--max-w);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 40px;
-  border-bottom: 1px solid var(--rule);
-  max-width: var(--max-w);
-  margin: 0 auto;
 }
 
-.meta {
-  font-family: var(--body);
-  font-size: 11px;
-  color: var(--ink-faint);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  flex: 1;
-}
-
-.meta:last-child { text-align: right; }
-
-.title {
-  font-family: var(--serif);
-  font-size: clamp(20px, 3.5vw, 38px);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  text-align: center;
-  flex: 2;
-  padding: 0 24px;
-  text-decoration: none;
-}
-
-.title span { color: var(--accent); }
-
-/* ── Navegación desktop — barra horizontal ── */
-.nav {
-  display: flex;
-  padding: 0 40px;
-  max-width: var(--max-w);
-  margin: 0 auto;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.nav::-webkit-scrollbar { display: none; }
-
-.link {
-  font-family: var(--body);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-muted);
-  text-decoration: none;
-  padding: 14px 18px;
-  min-height: 44px;
+/* ── Logo ── */
+.logoGroup {
   display: flex;
   align-items: center;
-  border-right: 1px solid var(--rule);
-  transition: color 0.15s, background 0.15s;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.logo:hover {
+  opacity: 0.9;
+}
+
+.gem {
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(211, 0, 1, 0.4));
+}
+
+.logoText {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
-.link:first-child { border-left: 1px solid var(--rule); }
-.link:hover { color: var(--accent); background: var(--paper-warm); }
-
-.link.active {
+.accentText {
   color: var(--accent);
-  font-weight: 500;
-  background: var(--paper-warm);
-  border-bottom: 2px solid var(--accent);
 }
 
-/* ── Botón hamburguesa — solo en móvil ── */
+/* ── Navegación ── */
+.nav {
+  display: flex;
+  gap: 8px;
+  margin-left: 20px;
+}
+
+.link {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.active {
+  color: #fff;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Hamburguesa (Móvil) ── */
 .hamburger {
-  display: none;          /* Oculto en desktop */
+  display: none;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 8px;
-  flex-shrink: 0;
 }
 
 .hamburgerLine {
   display: block;
   width: 100%;
   height: 2px;
-  background: var(--ink);
+  background: #fff;
   border-radius: 2px;
   transition: transform 0.25s, opacity 0.25s;
-  transform-origin: center;
 }
 
-/* Animación al abrir — X */
 .open1 { transform: translateY(7px) rotate(45deg); }
-.open2 { opacity: 0; transform: scaleX(0); }
+.open2 { opacity: 0; }
 .open3 { transform: translateY(-7px) rotate(-45deg); }
 
-/* ── Overlay oscuro ── */
+/* ── Mobile Menu & Overlay ── */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 150;
-  backdrop-filter: blur(2px);
-  animation: fadeIn 0.2s ease;
-  cursor: pointer; /* IMPORTANTE: Necesario en iOS Safari para que detecte clics en divs */
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-  overscroll-behavior: none;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* ── Menú móvil desplegable ── */
 .mobileMenu {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh; /* fallback */
-  height: 100dvh;
-  background: var(--paper); /* Fondo acorde al tema */
-  z-index: 300;
+  right: 0;
+  width: 280px;
+  height: 100vh;
+  background: #1D1815;
+  z-index: 1200;
   display: flex;
   flex-direction: column;
-  padding: 0;
-  transform: translateY(-100%);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  padding: 24px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
 }
 
 .mobileMenuOpen {
-  transform: translateY(0);
+  transform: translateX(0);
 }
-/* Menú header interno (logo + cerrar) */
+
 .mobileMenuHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--rule);
-  flex-shrink: 0;
+  margin-bottom: 32px;
 }
 
 .mobileMenuTitle {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
-  color: var(--ink);
+  color: #fff;
 }
 
 .mobileMenuClose {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: transparent;
   border: none;
-  cursor: pointer;
-  color: var(--ink);
+  color: #fff;
   font-size: 24px;
-  font-weight: 300;
-  transition: color 0.15s;
+  cursor: pointer;
 }
-
-.mobileMenuClose:hover { color: var(--accent); }
 
 .mobileMenuLinks {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-/* Links del menú móvil */
 .mobileLink {
   font-family: var(--body);
   font-size: 18px;
-  font-weight: 400;
-  color: var(--ink);
+  color: var(--ink-muted);
   text-decoration: none;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--rule);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: opacity 0.15s, color 0.15s;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
 }
 
-.mobileLink:last-child {
-  border-bottom: none;
-}
-
-.mobileLink:hover { opacity: 0.7; color: var(--accent); }
-
-.mobileLinkActive {
-  color: var(--accent);
-  font-weight: 600;
+.mobileLink:hover, .mobileLinkActive {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .activeDot {
-  font-family: var(--mono);
-  font-size: 16px;
-  color: var(--accent);
-}
-.activeDot::before {
-  content: "→";
+  display: none; /* Simplificado para Ruby style */
 }
 
 /* ── Responsive ── */
-@media (max-width: 640px) {
-  .top {
-    padding: 12px 20px;
-  }
-
-  /* En móvil: logo a la izquierda, hamburguesa a la derecha */
-  .meta { display: none; }  /* Ocultar textos meta */
-  .title {
-    flex: 1;
-    text-align: left;
-    padding: 0;
-    font-size: 22px;
-  }
-
-  /* Mostrar el hamburger */
-  .hamburger { display: flex; }
-
-  /* Ocultar la nav horizontal en móvil */
+@media (max-width: 900px) {
   .nav { display: none; }
+  .hamburger { display: flex; }
+}
+
+@media (max-width: 480px) {
+  .logoText { font-size: 16px; }
+  .gem { width: 20px; height: 20px; }
 }

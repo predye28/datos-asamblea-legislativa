@@ -1,0 +1,84 @@
+/* src/components/sections/AboutAsamblea.module.css */
+.section {
+  padding: 100px 0;
+  background: var(--paper-warm); /* Slightly different background for contrast */
+  border-top: 2px solid var(--rule);
+}
+
+.container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 44px);
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 60px;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.subtitle {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.description {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--ink-muted);
+}
+
+.description strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+  
+  .subtitle {
+    font-size: 24px;
+  }
+  
+  .description {
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .section { padding: 60px 0; }
+  .container { padding: 0 20px; }
+  .title { margin-bottom: 40px; }
+}

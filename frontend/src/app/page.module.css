@@ -1,0 +1,16 @@
+.homeCanvas {
+  background: var(--paper);
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.homeCanvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(2, 158, 185, 0.3) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
