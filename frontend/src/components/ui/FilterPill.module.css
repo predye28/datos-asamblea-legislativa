@@ -122,6 +122,19 @@
   margin-left: 8px;
 }
 
+.dropdownSep {
+  padding: 8px 14px 4px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  opacity: 0.6;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+}
+
 @keyframes pillActivate {
   0%   { transform: scale(1); }
   35%  { transform: scale(0.93); }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { ProyectoResumen, Categoria, Paginacion } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
@@ -9,7 +10,7 @@ import { getPeriodos, getAllLegislativePeriods } from '@/lib/periodos'
 import styles from './proyectos.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 
-const POR_PAGINA = 20
+const POR_PAGINA = 10
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,24 @@ function IconScale() {
   )
 }
 
+// ── Tipo abbreviation ─────────────────────────────────────────────────────────
+
+const TIPO_MAP: Record<string, string> = {
+  'PROCEDIMIENTO PROYECTO DE LEY ORDINARIO': 'Ley ordinaria',
+  'PROCEDIMIENTO PROYECTOS DE COMISION DE HONORES': 'Comisión de honores',
+  'PROCEDIMIENTO REFORMAS AL REGLAMENTO DE LA ASAMBLEA LEGISLATIVA': 'Reforma al reglamento',
+  'PROCEDIMIENTO COMISIONES ESPECIALES INVESTIGADORAS': 'Comisión investigadora',
+  'PROCEDIMIENTO DE NOMBRAMIENTOS / RATIFICACIONES / REELECCIONES': 'Nombramiento / Ratificación',
+  'PROCEDIMIENTO QUERELLAS DE LOS MIEMBROS DE LOS SUPREMOS PODERES': 'Querella',
+}
+
+function abbreviateTipo(tipo: string): string {
+  const clean = tipo.trim().toUpperCase()
+  if (TIPO_MAP[clean]) return TIPO_MAP[clean]
+  const stripped = clean.replace(/^PROCEDIMIENTO\s+(DE\s+)?/, '')
+  return stripped.charAt(0) + stripped.slice(1).toLowerCase()
+}
+
 // ── Project card ─────────────────────────────────────────────────────────────
 
 function ProyectoCard({ p }: { p: ProyectoResumen }) {
@@ -64,43 +83,40 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
       <div className={styles.cardAccent} />
 
       <div className={styles.cardBody}>
-        {/* Top row */}
+        {/* Top row: exp number + law badge (right-aligned) */}
         <div className={styles.cardTop}>
           <span className={styles.expediente}>Exp. {p.numero_expediente}</span>
-          <div className={styles.cardBadges}>
-            {isLey && (
-              <span className={styles.badgeLey}>
-                <IconScale /> Ley N° {p.numero_ley}
-              </span>
-            )}
-            {!isLey && p.estado_actual && (
-              <span className={styles.badgeEstado}>{p.estado_actual}</span>
-            )}
-            {p.tipo_expediente && (
-              <span className={styles.badgeTipo}>{p.tipo_expediente}</span>
-            )}
-          </div>
+          {isLey && (
+            <span className={styles.badgeLey}>
+              <IconScale /> Ley N°{p.numero_ley}
+            </span>
+          )}
         </div>
 
         {/* Title */}
         <h2 className={styles.cardTitle}>{formatTitle(p.titulo)}</h2>
 
-        {/* Stats */}
-        <div className={styles.cardStats}>
-          {p.fecha_inicio && (
-            <span className={styles.stat}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              {formatDate(p.fecha_inicio)}
-            </span>
+        {/* Meta row: tipo · estado · fecha · proponentes · trámites */}
+        <div className={styles.cardMeta}>
+          {p.tipo_expediente && (
+            <span className={styles.metaTipo}>{abbreviateTipo(p.tipo_expediente)}</span>
           )}
-          <span className={styles.stat}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            {formatQuantity(p.total_proponentes, 'proponente', 'proponentes')}
-          </span>
-          <span className={styles.stat}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            {formatQuantity(p.total_tramites, 'trámite', 'trámites')}
-          </span>
+          {!isLey && p.estado_actual && (
+            <>
+              <span className={styles.metaSep} aria-hidden>·</span>
+              <span className={styles.metaEstado}>{p.estado_actual}</span>
+            </>
+          )}
+          {p.fecha_inicio && (
+            <>
+              <span className={styles.metaSep} aria-hidden>·</span>
+              <span className={styles.metaStat}>{formatDate(p.fecha_inicio)}</span>
+            </>
+          )}
+          <span className={styles.metaSep} aria-hidden>·</span>
+          <span className={styles.metaStat}>{formatQuantity(p.total_proponentes, 'proponente', 'proponentes')}</span>
+          <span className={styles.metaSep} aria-hidden>·</span>
+          <span className={styles.metaStat}>{formatQuantity(p.total_tramites, 'trámite', 'trámites')}</span>
         </div>
 
         {/* Category tags */}
@@ -136,9 +152,11 @@ function Skeleton() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProyectosPage() {
-  // Filter state
-  const [query, setQuery]         = useState('')
-  const [categoria, setCategoria] = useState('')
+  const searchParams = useSearchParams()
+
+  // Filter state — pre-populated from URL params (?q=...&categoria=...)
+  const [query, setQuery]         = useState(() => searchParams.get('q') || '')
+  const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
   const [tipo, setTipo]           = useState('')
   const [orden, setOrden]         = useState('reciente')

@@ -326,7 +326,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #1a1a1a;
-  background: var(--gold);
+  background: var(--card-accent);
   border: none;
   border-radius: 50px;
   overflow: hidden;
@@ -352,9 +352,9 @@
 }
 
 .cta:hover {
-  background: #059cbd;
+  filter: brightness(1.2) saturate(1.1);
   transform: scale(1.03);
-  box-shadow: 0 10px 28px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
 .arrow {

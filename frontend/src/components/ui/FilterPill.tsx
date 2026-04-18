@@ -6,6 +6,7 @@ import styles from './FilterPill.module.css'
 export interface FilterOption {
   value: string
   label: string
+  disabled?: boolean
 }
 
 interface Props {
@@ -56,15 +57,19 @@ export default function FilterPill({ value, onChange, options, placeholder, acti
       {open && (
         <div className={styles.dropdown}>
           {options.map((opt, i) => (
-            <button
-              key={`${i}-${opt.value}`}
-              className={`${styles.dropdownItem} ${opt.value === value ? styles.dropdownItemActive : ''}`}
-              onClick={() => { onChange(opt.value); setOpen(false) }}
-              type="button"
-            >
-              {opt.label}
-              {opt.value === value && <span className={styles.dropdownCheck}>✓</span>}
-            </button>
+            opt.disabled ? (
+              <div key={`${i}-sep`} className={styles.dropdownSep}>{opt.label}</div>
+            ) : (
+              <button
+                key={`${i}-${opt.value}`}
+                className={`${styles.dropdownItem} ${opt.value === value ? styles.dropdownItemActive : ''}`}
+                onClick={() => { onChange(opt.value); setOpen(false) }}
+                type="button"
+              >
+                {opt.label}
+                {opt.value === value && <span className={styles.dropdownCheck}>✓</span>}
+              </button>
+            )
           ))}
         </div>
       )}

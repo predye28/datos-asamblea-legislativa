@@ -275,7 +275,7 @@ export default function FeatureBlocks() {
         <div className={styles.grid}>
           <Card
             title="Proyectos"
-            accent="var(--accent)"
+            accent="#0EA5E9"
             slides={data ? proyectosSlides(data) : PLACEHOLDER}
             href="/proyectos"
             cta="Explorar proyectos"
@@ -283,7 +283,7 @@ export default function FeatureBlocks() {
           />
           <Card
             title="Estadísticas"
-            accent="var(--gold)"
+            accent="#F59E0B"
             slides={data ? estadisticasSlides(data) : PLACEHOLDER}
             href="/estadisticas"
             cta="Ver estadísticas"
@@ -291,7 +291,7 @@ export default function FeatureBlocks() {
           />
           <Card
             title="Diputados"
-            accent="var(--blue)"
+            accent="#6366F1"
             slides={data ? diputadosSlides(data) : PLACEHOLDER}
             href="/diputados"
             cta="Ver diputados"

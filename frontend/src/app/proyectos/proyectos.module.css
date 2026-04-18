@@ -261,7 +261,7 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* ── Project card ── */
@@ -269,25 +269,32 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  background: #181c1e;
+  background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
-  transition: border-color 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+  transition: border-color 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .card:hover {
-  border-color: rgba(6, 182, 212, 0.45);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  border-color: rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.card:focus-visible {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
 }
 
 .cardAccent {
-  width: 3px;
+  width: 4px;
   flex-shrink: 0;
-  background: var(--rule);
-  transition: background 0.2s;
+  background: transparent;
+  transition: background 0.18s ease;
 }
 
 .card:hover .cardAccent {
@@ -299,137 +306,146 @@
 }
 
 .cardLey {
-  border-color: rgba(34, 197, 94, 0.2);
+  background: color-mix(in srgb, var(--paper-card) 92%, #22c55e 8%);
+  border-color: rgba(34, 197, 94, 0.25);
 }
 
 .cardLey:hover {
-  border-color: rgba(34, 197, 94, 0.45);
-  box-shadow: 0 8px 28px rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.55);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cardLey:focus-visible {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
 }
 
 .cardBody {
   flex: 1;
-  padding: 22px 24px 20px;
+  padding: 18px 22px 16px;
   min-width: 0;
 }
 
 .cardTop {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
 }
 
 .expediente {
   font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 600;
   color: var(--ink-faint);
   letter-spacing: 0.06em;
   flex-shrink: 0;
-}
-
-.cardBadges {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 
 .badgeLey {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: 20px;
+  padding: 3px 10px;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 6px;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--positive);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
-}
-
-.badgeEstado {
-  display: inline-flex;
-  padding: 3px 9px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--rule);
-  border-radius: 20px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--ink-faint);
-  white-space: nowrap;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.badgeTipo {
-  display: inline-flex;
-  padding: 3px 9px;
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.2);
-  border-radius: 20px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--accent);
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cardTitle {
   font-family: var(--body);
-  font-size: 16.5px;
+  font-size: 15.5px;
   font-weight: 600;
   color: var(--ink);
-  line-height: 1.45;
-  margin-bottom: 14px;
+  line-height: 1.5;
+  margin-bottom: 9px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.01em;
 }
 
 .card:hover .cardTitle {
   color: #fff;
 }
 
-.cardStats {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+.cardLey .cardTitle {
+  font-family: var(--serif);
+  font-weight: 700;
 }
 
-.stat {
-  display: inline-flex;
+/* ── Meta row (replaces cardStats + badgeTipo/badgeEstado) ── */
+.cardMeta {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  font-family: var(--body);
-  font-size: 12.5px;
+  flex-wrap: wrap;
+  row-gap: 2px;
+  margin-bottom: 9px;
+}
+
+.metaTipo {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
   color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.metaEstado {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.metaStat {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.metaSep {
+  font-size: 11px;
+  color: var(--ink-faint);
+  opacity: 0.4;
+  padding: 0 7px;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .cardTags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .tag {
   display: inline-flex;
-  padding: 3px 10px;
-  background: rgba(2, 158, 185, 0.08);
-  border: 1px solid rgba(2, 158, 185, 0.2);
-  border-radius: 20px;
+  padding: 2px 8px;
+  background: rgba(2, 158, 185, 0.06);
+  border: 1px solid rgba(2, 158, 185, 0.15);
+  border-radius: 4px;
   font-family: var(--body);
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--gold-dim);
+  letter-spacing: 0.01em;
 }
 
 .tagMore {
@@ -441,15 +457,17 @@
 .cardArrow {
   display: flex;
   align-items: center;
-  padding: 0 20px 0 8px;
+  padding: 0 16px 0 6px;
   color: var(--ink-faint);
+  opacity: 0;
   flex-shrink: 0;
-  transition: color 0.2s, transform 0.2s;
+  transition: opacity 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .card:hover .cardArrow {
+  opacity: 1;
   color: var(--accent);
-  transform: translateX(3px);
+  transform: translateX(2px);
 }
 
 /* ── Skeleton ── */
@@ -621,14 +639,20 @@
   }
 
   .cardTitle {
-    font-size: 15px;
-  }
-
-  .cardStats {
-    gap: 12px;
+    font-size: 14.5px;
+    letter-spacing: 0;
   }
 
   .cardBody {
-    padding: 18px 16px 16px;
+    padding: 14px 14px 13px;
+  }
+
+  .metaTipo {
+    max-width: 130px;
+  }
+
+  .cardArrow {
+    opacity: 1;
+    padding: 0 12px 0 4px;
   }
 }

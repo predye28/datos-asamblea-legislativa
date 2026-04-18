@@ -67,11 +67,28 @@
   letter-spacing: -0.03em;
   line-height: 1;
   display: inline-block;
-  text-decoration: underline;
-  text-decoration-color: var(--gold);
-  text-underline-offset: 10px;
-  text-decoration-thickness: 2px;
-  margin-bottom: 20px;
+  position: relative;
+  margin-bottom: 26px;
+}
+
+/* Custom "Swoosh" underline - balanced manual stroke (not too subtle, not too aggressive) */
+.pillarHeading::after {
+  content: '';
+  position: absolute;
+  left: -3%;
+  bottom: -8px;
+  width: 106%;
+  height: 10px;
+  background-color: var(--gold);
+  /* SVG mask: Medium-weight stroke with a defined circular start and tapered finish */
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M4 3 A 2.5 2.5 0 1 0 4 9 C 40 7, 80 7, 97 8.5 A 0.8 0.8 0 1 0 97 7 C 80 6, 40 5.5, 4 3 Z' fill='black'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M4 3 A 2.5 2.5 0 1 0 4 9 C 40 7, 80 7, 97 8.5 A 0.8 0.8 0 1 0 97 7 C 80 6, 40 5.5, 4 3 Z' fill='black'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  transform: rotate(-1.5deg);
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .pillarSubtitle {

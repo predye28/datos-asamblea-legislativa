@@ -215,16 +215,19 @@ export default async function DetallePage({ params }: Props) {
                 <h3 className={styles.sideTitle}><IconUser /> Proponentes</h3>
                 {proyecto.proponentes.length > 0 ? (
                   <ul className={styles.proponenteList}>
-                    {proyecto.proponentes.map((p, i) => (
-                      <li key={i} className={styles.proponente}>
-                        <Link
-                          href={`/diputados/${encodeURIComponent(p.apellidos || '')}`}
-                          className={styles.proponenteLink}
-                        >
-                          {formatName(p.nombre_completo || `${p.nombre} ${p.apellidos}`)}
-                        </Link>
-                      </li>
-                    ))}
+                    {proyecto.proponentes.map((p, i) => {
+                      const nombreCompleto = p.nombre_completo || `${p.nombre} ${p.apellidos}`.trim()
+                      return (
+                        <li key={i} className={styles.proponente}>
+                          <Link
+                            href={`/diputados/${encodeURIComponent(nombreCompleto)}`}
+                            className={styles.proponenteLink}
+                          >
+                            {formatName(nombreCompleto)}
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 ) : (
                   <p className={styles.sideEmpty}>Sin información</p>

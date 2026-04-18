@@ -226,20 +226,26 @@
 .card {
   display: flex;
   align-items: center;
-  gap: 20px;
-  background: #181c1e;
+  gap: 18px;
+  background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
-  padding: 20px 24px;
-  transition: border-color 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+  border-radius: 10px;
+  padding: 18px 22px;
+  transition: border-color 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   text-decoration: none;
   color: inherit;
 }
 
 .card:hover {
   border-color: rgba(6, 182, 212, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.card:focus-visible {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
 }
 
 /* ── Rank badge ── */
@@ -257,27 +263,29 @@
 }
 
 .rankGold {
-  background: rgba(2, 158, 185, 0.18);
-  color: var(--gold);
-  border: 1px solid rgba(2, 158, 185, 0.35);
+  background: rgba(212, 175, 55, 0.14);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.12);
 }
 
 .rankSilver {
-  background: rgba(188, 188, 188, 0.12);
-  color: #BCBCBC;
-  border: 1px solid rgba(188, 188, 188, 0.25);
+  background: rgba(188, 188, 188, 0.1);
+  color: #a0a0a0;
+  border: 1px solid rgba(188, 188, 188, 0.22);
 }
 
 .rankBronze {
-  background: rgba(0, 121, 143, 0.12);
-  color: #00798f;
-  border: 1px solid rgba(0, 121, 143, 0.25);
+  background: rgba(176, 109, 53, 0.12);
+  color: #b06d35;
+  border: 1px solid rgba(176, 109, 53, 0.28);
 }
 
 .rankPlain {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--ink-faint);
   border: 1px solid var(--rule);
+  font-size: 11px;
 }
 
 /* ── Card body ── */
@@ -288,14 +296,15 @@
 
 .cardName {
   font-family: var(--body);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--ink);
-  margin-bottom: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.15s;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
 }
 
 .card:hover .cardName {
@@ -310,54 +319,82 @@
 
 .bar {
   flex: 1;
-  height: 5px;
+  height: 6px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.07);
   overflow: hidden;
+  min-width: 0;
 }
 
 .barFill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(to right, var(--accent), rgba(6, 182, 212, 0.6));
-  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(to right, var(--accent), rgba(6, 182, 212, 0.5));
 }
 
 .barCount {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--accent);
   flex-shrink: 0;
-  min-width: 36px;
-  text-align: right;
+  white-space: nowrap;
 }
 
 .barLabel {
   font-family: var(--body);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--ink-faint);
-  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+/* ── Load more ── */
+.loadMoreRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.loadMoreBtn {
+  padding: 11px 28px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  font-family: var(--body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loadMoreBtn:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  color: var(--accent);
+  transform: translateY(-1px);
 }
 
 /* ── Arrow ── */
 .cardArrow {
   color: var(--ink-faint);
   flex-shrink: 0;
-  transition: color 0.2s, transform 0.2s;
+  opacity: 0;
+  transition: opacity 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .card:hover .cardArrow {
+  opacity: 1;
   color: var(--accent);
-  transform: translateX(3px);
+  transform: translateX(2px);
 }
 
 /* ── Skeleton ── */
 .skeleton {
-  background: #181c1e;
+  background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
-  padding: 20px 24px;
+  border-radius: 10px;
+  padding: 18px 22px;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -456,8 +493,12 @@
   }
 
   .card {
-    padding: 16px 18px;
-    gap: 14px;
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .cardArrow {
+    opacity: 1;
   }
 
   .cardName {

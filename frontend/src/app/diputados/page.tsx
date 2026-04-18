@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { DiputadoRanking } from '@/lib/api'
 import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
+import { formatName } from '@/lib/utils'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 
@@ -55,10 +56,10 @@ function rankClass(i: number) {
 
 function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; max: number }) {
   const pct = max > 0 ? (d.total_proyectos / max) * 100 : 0
-  const apellidosSlug = encodeURIComponent(d.apellidos)
+  const slug = encodeURIComponent(d.nombre_completo)
 
   return (
-    <Link href={`/diputados/${apellidosSlug}`} className={styles.card}>
+    <Link href={`/diputados/${slug}`} className={styles.card}>
       {/* Rank */}
       <div className={`${styles.rank} ${rankClass(index)}`}>
         {index + 1}
@@ -66,18 +67,19 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
 
       {/* Body */}
       <div className={styles.cardBody}>
-        <p className={styles.cardName}>{d.nombre_completo}</p>
+        <p className={styles.cardName}>{formatName(d.nombre_completo)}</p>
         <div className={styles.barRow}>
           <div className={styles.bar}>
             <div className={styles.barFill} style={{ width: `${pct}%` }} />
           </div>
-          <span className={styles.barCount}>{d.total_proyectos}</span>
-          <span className={styles.barLabel}>proyectos</span>
+          <span className={styles.barCount}>
+            {d.total_proyectos} <span className={styles.barLabel}>{d.total_proyectos === 1 ? 'proyecto' : 'proyectos'}</span>
+          </span>
         </div>
       </div>
 
       {/* Arrow */}
-      <div className={styles.cardArrow}><IconChevron /></div>
+      <div className={styles.cardArrow} aria-hidden><IconChevron /></div>
     </Link>
   )
 }
@@ -100,11 +102,12 @@ function Skeleton() {
 
 export default function DiputadosPage() {
   const [query, setQuery]     = useState('')
-  const [periodo, setPeriodo] = useState('')
+  const [periodo, setPeriodo] = useState('6 meses')
   const [orden, setOrden]     = useState('proyectos')
 
   const [data, setData]       = useState<DiputadoRanking[]>([])
   const [loading, setLoading] = useState(true)
+  const [visible, setVisible] = useState(10)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -140,8 +143,11 @@ export default function DiputadosPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodo])
 
-  const clearFilters = () => { setQuery(''); setPeriodo(''); setOrden('proyectos') }
-  const hasFilters = query || periodo || orden !== 'proyectos'
+  const clearFilters = () => { setQuery(''); setPeriodo('6 meses'); setOrden('proyectos'); setVisible(10) }
+  const hasFilters = query || periodo !== '6 meses' || orden !== 'proyectos'
+
+  // Reset visible count when filters/data change
+  useEffect(() => { setVisible(10) }, [data, orden])
 
   const sorted = [...data].sort((a, b) => {
     if (orden === 'az') return a.apellidos.localeCompare(b.apellidos)
@@ -245,7 +251,7 @@ export default function DiputadosPage() {
 
           {loading ? (
             <div className={styles.list}>
-              {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} />)}
+              {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} />)}
             </div>
           ) : sorted.length === 0 ? (
             <div className={styles.empty}>
@@ -253,11 +259,20 @@ export default function DiputadosPage() {
               <p className={styles.emptyDesc}>Intentá con otro nombre o período diferente.</p>
             </div>
           ) : (
-            <div className={styles.list}>
-              {sorted.map((d, i) => (
-                <DiputadoCard key={`${i}-${d.apellidos}`} d={d} index={i} max={max} />
-              ))}
-            </div>
+            <>
+              <div className={styles.list}>
+                {sorted.slice(0, visible).map((d, i) => (
+                  <DiputadoCard key={d.nombre_completo} d={d} index={i} max={max} />
+                ))}
+              </div>
+              {visible < sorted.length && (
+                <div className={styles.loadMoreRow}>
+                  <button className={styles.loadMoreBtn} onClick={() => setVisible(v => v + 10)}>
+                    Ver más diputados ({sorted.length - visible} restantes)
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
         </div>

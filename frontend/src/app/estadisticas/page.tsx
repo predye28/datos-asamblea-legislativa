@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse } from '@/lib/api'
 import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
-import { formatTitle } from '@/lib/utils'
+import { formatTitle, formatName } from '@/lib/utils'
 import styles from './estadisticas.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 
@@ -19,6 +19,22 @@ function rankBadgeClass(i: number) {
   if (i === 1) return styles.rankBadgeSilver
   if (i === 2) return styles.rankBadgeBronze
   return styles.rankBadgePlain
+}
+
+function IconFilter() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+    </svg>
+  )
+}
+
+function IconX() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M18 6 6 18M6 6l12 12"/>
+    </svg>
+  )
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -85,8 +101,9 @@ export default function EstadisticasPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const periodOptions = [
-    { value: '', label: 'Histórico' },
+    { value: '', label: 'Histórico (todo)' },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
+    { value: '__sep__', label: '── Períodos legislativos ──', disabled: true },
     ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
   ]
 
@@ -102,6 +119,9 @@ export default function EstadisticasPage() {
   const maxTimeline = Math.max(...timeline.map(t => t.leyes_aprobadas), 1)
   const maxTipo = tipos[0]?.total ?? 1
 
+  const isLegislativePeriod = getAllLegislativePeriods().some(p => p.label === periodo)
+  const hasFilter = periodo !== ''
+
   return (
     <div className={styles.page}>
 
@@ -116,16 +136,29 @@ export default function EstadisticasPage() {
               Métricas y tendencias de la actividad legislativa de Costa Rica desde 1949.
             </p>
           </div>
-          <div className={styles.heroFilters}>
-            <FilterPill
-              value={periodo}
-              onChange={setPeriodo}
-              placeholder="Histórico"
-              options={periodOptions}
-            />
-          </div>
         </div>
       </section>
+
+      {/* ── Filters bar ── */}
+      <div className={styles.filtersBar}>
+        <div className={styles.filtersInner}>
+          <span className={styles.filtersLabel}><IconFilter /> Período</span>
+
+          <FilterPill
+            value={periodo}
+            onChange={setPeriodo}
+            placeholder="Histórico (todo)"
+            active={hasFilter}
+            options={periodOptions}
+          />
+
+          {hasFilter && (
+            <button className={styles.clearBtn} onClick={() => setPeriodo('')}>
+              <IconX /> Limpiar
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* ── Content ── */}
       {loading ? (
@@ -142,16 +175,29 @@ export default function EstadisticasPage() {
         <div className={styles.main}>
           <div className={styles.container}>
 
+            {/* Period context banner */}
+            {hasFilter && (
+              <div className={styles.periodBanner}>
+                <span className={styles.periodBannerDot} />
+                <span className={styles.periodBannerText}>
+                  Mostrando datos de <strong>{periodo}</strong>
+                  {isLegislativePeriod && ' · período legislativo'}
+                </span>
+              </div>
+            )}
+
             {/* ── KPI grid ── */}
             <div className={styles.kpiGrid}>
 
               {/* Total proyectos */}
               <div className={styles.kpiCard} style={{ borderColor: 'rgba(20,184,166,0.2)' }}>
                 <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, var(--accent), transparent)' }} />
-                <p className={styles.kpiEyebrow} style={{ color: 'var(--accent)' }}>EN TOTAL</p>
+                <p className={styles.kpiEyebrow} style={{ color: 'var(--accent)' }}>
+                  {hasFilter ? 'EN EL PERÍODO' : 'EN TOTAL'}
+                </p>
                 <p className={styles.kpiBig} style={{ color: 'var(--accent)' }}>{fmt(g?.total_proyectos ?? 0)}</p>
                 <p className={styles.kpiLabel}>Proyectos registrados</p>
-                <p className={styles.kpiSub}>Desde 1949 hasta hoy</p>
+                <p className={styles.kpiSub}>{hasFilter ? `Presentados en ${periodo}` : 'Desde 1949 hasta hoy'}</p>
               </div>
 
               {/* Leyes aprobadas */}
@@ -160,16 +206,20 @@ export default function EstadisticasPage() {
                 <p className={styles.kpiEyebrow} style={{ color: 'var(--positive)' }}>APROBADAS</p>
                 <p className={styles.kpiBig} style={{ color: 'var(--positive)' }}>{fmt(g?.total_leyes_aprobadas ?? 0)}</p>
                 <p className={styles.kpiLabel}>Leyes vigentes</p>
-                <p className={styles.kpiSub}>Cada una rige la vida del país</p>
+                <p className={styles.kpiSub}>{hasFilter ? `Leyes del período ${periodo}` : 'Cada una rige la vida del país'}</p>
               </div>
 
               {/* Tasa de aprobación */}
               <div className={styles.kpiCard} style={{ borderColor: 'rgba(212,168,67,0.2)' }}>
                 <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, var(--gold), transparent)' }} />
-                <p className={styles.kpiEyebrow} style={{ color: 'var(--gold)' }}>TASA HISTÓRICA</p>
+                <p className={styles.kpiEyebrow} style={{ color: 'var(--gold)' }}>
+                  {hasFilter ? 'TASA DEL PERÍODO' : 'TASA HISTÓRICA'}
+                </p>
                 <p className={styles.kpiBig} style={{ color: 'var(--gold)' }}>{fmtPct(g?.tasa_aprobacion_pct ?? 0)}</p>
                 <p className={styles.kpiLabel}>De aprobación</p>
-                <p className={styles.kpiSub}>Solo 1 de cada 7 proyectos lo logra</p>
+                <p className={styles.kpiSub}>
+                  {hasFilter ? 'Proyectos que se convirtieron en ley' : 'Solo 1 de cada 7 proyectos lo logra'}
+                </p>
               </div>
 
               {/* Tiempo promedio */}
@@ -185,22 +235,36 @@ export default function EstadisticasPage() {
                 <p className={styles.kpiSub}>Más que un ciclo legislativo completo</p>
               </div>
 
-              {/* Este mes */}
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, rgba(20,184,166,0.5), transparent)' }} />
-                <p className={styles.kpiEyebrow} style={{ color: 'var(--ink-faint)' }}>ESTE MES</p>
-                <p className={styles.kpiBig} style={{ color: 'var(--ink)' }}>{fmt(g?.proyectos_este_mes ?? 0)}</p>
-                <p className={styles.kpiLabel}>Nuevos proyectos</p>
-                <p className={styles.kpiSub}>El congreso sesiona todo el año</p>
-              </div>
+              {/* Este mes — hidden when legislative period active, shown otherwise */}
+              {!isLegislativePeriod ? (
+                <div className={styles.kpiCard}>
+                  <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, rgba(20,184,166,0.5), transparent)' }} />
+                  <p className={styles.kpiEyebrow} style={{ color: 'var(--ink-faint)' }}>ESTE MES</p>
+                  <p className={styles.kpiBig} style={{ color: 'var(--ink)' }}>{fmt(g?.proyectos_este_mes ?? 0)}</p>
+                  <p className={styles.kpiLabel}>Nuevos proyectos</p>
+                  <p className={styles.kpiSub}>El congreso sesiona todo el año</p>
+                </div>
+              ) : (
+                <div className={`${styles.kpiCard} ${styles.kpiCardContext}`}>
+                  <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, rgba(212,175,55,0.5), transparent)' }} />
+                  <p className={styles.kpiEyebrow} style={{ color: 'var(--gold)' }}>PERÍODO</p>
+                  <p className={`${styles.kpiBig} ${styles.kpiBigPeriod}`}>{periodo.replace('Período ', '')}</p>
+                  <p className={styles.kpiLabel}>Período legislativo</p>
+                  <p className={styles.kpiSub}>Asamblea Legislativa de Costa Rica</p>
+                </div>
+              )}
 
               {/* Este año */}
               <div className={styles.kpiCard}>
                 <div className={styles.kpiCardAccent} style={{ background: 'linear-gradient(to right, rgba(20,184,166,0.5), transparent)' }} />
-                <p className={styles.kpiEyebrow} style={{ color: 'var(--ink-faint)' }}>ESTE AÑO</p>
+                <p className={styles.kpiEyebrow} style={{ color: 'var(--ink-faint)' }}>
+                  {isLegislativePeriod ? 'AÑO EN CURSO' : 'ESTE AÑO'}
+                </p>
                 <p className={styles.kpiBig} style={{ color: 'var(--ink)' }}>{fmt(g?.proyectos_este_anio ?? 0)}</p>
                 <p className={styles.kpiLabel}>Proyectos en {new Date().getFullYear()}</p>
-                <p className={styles.kpiSub}>Ingresados desde enero</p>
+                <p className={styles.kpiSub}>
+                  {isLegislativePeriod ? 'Datos del año calendario actual' : 'Ingresados desde enero'}
+                </p>
               </div>
 
             </div>
@@ -216,7 +280,11 @@ export default function EstadisticasPage() {
                 </div>
                 <div className={styles.barList}>
                   {categorias.slice(0, 10).map(c => (
-                    <div key={c.slug}>
+                    <Link
+                      key={c.slug}
+                      href={`/proyectos?categoria=${c.slug}${periodo ? '' : ''}`}
+                      className={styles.barItemLink}
+                    >
                       <div className={styles.barItem}>
                         <span className={styles.barItemLabel}>{formatTitle(c.categoria)}</span>
                         <span className={styles.barItemValue} style={{ color: 'var(--accent)' }}>{fmt(c.total)}</span>
@@ -231,7 +299,7 @@ export default function EstadisticasPage() {
                         </div>
                         <span className={styles.barItemRate}>{fmtPct(c.tasa_aprobacion)} aprobados</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -246,11 +314,16 @@ export default function EstadisticasPage() {
                   {topDip.slice(0, 10).map((d, i) => (
                     <Link
                       key={`dip-${i}`}
-                      href={`/diputados/${encodeURIComponent(d.apellidos)}`}
+                      href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
                       className={styles.rankRow}
                     >
                       <div className={`${styles.rankBadge} ${rankBadgeClass(i)}`}>{i + 1}</div>
-                      <span className={styles.rankName}>{d.nombre_completo}</span>
+                      <span className={styles.rankName}>{formatName(d.nombre_completo)}</span>
+                      <div className={styles.rankBarWrap}>
+                        <div className={styles.rankBarTrack}>
+                          <div className={styles.rankBarFill} style={{ width: `${(d.total_proyectos / maxDip) * 100}%` }} />
+                        </div>
+                      </div>
                       <span className={styles.rankVal} style={{ color: 'var(--accent)' }}>{fmt(d.total_proyectos)}</span>
                       <span className={styles.rankValSub}>proy.</span>
                     </Link>
@@ -267,7 +340,7 @@ export default function EstadisticasPage() {
               <div className={styles.timelineWrap}>
                 <div className={styles.sectionHeader}>
                   <h2 className={styles.sectionTitle}>Leyes aprobadas por año</h2>
-                  <span className={styles.sectionSub}>{timeline[0]?.anio} – {timeline[timeline.length - 1]?.anio}</span>
+                  <span className={styles.sectionSub}>{timeline[0]?.anio} – {timeline[timeline.length - 1]?.anio} · histórico completo</span>
                 </div>
                 <div className={styles.timelineChart}>
                   {timeline.map(t => {
@@ -298,11 +371,11 @@ export default function EstadisticasPage() {
                     {topEfic.slice(0, 8).map((d, i) => (
                       <Link
                         key={`efic-${i}`}
-                        href={`/diputados/${encodeURIComponent(d.apellidos)}`}
+                        href={`/diputados/${encodeURIComponent(d.nombre_completo)}`}
                         className={styles.rankRow}
                       >
                         <div className={`${styles.rankBadge} ${rankBadgeClass(i)}`}>{i + 1}</div>
-                        <span className={styles.rankName}>{d.nombre_completo}</span>
+                        <span className={styles.rankName}>{formatName(d.nombre_completo)}</span>
                         <span className={styles.rankVal} style={{ color: 'var(--positive)' }}>{fmtPct(d.tasa_aprobacion)}</span>
                       </Link>
                     ))}
