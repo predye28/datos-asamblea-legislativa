@@ -1,21 +1,23 @@
-/* src/app/estadisticas/estadisticas.module.css */
+/* src/app/estadisticas/estadisticas.module.css
+   Rediseño editorial — paleta Ruby dark + serif/mono
+   ------------------------------------------------------- */
 
-/* ── Selector de período ─────────────────────────────────────────── */
+/* ── Selector de período ─────────────────────────────────── */
 .periodoWrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
   margin-bottom: 8px;
 }
 
 .periodoSelect {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
   background: var(--paper);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -24,19 +26,18 @@
   font-size: 15px;
   font-weight: 600;
   min-height: 48px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   outline: none;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23BCBCBC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color .2s, box-shadow .2s;
 }
-
 .periodoSelect:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(211, 0, 1, 0.18);
 }
 
 .clearBtn {
@@ -48,330 +49,403 @@
   color: var(--ink-muted);
   padding: 10px 16px;
   min-height: 44px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .15s;
   white-space: nowrap;
 }
-
-.clearBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+.clearBtn:hover { border-color: var(--accent); color: var(--accent); }
 
 .periodoMeta {
   width: 100%;
-  font-size: 13px;
+  font-family: var(--serif);
+  font-size: 13.5px;
   color: var(--ink-muted);
+  font-style: italic;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.periodoMeta strong { color: var(--ink); font-style: normal; font-weight: 600; }
+
+/* ── Bloque editorial genérico ───────────────────────────── */
+.block {
+  margin-bottom: 12px;
+}
+
+.blockIntro {
+  max-width: 720px;
+  margin: 4px 0 18px;
+}
+.blockIntro h3 {
+  font-family: var(--serif);
+  font-size: clamp(20px, 3.2vw, 26px);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+.blockIntro p {
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--ink-muted);
+  line-height: 1.55;
   font-style: italic;
   margin: 0;
 }
 
-/* ── KPI Grid ────────────────────────────────────────────────────── */
-.kpiGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.kpi {
-  background: var(--paper-card);
-  border: 1px solid var(--rule);
-  border-radius: 14px;
-  padding: 20px 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-}
-
-.kpiAccent {
-  border-color: var(--accent);
-  background: rgba(59, 130, 246, 0.06);
-}
-
-.kpiValue {
-  font-family: var(--body);
-  font-size: clamp(20px, 4vw, 32px);
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1;
-  margin-bottom: 6px;
-}
-
-.kpiAccent .kpiValue {
-  color: var(--accent);
-}
-
-.kpiLabel {
-  font-family: var(--body);
-  font-size: 12px;
-  color: var(--ink-muted);
-  line-height: 1.3;
-}
-
-/* ── Tarjeta genérica ────────────────────────────────────────────── */
+/* ── Tarjeta ─────────────────────────────────────────────── */
 .card {
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
-  padding: 24px 20px;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-radius: var(--radius-lg);
+  padding: 26px 24px;
+  box-shadow: var(--shadow-sm);
 }
 
-.cardDesc {
-  font-size: 14px;
+.figcaption {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--rule);
+  font-family: var(--serif);
+  font-size: 13.5px;
   color: var(--ink-muted);
   font-style: italic;
-  margin-bottom: 20px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
+.figcaption strong { color: var(--ink); font-style: normal; font-weight: 600; }
 
-/* ── Eficacia por tema ───────────────────────────────────────────── */
-.eficaciaList {
+/* ── KPIs ─────────────────────────────────────────────────── */
+.kpiGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
-
-.eficaciaItem {
+.kpi {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: var(--paper-warm);
-  border: 1px solid var(--rule);
-  padding: 16px;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  gap: 10px;
+  min-height: 140px;
+  transition: border-color .2s, transform .2s;
 }
+.kpi:hover { border-color: var(--accent); transform: translateY(-2px); }
 
-.eficaciaItem:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.eficaciaItem::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 4px; height: 100%;
-  background: var(--cat-color);
-  opacity: 0.8;
-}
-
-.eficaciaHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  padding-left: 4px;
-}
-
-.eficaciaTema {
+.kpiLabel {
   font-family: var(--body);
-  font-size: 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.kpiValue {
+  font-family: var(--serif);
+  font-size: clamp(28px, 5vw, 44px);
   font-weight: 700;
   color: var(--ink);
-  flex: 1;
-  min-width: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
-
-.eficaciaPct {
-  font-family: var(--body);
-  font-size: 18px;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.eficaciaStats {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  font-family: var(--body);
+.kpiAccent .kpiValue { color: var(--accent-warm); }
+.kpiPositive .kpiValue { color: var(--positive); }
+.kpiHelp {
+  font-family: var(--serif);
+  font-size: 12.5px;
+  font-style: italic;
   color: var(--ink-muted);
-  padding-left: 4px;
+  line-height: 1.45;
+  margin-top: auto;
 }
 
-.eficaciaStats span:first-child {
-  font-weight: 500;
-}
-
-.eficaciaStats span:last-child {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.eficaciaBar {
-  height: 10px;
-  background: var(--paper);
-  border-radius: 5px;
-  overflow: hidden;
-  margin-top: 4px;
-  margin-left: 4px;
-}
-
-.eficaciaFill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ── Tipo de expediente ──────────────────────────────────────────── */
-.tipoList {
+/* ── Dot-plot (eficacia por tema) ────────────────────────── */
+.dotplot {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-
-.tipoItem {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.dotplotScaleWrap {
+  position: relative;
+  padding-left: 170px;
+  margin-bottom: 4px;
+}
+.dotplotScale {
+  position: relative;
+  height: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.dotplotScale span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
 }
 
-.tipoMeta {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
+.dotRow {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
 }
-
-.tipoName {
-  font-size: 14px;
-  color: var(--ink);
+.dotLabel {
+  font-family: var(--body);
+  font-size: 13.5px;
   font-weight: 500;
-  flex: 1;
-  min-width: 0;
+  color: var(--ink);
+  text-align: right;
+  padding-right: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.tipoCount {
+.dotTrack {
+  position: relative;
+  height: 28px;
+  background:
+    linear-gradient(to right,
+      transparent 0, transparent calc(25% - .5px),
+      var(--rule) calc(25% - .5px), var(--rule) calc(25% + .5px),
+      transparent calc(25% + .5px), transparent calc(50% - .5px),
+      var(--rule) calc(50% - .5px), var(--rule) calc(50% + .5px),
+      transparent calc(50% + .5px), transparent calc(75% - .5px),
+      var(--rule) calc(75% - .5px), var(--rule) calc(75% + .5px),
+      transparent calc(75% + .5px));
+  background-repeat: no-repeat;
+  border-radius: 4px;
+}
+.dotTrack::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px;
+  background: var(--rule);
+  opacity: 0.5;
+}
+.dotPoint {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent-warm);
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--accent-warm), 0 2px 6px rgba(0,0,0,0.4);
+  transition: transform .15s;
+  animation: dotIn .7s cubic-bezier(.16,1,.3,1) both;
+}
+.dotPoint:hover { transform: translate(-50%, -50%) scale(1.25); }
+.dotValue {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 14px;
   font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink-faint);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
   white-space: nowrap;
-  flex-shrink: 0;
 }
-
-.tipoBar {
-  height: 6px;
-  background: var(--paper);
-  border-radius: 3px;
-  overflow: hidden;
+.dotValue span {
+  color: var(--ink-faint);
+  margin-left: 6px;
+  font-weight: 500;
 }
+@keyframes dotIn { from { transform: translate(-50%, -50%) scale(0); opacity: 0; } }
 
-.tipoFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ── Órganos ─────────────────────────────────────────────────────── */
-.organoList {
+/* ── Ranking editorial (diputados / órganos) ─────────────── */
+.rankList {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
-
-.organoItem {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.organoTop {
-  display: flex;
+.rankItem {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+  transition: background .15s;
 }
+.rankItem:last-child { border-bottom: none; }
+.rankItem:hover { background: var(--paper-warm); margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
 
-.organoRank {
+.rankNum {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 700;
   color: var(--accent);
-  width: 20px;
-  flex-shrink: 0;
+  letter-spacing: 0.04em;
 }
-
-.organoName {
-  font-size: 14px;
+.rankBody { min-width: 0; }
+.rankName {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
   color: var(--ink);
-  font-weight: 500;
-  flex: 1;
-  min-width: 0;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.organoCount {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink-muted);
-  flex-shrink: 0;
-}
-
-.organoBar {
-  height: 6px;
+.rankBar {
+  height: 5px;
   background: var(--paper);
   border-radius: 3px;
   overflow: hidden;
-  margin-left: 30px;
 }
-
-.organoFill {
+.rankFill {
   height: 100%;
   background: var(--accent);
-  opacity: 0.6;
   border-radius: 3px;
-  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width .9s cubic-bezier(.16,1,.3,1);
+}
+.rankFill.gold { background: var(--accent-warm); }
+.rankMeta {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+.rankMeta strong {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent-warm);
+  display: block;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .eficaciaList {
-    grid-template-columns: 1fr;
-  }
+/* ── Stacked bar único (tipo de expediente) ──────────────── */
+.stackedBar {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+.stackedSeg {
+  height: 100%;
+  transition: width .9s cubic-bezier(.16,1,.3,1), filter .15s;
+  position: relative;
+}
+.stackedSeg:hover { filter: brightness(1.2); }
 
-  .kpiGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .kpi {
-    padding: 16px 12px;
-  }
-
-  .kpiValue {
-    font-size: clamp(18px, 6vw, 26px);
-  }
-
-  .card {
-    padding: 18px 14px;
-  }
-
-  .periodoWrap {
-    padding: 12px;
-  }
-
-  .periodoSelect {
-    font-size: 14px;
-    min-width: 0;
-  }
+.stackedTicks {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
 }
 
-@media (max-width: 360px) {
-  .kpiGrid {
-    grid-template-columns: 1fr 1fr;
-  }
+.stackedLegend {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+}
+.stackedLegendItem {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: start;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--rule);
+}
+.stackedDot {
+  width: 10px; height: 10px; border-radius: 50%; margin-top: 6px;
+}
+.stackedName {
+  font-family: var(--body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.stackedDesc {
+  font-family: var(--serif);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.stackedCount {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  text-align: right;
+  white-space: nowrap;
+}
+.stackedCount span {
+  color: var(--ink-faint);
+  display: block;
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+
+/* ── Histórico anual (area chart wrapper) ────────────────── */
+.chartWrap {
+  position: relative;
+  width: 100%;
+}
+.peakNote {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin-top: 14px;
+}
+.peakNote strong { color: var(--accent-warm); font-style: normal; font-weight: 700; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi { padding: 18px 14px; min-height: 120px; }
+
+  .stackedLegend { grid-template-columns: 1fr; gap: 12px; }
+
+  .dotplotScaleWrap { padding-left: 120px; }
+  .dotRow { grid-template-columns: 120px 1fr; gap: 10px; }
+  .dotLabel { font-size: 12.5px; }
+
+  .rankItem { grid-template-columns: 24px 1fr auto; gap: 10px; }
+  .rankName { font-size: 14.5px; }
+  .rankMeta strong { font-size: 15px; }
+
+  .card { padding: 20px 16px; }
+}
+
+@media (max-width: 480px) {
+  .kpiGrid { grid-template-columns: 1fr 1fr; }
+  .kpi { min-height: 110px; padding: 14px 12px; }
+
+  .dotplotScaleWrap { padding-left: 0; }
+  .dotRow { grid-template-columns: 1fr; gap: 4px; }
+  .dotLabel { text-align: left; font-size: 13px; padding-right: 0; }
+  .dotTrack { height: 22px; }
+
+  .periodoWrap { padding: 14px; }
+  .periodoSelect { min-width: 0; width: 100%; }
+  .clearBtn { width: 100%; }
+
+  .stackedBar { height: 36px; }
 }
