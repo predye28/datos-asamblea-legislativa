@@ -1,23 +1,6 @@
 .section {
   position: relative;
-  padding: 26px 0 64px;
-}
-
-/* Dot grid removed - now handled by page canvas */
-
-/* Decorative circles — mirror of hero's, anchored to corners */
-.section::after {
-  content: '';
-  position: absolute;
-  bottom: -160px;
-  right: -160px;
-  width: 560px;
-  height: 560px;
-  border-radius: 50%;
-  border: 1px solid rgba(2, 158, 185, 0.11);
-  background: radial-gradient(circle at center, rgba(2, 158, 185, 0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  padding: 40px 0 80px;
 }
 
 .container {
@@ -28,415 +11,201 @@
   z-index: 1;
 }
 
-/* ── Extra decorative circle left ── */
-.decLeft {
-  position: absolute;
-  top: -100px;
-  left: -180px;
-  width: 480px;
-  height: 480px;
-  border-radius: 50%;
-  border: 1px solid rgba(6, 182, 212, 0.09);
-  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* ── Section header ── */
 .sectionHeader {
+  margin-bottom: 56px;
   text-align: center;
-  margin-bottom: 52px;
-  animation: slideUp 0.6s ease both;
-  animation-delay: 1.35s;
-}
-
-.sectionLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 10px;
-}
-
-.sectionLabelDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gold);
-  opacity: 0.7;
 }
 
 .sectionEyebrow {
-  display: block;
   font-family: var(--serif);
-  font-size: clamp(26px, 3.2vw, 38px);
+  font-size: clamp(28px, 3.4vw, 40px);
   font-weight: 900;
   letter-spacing: -0.025em;
   color: var(--ink);
   margin: 0;
   line-height: 1.1;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: eyebrowIn 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
 }
 
-/* ── Grid ── */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-}
-
-/* ── Card ── */
-.card {
-  position: relative;
-  background: #1e1d1b;
-  border: 1px solid rgba(2, 158, 185, 0.35);
-  border-radius: 20px;
-  overflow: hidden;
-  animation: cardEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition:
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.35s ease,
-    border-color 0.35s ease;
-}
-
-.card:hover {
-  transform: translateY(-7px);
-  border-color: var(--card-accent);
-  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--card-accent);
-}
-
-/* ── Colored top glow (set via inline style) ── */
-.cardGlow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 140px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Subtle top accent strip ── */
-.accentStrip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--card-accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 1;
-}
-
-.card:hover .accentStrip {
-  transform: scaleX(1);
-}
-
-/* ── Inner ── */
-.inner {
-  position: relative;
-  z-index: 1;
-  padding: 36px 36px 32px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Card top ── */
-.cardTop {
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.cardTitle {
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1;
-}
-
-.cardNum {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--ink-faint);
-  opacity: 0.4;
-}
-
-/* Thin divider under title */
-.cardDivider {
-  height: 1px;
-  background: linear-gradient(to right, var(--card-accent), rgba(255, 255, 255, 0.05) 60%, transparent);
-  margin-bottom: 26px;
-  opacity: 0.5;
-}
-
-/* ── Slide area ── */
-.slideArea {
-  position: relative;
-  height: 210px;
-  margin-bottom: 32px;
-  overflow: hidden;
-}
-
-/* ── Slide ── */
-.slide {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-.slideEnter {
-  animation: enterRight 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.slideExit {
-  animation: exitLeft 0.36s ease forwards;
-}
-
-@keyframes enterRight {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes exitLeft {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateX(-32px);
-  }
-}
-
-/* ── Slide content ── */
-.slideKicker {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  width: fit-content;
-}
-
-.slideBig {
-  font-family: var(--mono);
-  font-size: clamp(36px, 3.8vw, 50px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  margin-bottom: 6px;
-}
-
-.slideSeparator {
-  height: 1px;
-  width: 32px;
-  background: rgba(255, 255, 255, 0.12);
-  margin-bottom: 12px;
-}
-
-.slideLabel {
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.4;
-  margin-bottom: 7px;
-}
-
-.slideSub {
-  font-family: var(--body);
-  font-size: 13px;
-  color: var(--ink-muted);
-  line-height: 1.55;
-}
-
-/* ── Dot indicators ── */
-.dots {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background 0.2s, width 0.25s, border-radius 0.25s;
-}
-
-.dot:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.dotActive {
-  width: 20px;
-  border-radius: 3px;
-}
-
-/* ── CTA ── */
-.cardFooter {
-  display: flex;
-}
-
-.cta {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 15px 32px;
-  font-family: var(--body);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #1a1a1a;
-  background: var(--card-accent);
-  border: none;
-  border-radius: 50px;
-  overflow: hidden;
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
-
-/* Shine sweep */
-.cta::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -80%;
-  width: 55%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.38) 50%, transparent 100%);
-  transform: skewX(-20deg);
-  transition: left 0.55s ease;
-}
-
-.cta:hover::before {
-  left: 140%;
-}
-
-.cta:hover {
-  filter: brightness(1.2) saturate(1.1);
-  transform: scale(1.03);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
-}
-
-.arrow {
-  display: inline-block;
-  transition: transform 0.2s;
-}
-
-.cta:hover .arrow {
-  transform: translateX(5px);
-}
-
-/* ── Entrance animations ── */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-
+@keyframes eyebrowIn {
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(44px) scale(0.97);
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* ── Card ── */
+.card {
+  position: relative;
+  padding: 36px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+  transition-delay: calc(300ms + var(--i, 0) * 220ms);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.grid.inView > .card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Header ── */
+.cardNum {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--card-accent, var(--ink-muted));
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.cardTitle {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--card-accent, var(--ink));
+  margin: 0 0 14px;
+  line-height: 1.1;
+}
+
+/* ── Promise ── */
+.promise {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  margin: 0 0 32px;
+  max-width: 34ch;
+}
+
+/* ── Data list ── */
+.dataList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.dataRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--card-accent) 22%, transparent);
+}
+
+.dataRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.dataValue {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dataLabel {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
+/* ── Link ── */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--body);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--card-accent, var(--ink));
+  text-decoration: none;
+  margin-top: auto;
+  padding: 10px 18px;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-accent) 8%, transparent);
+  align-self: flex-start;
+  transition: gap 0.25s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.cta:hover {
+  gap: 14px;
+  background: color-mix(in srgb, var(--card-accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--card-accent) 70%, transparent);
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .cta,
+  .arrow {
+    transition: opacity 0.2s ease;
   }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  .grid.inView > .card {
+    transform: none;
   }
-}
-
-.grid>.card:nth-child(1) {
-  animation-delay: 1.5s;
-}
-
-.grid>.card:nth-child(2) {
-  animation-delay: 1.65s;
-}
-
-.grid>.card:nth-child(3) {
-  animation-delay: 1.8s;
 }
 
 /* ── Responsive ── */
 @media (max-width: 1080px) {
   .grid {
     grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .slideArea {
-    height: 220px;
+    max-width: 520px;
+    margin: 0 auto;
   }
 }
 
 @media (max-width: 640px) {
   .section {
-    padding: 8px 0 80px;
+    padding: 24px 0 64px;
   }
-
   .container {
     padding: 0 20px;
   }
-
-  .inner {
-    padding: 28px 24px 26px;
+  .card {
+    padding: 28px 24px 24px;
   }
-
-  .slideArea {
-    height: 200px;
-  }
-
-  .slideBig {
-    font-size: 38px;
-  }
-
   .cardTitle {
+    font-size: 24px;
+  }
+  .dataValue {
     font-size: 20px;
   }
 }
