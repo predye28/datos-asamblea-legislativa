@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -151,7 +151,7 @@ function Skeleton() {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ProyectosPage() {
+function ProyectosContent() {
   const searchParams = useSearchParams()
 
   // Filter state — pre-populated from URL params (?q=...&categoria=...)
@@ -420,5 +420,13 @@ export default function ProyectosPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ProyectosPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProyectosContent />
+    </Suspense>
   )
 }
