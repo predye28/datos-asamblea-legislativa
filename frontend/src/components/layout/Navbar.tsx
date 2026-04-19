@@ -32,35 +32,28 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!menuOpen) return
-    const scrollY = window.scrollY
-    const { body } = document
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overflow: body.style.overflow,
-    }
-    body.style.position = 'fixed'
-    body.style.top = `-${scrollY}px`
-    body.style.width = '100%'
+    const { documentElement: html, body } = document
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+
+    html.style.overflow = 'hidden'
     body.style.overflow = 'hidden'
+    
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false)
     }
     window.addEventListener('keydown', onKey)
+    
     return () => {
-      body.style.position = prev.position
-      body.style.top = prev.top
-      body.style.width = prev.width
-      body.style.overflow = prev.overflow
-      window.scrollTo(0, scrollY)
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
       window.removeEventListener('keydown', onKey)
     }
   }, [menuOpen])
 
   return (
     <>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${menuOpen ? styles.headerFixed : ''}`}>
         <div className={styles.container}>
           <Link href="/" className={styles.logo}>
             La <span className={styles.accent}>Asamblea</span> al Día

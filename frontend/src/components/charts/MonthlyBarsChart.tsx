@@ -58,10 +58,10 @@ export function MonthlyBarsChart({
           <XAxis
             dataKey="label"
             stroke="#9A9A9A"
-            tick={{ fontSize: 11, fontFamily: 'IBM Plex Mono', fill: '#9A9A9A' }}
+            tick={{ fontSize: 10, fontFamily: 'IBM Plex Mono', fill: '#9A9A9A', angle: -40, textAnchor: 'end', dy: 4 }}
             tickLine={false}
             axisLine={{ stroke: '#333' }}
-            interval={0}
+            height={44}
           />
           <YAxis
             stroke="#9A9A9A"

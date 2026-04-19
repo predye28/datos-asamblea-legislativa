@@ -123,6 +123,7 @@ export default function EstadisticasPage() {
   const [customHasta, setCustomHasta] = useState('')
   const [periodo, setPeriodo] = useState('')
   const [data, setData] = useState<MetricasResponse | null>(null)
+  const [globalData, setGlobalData] = useState<MetricasResponse | null>(null)
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
   const [proxVencer, setProxVencer] = useState<ProximoVencer[]>([])
   const [loading, setLoading] = useState(true)
@@ -141,16 +142,19 @@ export default function EstadisticasPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [metricas, tl, prox] = await Promise.all([
+      const [metricas, globalMetricas, tl, prox] = await Promise.all([
         api.metricas.general({ desde, hasta }),
+        api.metricas.general({}),
         api.metricas.lineaTiempo(),
         api.metricas.proximosVencer(90).catch(() => ({ datos: [] as ProximoVencer[] })),
       ])
       setData(metricas)
+      setGlobalData(globalMetricas)
       setTimeline(tl.datos)
       setProxVencer(prox.datos || [])
     } catch {
       setData(null)
+      setGlobalData(null)
     } finally {
       setLoading(false)
     }
@@ -165,8 +169,9 @@ export default function EstadisticasPage() {
     ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
   ]
 
-  const g = data?.general
+  const g = globalData?.general
   const categorias = data?.por_categoria ?? []
+  const globalCategorias = globalData?.por_categoria ?? []
   const topDip = data?.top_diputados ?? []
   const topEfic = useMemo(
     () => (data?.top_diputados_eficacia ?? []).filter(d => d.total_proyectos >= 3),
@@ -174,7 +179,7 @@ export default function EstadisticasPage() {
   )
   const tipos = data?.por_tipo ?? []
   const organos = data?.organos_activos ?? []
-  const porMes = data?.por_mes ?? []
+  const porMes = globalData?.por_mes ?? []
 
   const maxDip = topDip[0]?.total_proyectos ?? 1
   const maxOrg = organos[0]?.total_tramites ?? 1
@@ -217,6 +222,7 @@ export default function EstadisticasPage() {
   const top2Pct = (topTipo?.porcentaje ?? 0) + (topTipo2?.porcentaje ?? 0)
 
   const topTema = categorias[0]
+  const globalTopTema = globalCategorias[0]
   const temaMasEficaz = useMemo(() => {
     const conMin = categorias.filter(c => c.total >= 3)
     if (conMin.length === 0) return null
@@ -242,11 +248,19 @@ export default function EstadisticasPage() {
 
   const rangoTextoHumano = hasRapido
     ? (rangoRapido === 'personalizado' && customDesde && customHasta
-        ? `del ${customDesde} al ${customHasta}`
-        : RANGO_LABEL[rangoRapido].toLowerCase())
+      ? `del ${customDesde} al ${customHasta}`
+      : RANGO_LABEL[rangoRapido].toLowerCase())
     : hasLegislative
       ? periodo
       : 'histórico'
+
+  const filtroLabel = hasRapido
+    ? (rangoRapido === 'personalizado' && customDesde && customHasta
+      ? `${customDesde} al ${customHasta}`
+      : RANGO_LABEL[rangoRapido])
+    : hasLegislative
+      ? periodo
+      : 'Histórico (todo)'
 
   const onChangeRapido = (v: RangoRapido) => {
     setRangoRapido(v)
@@ -288,7 +302,7 @@ export default function EstadisticasPage() {
             <div className={styles.heroKpiGrid}>
               <HeroKpi
                 label="Proyectos presentados"
-                sub={hasFilter ? `en ${rangoTextoHumano}` : 'desde 1949'}
+                sub="desde 1949"
                 value={<CountUp end={g.total_proyectos} />}
                 color="var(--accent)"
               />
@@ -321,44 +335,29 @@ export default function EstadisticasPage() {
       </section>
 
       {/* ── Resumen ejecutivo ── */}
-      {!loading && data && (
+      {globalData && data && (
         <ResumenEjecutivo
           mensual={mensualStats ? {
             ultimoMes: mensualStats.ultimoMes,
             delta: mensualStats.delta,
             hayAnterior: !!mensualStats.mesAnterior,
           } : null}
-          topTema={topTema}
+          topTema={globalTopTema}
           tasa={g?.tasa_aprobacion_pct ?? 0}
           urgentes={urgentesCount}
-          hasFilter={hasFilter}
-          rangoTexto={rangoTextoHumano}
+          hasFilter={false}
+          rangoTexto=""
         />
       )}
 
       {/* ── Filters ── */}
       <div className={styles.filtersBar}>
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> Rango</span>
-          <div className={styles.rangoChips} role="tablist" aria-label="Rango de tiempo">
-            {(['', 'este_mes', 'seis_meses', 'este_anio', 'personalizado'] as RangoRapido[]).map(r => (
-              <button
-                key={r}
-                role="tab"
-                aria-selected={rangoRapido === r}
-                className={`${styles.rangoChip} ${rangoRapido === r ? styles.rangoChipActive : ''}`}
-                onClick={() => onChangeRapido(r)}
-              >
-                {r === '' ? 'Histórico' : RANGO_LABEL[r]}
-              </button>
-            ))}
-          </div>
-          <span className={styles.filtersSep} aria-hidden />
-          <span className={styles.filtersLabelSecondary}>Período legislativo</span>
+          <span className={styles.filtersLabel}><IconFilter /> Período legislativo</span>
           <FilterPill
             value={periodo}
             onChange={onChangePeriodo}
-            placeholder="Todos"
+            placeholder="Todos los períodos"
             active={hasLegislative}
             options={periodOptions}
           />
@@ -368,28 +367,6 @@ export default function EstadisticasPage() {
             </Button>
           )}
         </div>
-        {rangoRapido === 'personalizado' && (
-          <div className={styles.customRow}>
-            <label className={styles.customLabel}>
-              Desde
-              <input
-                type="date"
-                value={customDesde}
-                onChange={e => setCustomDesde(e.target.value)}
-                className={styles.customInput}
-              />
-            </label>
-            <label className={styles.customLabel}>
-              Hasta
-              <input
-                type="date"
-                value={customHasta}
-                onChange={e => setCustomHasta(e.target.value)}
-                className={styles.customInput}
-              />
-            </label>
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -416,62 +393,15 @@ export default function EstadisticasPage() {
               </div>
             )}
 
-            {/* ── 01 · Lo que está por vencer (urgente) ── */}
-            {proxVencer.length > 0 && (
-              <>
-                <SectionIntro
-                  num="01"
-                  kicker="Lo urgente"
-                  title="Proyectos por vencer"
-                  deck="Cada proyecto tiene cuatro años para ser aprobado. Si no lo logra, se archiva sin trámite. Estos son los más cercanos al límite."
-                />
-                <p className={`${styles.insight} ${urgentesCount > 0 ? styles.insightUrgent : ''}`}>
-                  {urgentesCount > 0
-                    ? <><strong>{urgentesCount} {urgentesCount === 1 ? 'proyecto vence' : 'proyectos vencen'}</strong> en menos de 30 días. Si no se aprueban, se archivan.</>
-                    : <>Ningún proyecto vence en los próximos 30 días. La ventana inmediata está libre.</>}
-                </p>
-                <div className={styles.relojGrid}>
-                  {proxVencer.slice(0, 6).map((p) => {
-                    const urg = p.dias_restantes < 30 ? 'red' : p.dias_restantes < 90 ? 'amber' : 'neutral'
-                    return (
-                      <Link
-                        key={p.numero_expediente}
-                        href={`/proyectos/${p.numero_expediente}`}
-                        className={`${styles.relojCard} ${styles[`reloj_${urg}`]}`}
-                      >
-                        <div className={styles.relojHead}>
-                          <span className={styles.relojExp}>EXP. {p.numero_expediente}</span>
-                          <span className={styles.relojTipo}>{p.tipo_expediente || '—'}</span>
-                        </div>
-                        <h4 className={styles.relojTitle}>
-                          {p.titulo || 'Proyecto sin título'}
-                        </h4>
-                        <div className={styles.relojFooter}>
-                          <div className={styles.relojDays}>
-                            <strong>{p.dias_restantes}</strong>
-                            <span>días restantes</span>
-                          </div>
-                          {p.proponentes_resumen && (
-                            <div className={styles.relojProp} title={p.proponentes_resumen}>
-                              {p.proponentes_resumen}
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* ── 02 · Temas ── */}
+            {/* ── 01 · Temas ── */}
             {categorias.length > 0 && (
               <>
                 <SectionIntro
-                  num="02"
+                  num="01"
                   kicker="¿De qué se habla?"
                   title="Los temas que mueven la agenda"
-                  deck="Ranking por volumen de proyectos presentados. El tema protagonista ocupa el espacio destacado; los demás componen la lista."
+                  deck="Ranking por volumen de proyectos presentados. El tema con más iniciativas encabeza; los demás siguen en orden."
+                  filtro={filtroLabel}
                 />
                 <p className={styles.insight}>
                   {topTema && (
@@ -485,122 +415,41 @@ export default function EstadisticasPage() {
                     </>
                   )}
                 </p>
-                <div className={styles.cartelera}>
-                  {categorias.slice(0, 9).map((c, i) => {
-                    const color = PALETTE[i % PALETTE.length]
+                <div className={styles.temasList}>
+                  {categorias.slice(0, 10).map((c, i) => {
+                    const maxTotal = categorias[0].total || 1
+                    const width = (c.total / maxTotal) * 100
                     return (
                       <Link
                         key={c.slug}
                         href={`/proyectos?categoria=${c.slug}`}
-                        className={`${styles.cartTile} ${i === 0 ? styles.cartHero : ''}`}
-                        style={{ '--tile-accent': color } as React.CSSProperties}
+                        className={styles.temaRow}
                       >
-                        <div className={styles.cartRank}>{String(i + 1).padStart(2, '0')}</div>
-                        <h3 className={styles.cartTitle}>{formatTitle(c.categoria)}</h3>
-                        <div className={styles.cartMeta}>
-                          <span className={styles.cartCount}>
-                            {i === 0 ? <CountUp end={c.total} /> : fmt(c.total)}
-                            <span>proyectos</span>
-                          </span>
-                          <span className={styles.cartRate}>
-                            {fmtPct(c.tasa_aprobacion)} <em>llega a ley</em>
-                          </span>
+                        <span className={styles.temaRank}>{i + 1}</span>
+                        <div className={styles.temaBody}>
+                          <div className={styles.temaNameRow}>
+                            <span className={styles.temaName}>{formatTitle(c.categoria)}</span>
+                            <span className={styles.temaRate}>{fmtPct(c.tasa_aprobacion)} llega a ley</span>
+                          </div>
+                          <div className={styles.temaBar}>
+                            <div className={styles.temaFill} style={{ width: `${width}%` }} />
+                          </div>
                         </div>
-                        <span className={styles.cartArrow}>Ver proyectos →</span>
+                        <div className={styles.temaCount}>
+                          <strong>{fmt(c.total)}</strong>
+                          <span>proyectos</span>
+                        </div>
                       </Link>
                     )
                   })}
                 </div>
               </>
             )}
-
-            {/* ── 03 · Ritmo mensual ── */}
-            {mensualStats && porMes.length >= 3 && (
-              <>
-                <SectionIntro
-                  num="03"
-                  kicker="El ritmo"
-                  title="Proyectos presentados mes a mes"
-                  deck="Últimos 12 meses de actividad. Verde señala picos (30% sobre el promedio), ámbar indica meses bajos."
-                />
-                <p className={styles.insight}>
-                  {mensualStats.pico.total > mensualStats.promedio * 1.2 ? (
-                    <>
-                      Hubo un <strong>pico en {mensualStats.pico.mes_nombre} {mensualStats.pico.anio}</strong> con{' '}
-                      <strong>{mensualStats.pico.total} proyectos</strong> ({Math.round((mensualStats.pico.total / mensualStats.promedio - 1) * 100)}% sobre el promedio de {mensualStats.promedio.toFixed(1)}).
-                    </>
-                  ) : (
-                    <>La actividad mensual se mantiene estable alrededor de <strong>{mensualStats.promedio.toFixed(1)} proyectos por mes</strong>.</>
-                  )}
-                </p>
-                <div className={styles.mensualPanel}>
-                  <MonthlyBarsChart data={mensualStats.ultimos} height={260} />
-                </div>
-              </>
-            )}
-
-            {/* ── 04 · Pulso histórico ── */}
-            {timelineStats && (
-              <>
-                <SectionIntro
-                  num="04"
-                  kicker="La historia larga"
-                  title={`${timelineStats.totalAnios} años de producción legislativa`}
-                  deck={`Cantidad de proyectos convertidos en ley entre ${timelineStats.desde} y ${timelineStats.hasta}. Los picos reflejan ciclos políticos, las caídas marcan años de bloqueo o transición.`}
-                />
-                <p className={styles.insight}>
-                  {Math.abs(timelineStats.deltaPct) >= 5 ? (
-                    <>
-                      En los últimos 3 años la producción legislativa{' '}
-                      <strong>{timelineStats.deltaPct > 0 ? 'subió' : 'cayó'} un {Math.abs(timelineStats.deltaPct).toFixed(0)}%</strong>{' '}
-                      respecto al promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.
-                    </>
-                  ) : (
-                    <>Los últimos 3 años se mantienen cerca del promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.</>
-                  )}
-                </p>
-                <div className={styles.pulsoGrid}>
-                  <aside className={styles.pullQuotes}>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>AÑO PICO</div>
-                      <div className={styles.pullNum} style={{ color: '#F59E0B' }}>{timelineStats.peak.anio}</div>
-                      <figcaption>
-                        <strong>{timelineStats.peak.leyes_aprobadas}</strong> leyes aprobadas — el máximo histórico en un solo año.
-                      </figcaption>
-                    </figure>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>AÑO MÁS BAJO</div>
-                      <div className={styles.pullNum}>{timelineStats.low.anio}</div>
-                      <figcaption>
-                        Solo <strong>{timelineStats.low.leyes_aprobadas}</strong> leyes aprobadas. Ciclos de obstrucción o transición política.
-                      </figcaption>
-                    </figure>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>PROMEDIO</div>
-                      <div className={styles.pullNum} style={{ color: 'var(--accent)' }}>
-                        <CountUp end={timelineStats.promedio} decimals={1} />
-                      </div>
-                      <figcaption>
-                        leyes por año a lo largo de <strong>{timelineStats.totalAnios}</strong> años de registro.
-                      </figcaption>
-                    </figure>
-                  </aside>
-                  <div className={styles.pulsoChart}>
-                    <TimelineAreaChart data={timeline} height={340} />
-                    <p className={styles.peakCaption}>
-                      Pico histórico en <strong>{timelineStats.peak.anio}</strong> con{' '}
-                      <strong>{fmt(timelineStats.peak.leyes_aprobadas)} leyes aprobadas</strong>.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ── 05 · Diputados ── */}
+            {/* ── 02 · Diputados ── */}
             {(topDip.length > 0 || topEfic.length > 0) && (
               <>
                 <SectionIntro
-                  num="05"
+                  num="02"
                   kicker="Los protagonistas"
                   title="Quiénes proponen · quiénes aprueban"
                   deck={
@@ -609,6 +458,7 @@ export default function EstadisticasPage() {
                       A la derecha, <strong>eficacia</strong>: los que logran que un porcentaje alto de sus proyectos se convierta en ley.
                     </>
                   }
+                  filtro={filtroLabel}
                 />
                 {topEfic.length > 0 && (
                   <p className={styles.insight}>
@@ -684,14 +534,15 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 06 · Anatomía (tipos) ── */}
+            {/* ── 03 · Anatomía (tipos) ── */}
             {tipos.length > 0 && (
               <>
                 <SectionIntro
-                  num="06"
+                  num="03"
                   kicker="Anatomía"
                   title="¿De qué se compone el trabajo legislativo?"
                   deck="No todos los proyectos son iguales. Cada tipo de expediente sigue un trámite distinto. Así se reparte el total."
+                  filtro={filtroLabel}
                 />
                 <div className={styles.anatomiaPanel}>
                   <div className={styles.anatomiaBajada}>
@@ -700,7 +551,7 @@ export default function EstadisticasPage() {
                     </div>
                     <p>
                       del volumen total viene de solo <strong>dos tipos</strong> de expediente:
-                      <em> {topTipo?.tipo}</em> y <em>{topTipo2?.tipo}</em>.
+                      <em> {topTipo ? formatTitle(topTipo.tipo) : ''}</em> y <em>{topTipo2 ? formatTitle(topTipo2.tipo) : ''}</em>.
                     </p>
                   </div>
 
@@ -725,7 +576,7 @@ export default function EstadisticasPage() {
                           {ROMAN[i] || `${i + 1}`}
                         </span>
                         <div className={styles.glosarioBody}>
-                          <div className={styles.glosarioName}>{t.tipo}</div>
+                          <div className={styles.glosarioName}>{formatTitle(t.tipo)}</div>
                           {TIPO_HELP[t.tipo] && (
                             <div className={styles.glosarioDesc}>{TIPO_HELP[t.tipo]}</div>
                           )}
@@ -747,14 +598,15 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 07 · Órganos ── */}
+            {/* ── 04 · Órganos ── */}
             {organos.length > 0 && (
               <>
                 <SectionIntro
-                  num="07"
+                  num="04"
                   kicker="Los órganos"
                   title="Dónde se mueve el trabajo legislativo"
                   deck="Comisiones, departamentos y oficinas con más trámites procesados: cada paso formal registrado sobre un expediente."
+                  filtro={filtroLabel}
                 />
                 {topOrgano && (
                   <p className={styles.insight}>
@@ -766,9 +618,9 @@ export default function EstadisticasPage() {
                     const pct = Math.max(6, (o.total_tramites / maxOrg) * 100)
                     const role = o.organo.toLowerCase().includes('plenario') ? 'Plenario'
                       : o.organo.toLowerCase().includes('comisión') || o.organo.toLowerCase().includes('comision') ? 'Comisión'
-                      : o.organo.toLowerCase().includes('departamento') ? 'Departamento'
-                      : o.organo.toLowerCase().includes('secretar') ? 'Secretaría'
-                      : 'Órgano'
+                        : o.organo.toLowerCase().includes('departamento') ? 'Departamento'
+                          : o.organo.toLowerCase().includes('secretar') ? 'Secretaría'
+                            : 'Órgano'
                     return (
                       <div key={o.organo} className={styles.mastheadRow}>
                         <span className={styles.mastheadRank}>{String(i + 1).padStart(2, '0')}</span>
@@ -790,37 +642,138 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 08 · Indicadores complementarios ── */}
-            <SectionIntro
-              num="08"
-              kicker="También importa"
-              title="Dos indicadores complementarios"
-              deck="Ritmo y actividad reciente. No son las cifras estrella, pero contextualizan el trabajo legislativo."
-            />
-            <div className={styles.kpiGridMini}>
-              <Kpi
-                roman="V"
-                eyebrow="Trámites"
-                value={g?.promedio_tramites
-                  ? <CountUp end={g.promedio_tramites} decimals={1} />
-                  : '—'}
-                label="Por proyecto (promedio)"
-                help="Pasos formales que recorre una iniciativa en promedio."
-                color="#EC4899"
-              />
-              <Kpi
-                roman="VI"
-                eyebrow={isLegislativePeriod ? 'Año en curso' : 'Este año'}
-                value={<CountUp end={g?.proyectos_este_anio ?? 0} />}
-                label={`Proyectos en ${new Date().getFullYear()}`}
-                help="Iniciativas presentadas durante el año calendario actual."
-                color="#14B8A6"
-              />
-            </div>
+            {/* ── 05 · Ritmo mensual ── */}
+            {mensualStats && porMes.length >= 3 && (
+              <>
+                <SectionIntro
+                  num="05"
+                  kicker="El ritmo"
+                  title="Proyectos presentados mes a mes"
+                  deck="Últimos 12 meses de actividad. Verde señala picos (30% sobre el promedio), ámbar indica meses bajos."
+                  filtro="Últimos 12 meses"
+                />
+                <p className={styles.insight}>
+                  {mensualStats.pico.total > mensualStats.promedio * 1.2 ? (
+                    <>
+                      Hubo un <strong>pico en {mensualStats.pico.mes_nombre} {mensualStats.pico.anio}</strong> con{' '}
+                      <strong>{mensualStats.pico.total} proyectos</strong> ({Math.round((mensualStats.pico.total / mensualStats.promedio - 1) * 100)}% sobre el promedio de {mensualStats.promedio.toFixed(1)}).
+                    </>
+                  ) : (
+                    <>La actividad mensual se mantiene estable alrededor de <strong>{mensualStats.promedio.toFixed(1)} proyectos por mes</strong>.</>
+                  )}
+                </p>
+                <div className={styles.mensualPanel}>
+                  <MonthlyBarsChart data={mensualStats.ultimos} height={260} />
+                </div>
+              </>
+            )}
 
-            {/* ── 09 · Colofón ── */}
+            {/* ── 06 · Pulso histórico ── */}
+            {timelineStats && (
+              <>
+                <SectionIntro
+                  num="06"
+                  kicker="La historia larga"
+                  title={`${timelineStats.totalAnios} años de producción legislativa`}
+                  deck={`Cantidad de proyectos convertidos en ley entre ${timelineStats.desde} y ${timelineStats.hasta}. Los picos reflejan ciclos políticos, las caídas marcan años de bloqueo o transición.`}
+                  filtro={`Histórico · ${timelineStats.desde}–${timelineStats.hasta}`}
+                />
+                <p className={styles.insight}>
+                  {Math.abs(timelineStats.deltaPct) >= 5 ? (
+                    <>
+                      En los últimos 3 años la producción legislativa{' '}
+                      <strong>{timelineStats.deltaPct > 0 ? 'subió' : 'cayó'} un {Math.abs(timelineStats.deltaPct).toFixed(0)}%</strong>{' '}
+                      respecto al promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.
+                    </>
+                  ) : (
+                    <>Los últimos 3 años se mantienen cerca del promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.</>
+                  )}
+                </p>
+                <div className={styles.pulsoPanel}>
+                  <TimelineAreaChart data={timeline} height={300} />
+                  <div className={styles.pulsoStats}>
+                    <div className={styles.pulsoStat}>
+                      <div className={styles.pulsoStatLabel}>Año con más leyes</div>
+                      <div className={styles.pulsoStatValue} style={{ color: '#F59E0B' }}>
+                        {timelineStats.peak.anio}
+                      </div>
+                      <div className={styles.pulsoStatHelp}>
+                        <strong>{timelineStats.peak.leyes_aprobadas}</strong> leyes aprobadas
+                      </div>
+                    </div>
+                    <div className={styles.pulsoStat}>
+                      <div className={styles.pulsoStatLabel}>Año con menos leyes</div>
+                      <div className={styles.pulsoStatValue}>{timelineStats.low.anio}</div>
+                      <div className={styles.pulsoStatHelp}>
+                        solo <strong>{timelineStats.low.leyes_aprobadas}</strong> leyes
+                      </div>
+                    </div>
+                    <div className={styles.pulsoStat}>
+                      <div className={styles.pulsoStatLabel}>Promedio anual</div>
+                      <div className={styles.pulsoStatValue} style={{ color: 'var(--accent)' }}>
+                        <CountUp end={timelineStats.promedio} decimals={1} />
+                      </div>
+                      <div className={styles.pulsoStatHelp}>
+                        leyes por año ({timelineStats.totalAnios} años de registro)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── 07 · Lo que está por vencer (urgente) ── */}
+            {proxVencer.length > 0 && (
+              <>
+                <SectionIntro
+                  num="07"
+                  kicker="Lo urgente"
+                  title="Proyectos por vencer"
+                  deck="Cada proyecto tiene cuatro años para ser aprobado. Si no lo logra, se archiva sin trámite. Estos son los más cercanos al límite."
+                  filtro="Próximos 90 días"
+                />
+                <p className={`${styles.insight} ${urgentesCount > 0 ? styles.insightUrgent : ''}`}>
+                  {urgentesCount > 0
+                    ? <><strong>{urgentesCount} {urgentesCount === 1 ? 'proyecto vence' : 'proyectos vencen'}</strong> en menos de 30 días. Si no se aprueban, se archivan.</>
+                    : <>Ningún proyecto vence en los próximos 30 días. La ventana inmediata está libre.</>}
+                </p>
+                <div className={styles.relojGrid}>
+                  {proxVencer.slice(0, 6).map((p) => {
+                    const urg = p.dias_restantes < 30 ? 'red' : p.dias_restantes < 90 ? 'amber' : 'neutral'
+                    return (
+                      <Link
+                        key={p.numero_expediente}
+                        href={`/proyectos/${p.numero_expediente}`}
+                        className={`${styles.relojCard} ${styles[`reloj_${urg}`]}`}
+                      >
+                        <div className={styles.relojHead}>
+                          <span className={styles.relojExp}>EXP. {p.numero_expediente}</span>
+                          <span className={styles.relojTipo}>{p.tipo_expediente || '—'}</span>
+                        </div>
+                        <h4 className={styles.relojTitle}>
+                          {p.titulo || 'Proyecto sin título'}
+                        </h4>
+                        <div className={styles.relojFooter}>
+                          <div className={styles.relojDays}>
+                            <strong>{p.dias_restantes}</strong>
+                            <span>días restantes</span>
+                          </div>
+                          {p.proponentes_resumen && (
+                            <div className={styles.relojProp} title={p.proponentes_resumen}>
+                              {p.proponentes_resumen}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* ── Colofón ── */}
             <div className={styles.colofon}>
-              <div className={styles.colofonKicker}>09 · COLOFÓN</div>
+              <div className={styles.colofonKicker}>08 · COLOFÓN</div>
               <h3 className={styles.colofonTitle}>Sobre esta edición</h3>
               <div className={styles.colofonCols}>
                 <div>
@@ -913,8 +866,8 @@ function ResumenEjecutivo({
   )
 }
 
-function SectionIntro({ num, kicker, title, deck }: {
-  num: string; kicker: string; title: string; deck: React.ReactNode
+function SectionIntro({ num, kicker, title, deck, filtro }: {
+  num: string; kicker: string; title: string; deck: React.ReactNode; filtro?: string
 }) {
   return (
     <div className={styles.sectionIntro}>
@@ -925,6 +878,13 @@ function SectionIntro({ num, kicker, title, deck }: {
       </div>
       <h2 className={styles.sectionTitle}>{title}</h2>
       <p className={styles.sectionDeck}>{deck}</p>
+      {filtro && (
+        <div className={styles.filtroHint}>
+          <span className={styles.filtroHintDot} />
+          <span className={styles.filtroHintLabel}>Mostrando:</span>
+          <strong>{filtro}</strong>
+        </div>
+      )}
     </div>
   )
 }

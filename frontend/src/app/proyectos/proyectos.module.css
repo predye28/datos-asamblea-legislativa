@@ -126,9 +126,8 @@
 .filtersBar {
   background: var(--paper-warm);
   border-bottom: 1px solid var(--rule);
-  position: sticky;
-  top: var(--nav-h);
-  z-index: 100;
+  position: relative;
+  z-index: 10;
 }
 
 .filtersInner {
@@ -670,10 +669,6 @@
   .searchInput {
     font-size: 14px;
     padding: 13px 44px 13px 46px;
-  }
-
-  .pageNums .pageNum:not(.pageNumActive) {
-    display: none;
   }
 
   .cardTitle {

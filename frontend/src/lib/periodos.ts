@@ -8,7 +8,6 @@ export const getPeriodos = () => {
     { label: 'Este mes',  desde: () => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01` },
     { label: '6 meses',   desde: () => { const d6=new Date(); d6.setMonth(d6.getMonth()-6); return d6.toISOString().slice(0,10) } },
     { label: 'Este año',  desde: () => `${d.getFullYear()}-01-01` },
-    { label: `Período ${startYear}-${String(endYear).slice(2)}`, desde: () => `${startYear}-05-01` },
   ]
 }
 

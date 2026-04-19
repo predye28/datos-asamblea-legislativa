@@ -1,11 +1,16 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 9999;
   height: var(--nav-h);
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
   box-shadow: 0 1px 16px rgba(0, 0, 0, 0.45);
+}
+
+.headerFixed {
+  position: fixed !important;
+  width: 100%;
 }
 
 .container {
@@ -150,7 +155,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 900;
+  z-index: 9997;
   animation: fadeIn 0.2s ease;
 }
 
@@ -173,7 +178,7 @@
   width: min(320px, 88vw);
   background: var(--paper-warm);
   border-left: 1px solid var(--rule);
-  z-index: 950;
+  z-index: 9998;
   display: flex;
   flex-direction: column;
   padding: 28px 20px;

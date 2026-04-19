@@ -392,27 +392,27 @@ function ProyectosContent() {
                 variant="secondary"
                 size="sm"
                 disabled={pagina <= 1}
-                onClick={() => setPagina(p => p - 1)}
+                onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
               >← Anterior</Button>
 
               <div className={styles.pageNums}>
-                {Array.from({ length: Math.min(paginacion.total_paginas, 10) }, (_, i) => {
+                {Array.from({ length: Math.min(paginacion.total_paginas, 5) }, (_, i) => {
                   const totalPages = paginacion.total_paginas
                   let pg: number
-                  if (totalPages <= 10) {
+                  if (totalPages <= 5) {
                     pg = i + 1
-                  } else if (pagina <= 5) {
+                  } else if (pagina <= 3) {
                     pg = i + 1
-                  } else if (pagina >= totalPages - 4) {
-                    pg = totalPages - 9 + i
+                  } else if (pagina >= totalPages - 2) {
+                    pg = totalPages - 4 + i
                   } else {
-                    pg = pagina - 4 + i
+                    pg = pagina - 2 + i
                   }
                   return (
                     <button
                       key={pg}
                       className={`${styles.pageNum} ${pg === pagina ? styles.pageNumActive : ''}`}
-                      onClick={() => setPagina(pg)}
+                      onClick={() => { setPagina(pg); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                     >{pg}</button>
                   )
                 })}
@@ -422,7 +422,7 @@ function ProyectosContent() {
                 variant="secondary"
                 size="sm"
                 disabled={pagina >= paginacion.total_paginas}
-                onClick={() => setPagina(p => p + 1)}
+                onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
               >Siguiente →</Button>
             </div>
           )}

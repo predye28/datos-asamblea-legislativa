@@ -312,6 +312,187 @@
 }
 .insightUrgent strong { color: var(--danger); }
 
+/* ── Filtro hint (por sección) ───────────────────────────── */
+.filtroHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 6px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-card);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.filtroHintDot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.filtroHintLabel {
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.filtroHint strong {
+  color: var(--ink);
+  font-weight: 700;
+  font-family: var(--body);
+  font-size: 12.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Temas (ranking lista simple) ─────────────────────────── */
+.temasList {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 8px 22px;
+}
+.temaRow {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px dashed var(--rule);
+  text-decoration: none;
+  color: inherit;
+  transition: background .15s ease, transform .15s ease;
+}
+.temaRow:last-child { border-bottom: none; }
+.temaRow:hover {
+  background: rgba(6,182,212,0.04);
+  transform: translateX(3px);
+}
+.temaRank {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.temaRow:nth-child(1) .temaRank { color: #F59E0B; font-size: 26px; }
+.temaBody { min-width: 0; }
+.temaNameRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.temaName {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.temaRate {
+  font-family: var(--body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.temaBar {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.temaFill {
+  height: 100%;
+  background: linear-gradient(to right, var(--accent), rgba(6,182,212,0.4));
+  border-radius: 4px;
+  transition: width .9s cubic-bezier(.16,1,.3,1);
+}
+.temaCount {
+  text-align: right;
+  white-space: nowrap;
+  min-width: 86px;
+}
+.temaCount strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.temaCount span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Pulso histórico (panel simplificado) ────────────────── */
+.pulsoPanel {
+  background: #181c1e;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 24px 24px 20px;
+}
+.pulsoStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--rule);
+}
+.pulsoStat {
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+}
+.pulsoStatLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.pulsoStatValue {
+  font-family: var(--serif);
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.pulsoStatHelp {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+.pulsoStatHelp strong { color: var(--ink); font-weight: 700; }
+
+@media (max-width: 720px) {
+  .pulsoStats { grid-template-columns: 1fr; }
+  .temaRow { grid-template-columns: 28px 1fr auto; gap: 12px; padding: 14px 0; }
+  .temaName { font-size: 15px; }
+  .temaCount strong { font-size: 18px; }
+  .temasList { padding: 4px 16px; }
+}
+
 /* ── Ritmo mensual ───────────────────────────────────────── */
 .mensualPanel {
   background: #181c1e;
@@ -320,13 +501,12 @@
   padding: 22px 20px 14px;
 }
 
-/* ── Filters bar (sticky) ─────────────────────────────────── */
+/* ── Filters bar ─────────────────────────────────── */
 .filtersBar {
   background: var(--paper-warm);
   border-bottom: 1px solid var(--rule);
-  position: sticky;
-  top: var(--nav-h);
-  z-index: 100;
+  position: relative;
+  z-index: 10;
 }
 .filtersInner {
   max-width: var(--container-max); margin: 0 auto;
@@ -358,6 +538,99 @@
   border-color: rgba(239,68,68,0.4);
   color: #ef4444;
   transform: translateY(-1px);
+}
+
+/* Rango chips */
+.rangoChips {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-card);
+  flex-wrap: wrap;
+}
+.rangoChip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+.rangoChip:hover { color: var(--ink); }
+.rangoChipActive {
+  background: rgba(6,182,212,0.14);
+  color: var(--accent);
+}
+
+.filtersSep {
+  width: 1px;
+  height: 20px;
+  background: var(--rule);
+  margin: 0 4px;
+}
+.filtersLabelSecondary {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.customRow {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--container-pad) 12px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.customLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.customInput {
+  padding: 7px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper-card);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  color-scheme: dark;
+}
+.customInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.peakCaption {
+  margin-top: 14px;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+.peakCaption strong { color: var(--ink); font-style: normal; font-weight: 700; }
+
+@media (max-width: 720px) {
+  .rangoChips { width: 100%; justify-content: flex-start; }
+  .filtersSep { display: none; }
 }
 
 /* ── Period banner ────────────────────────────────────────── */
@@ -893,8 +1166,12 @@
   color: var(--ink-faint);
   text-transform: uppercase;
   text-align: right;
-  flex-shrink: 0;
+  flex-shrink: 1;
   font-size: 9.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65%;
 }
 .relojTitle {
   font-family: var(--serif);
@@ -1336,18 +1613,28 @@
   .relojGrid {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 82%;
+    grid-auto-columns: 85%;
+    gap: 16px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding-bottom: 8px;
+    padding-bottom: 24px;
     margin: 0 calc(-1 * var(--container-pad));
     padding-left: var(--container-pad);
     padding-right: var(--container-pad);
   }
   .relojGrid::-webkit-scrollbar { display: none; }
   .relojCard { scroll-snap-align: start; }
+
+  @keyframes hintScroll {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-20px); }
+    30% { transform: translateX(0); }
+  }
+  .relojGrid {
+    animation: hintScroll 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s 1;
+  }
 
   .stackedBar, .stackedTicks { display: none; }
   .glosario { margin-top: 10px; }
