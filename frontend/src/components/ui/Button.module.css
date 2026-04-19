@@ -1,0 +1,110 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--body);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+}
+
+.btn:active:not([disabled]):not([aria-busy='true']) {
+  transform: translateY(1px);
+}
+
+.btn[disabled],
+.btn[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.sm {
+  font-size: var(--fs-sm);
+  padding: 8px 14px;
+  min-height: 34px;
+}
+.md {
+  font-size: var(--fs-base);
+  padding: 10px 18px;
+  min-height: 40px;
+}
+.lg {
+  font-size: var(--fs-lg);
+  padding: 14px 24px;
+  min-height: 48px;
+}
+
+/* Variants */
+.primary {
+  background: var(--accent);
+  color: #0B1620;
+  border-color: var(--accent);
+}
+.primary:hover:not([disabled]):not([aria-busy='true']) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.secondary {
+  background: var(--paper-card);
+  color: var(--ink);
+  border-color: var(--rule);
+}
+.secondary:hover:not([disabled]):not([aria-busy='true']) {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule);
+}
+.ghost:hover:not([disabled]):not([aria-busy='true']) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.danger:hover:not([disabled]):not([aria-busy='true']) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.block { width: 100%; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.iconOnly { padding-inline: 10px; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}

@@ -7,7 +7,7 @@
 .hero {
   position: relative;
   background: var(--paper);
-  padding: 64px 0 52px;
+  padding: 56px 0 44px;
   overflow: hidden;
   border-bottom: 1px solid var(--rule);
 }
@@ -134,7 +134,7 @@
 .filtersInner {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: 12px var(--container-pad);
+  padding: 10px var(--container-pad);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -143,15 +143,27 @@
 
 @media (max-width: 720px) {
   .filtersInner {
+    flex-direction: column;
+    align-items: stretch;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 10px var(--container-pad);
+    gap: 8px;
+    padding: 12px 16px;
   }
-  .filtersInner::-webkit-scrollbar { display: none; }
-  .filtersInner > * { scroll-snap-align: start; flex-shrink: 0; }
+  .selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .filtersSep { display: none; }
+  .toggleLey {
+    width: 100%;
+    justify-content: center;
+  }
+  .clearBtn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .filtersLabel {
@@ -284,7 +296,7 @@
   align-items: stretch;
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   transition: border-color 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   cursor: pointer;
@@ -335,7 +347,7 @@
 
 .cardBody {
   flex: 1;
-  padding: 18px 22px 16px;
+  padding: 20px 24px 18px;
   min-width: 0;
 }
 
@@ -378,8 +390,8 @@
   font-size: 15.5px;
   font-weight: 600;
   color: var(--ink);
-  line-height: 1.5;
-  margin-bottom: 9px;
+  line-height: 1.55;
+  margin-bottom: 10px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -451,10 +463,10 @@
 
 .tag {
   display: inline-flex;
-  padding: 2px 8px;
-  background: rgba(2, 158, 185, 0.06);
-  border: 1px solid rgba(2, 158, 185, 0.15);
-  border-radius: 4px;
+  padding: 3px 9px;
+  background: rgba(2, 158, 185, 0.07);
+  border: 1px solid rgba(2, 158, 185, 0.18);
+  border-radius: 999px;
   font-family: var(--body);
   font-size: 11px;
   color: var(--gold-dim);
@@ -633,10 +645,6 @@
     padding: 0 20px;
   }
 
-  .filtersInner {
-    padding: 12px 20px;
-  }
-
   .filtersLabel {
     display: none;
   }
@@ -644,7 +652,24 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding: 40px 0 36px;
+    padding: 32px 0 28px;
+  }
+
+  .heroText {
+    margin-bottom: 24px;
+  }
+
+  .heroTitle {
+    font-size: clamp(26px, 8vw, 36px);
+  }
+
+  .heroDesc {
+    font-size: 14px;
+  }
+
+  .searchInput {
+    font-size: 14px;
+    padding: 13px 44px 13px 46px;
   }
 
   .pageNums .pageNum:not(.pageNumActive) {
@@ -652,12 +677,12 @@
   }
 
   .cardTitle {
-    font-size: 14.5px;
+    font-size: 15px;
     letter-spacing: 0;
   }
 
   .cardBody {
-    padding: 14px 14px 13px;
+    padding: 16px 16px 14px;
   }
 
   .metaTipo {
@@ -667,5 +692,14 @@
   .cardArrow {
     opacity: 1;
     padding: 0 12px 0 4px;
+  }
+
+  .list {
+    gap: 8px;
+  }
+
+  .pagination {
+    gap: 6px;
+    margin-top: 32px;
   }
 }

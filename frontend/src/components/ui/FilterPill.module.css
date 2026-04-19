@@ -20,6 +20,20 @@
   outline: none;
 }
 
+@media (max-width: 720px) {
+  .pillWrap {
+    width: 100%;
+  }
+  .pillBtn {
+    width: 100%;
+    justify-content: space-between;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 10px;
+  }
+}
+
 .pillBtn:hover {
   border-color: rgba(20, 184, 166, 0.35);
   background: rgba(20, 184, 166, 0.06);

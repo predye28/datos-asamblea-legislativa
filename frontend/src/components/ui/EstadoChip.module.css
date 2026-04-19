@@ -1,0 +1,56 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.chip.sm {
+  font-size: 10px;
+  padding: 3px 8px 3px 6px;
+  gap: 5px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip_ley {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #22C55E;
+}
+.chip_ley .dot { background: #22C55E; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+
+.chip_discusion {
+  background: rgba(6, 182, 212, 0.10);
+  border-color: rgba(6, 182, 212, 0.32);
+  color: var(--accent);
+}
+.chip_discusion .dot { background: var(--accent); }
+
+.chip_archivado {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: var(--ink-faint);
+}
+.chip_archivado .dot { background: var(--ink-faint); }
+
+.chip_otro {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #F59E0B;
+}
+.chip_otro .dot { background: #F59E0B; }

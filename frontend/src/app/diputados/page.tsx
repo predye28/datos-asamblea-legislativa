@@ -8,6 +8,7 @@ import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatName } from '@/lib/utils'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
+import { Button } from '@/components/ui/Button'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -54,28 +55,58 @@ function rankClass(i: number) {
 
 // ── Diputado card ─────────────────────────────────────────────────────────────
 
+function getInitials(nombre: string, apellidos: string) {
+  const n = (nombre || '').trim().split(/\s+/)[0]?.[0] || ''
+  const a = (apellidos || '').trim().split(/\s+/)[0]?.[0] || ''
+  return (n + a).toUpperCase() || '·'
+}
+
+function avatarHue(seed: string) {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360
+  return h
+}
+
 function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; max: number }) {
   const pct = max > 0 ? (d.total_proyectos / max) * 100 : 0
   const slug = encodeURIComponent(d.nombre_completo)
+  const initials = getInitials(d.nombre, d.apellidos)
+  const hue = avatarHue(d.nombre_completo)
+  const isTop3 = index < 3
 
   return (
     <Link href={`/diputados/${slug}`} className={styles.card}>
-      {/* Rank */}
-      <div className={`${styles.rank} ${rankClass(index)}`}>
-        {index + 1}
+      {/* Avatar + rank overlay */}
+      <div className={styles.avatarWrap}>
+        <div
+          className={styles.avatar}
+          style={{ background: `linear-gradient(135deg, hsl(${hue} 55% 28%), hsl(${(hue + 40) % 360} 55% 18%))` }}
+          aria-hidden
+        >
+          {initials}
+        </div>
+        <div className={`${styles.rankBadge} ${rankClass(index)}`}>
+          {isTop3 ? (index === 0 ? '1º' : index === 1 ? '2º' : '3º') : `#${index + 1}`}
+        </div>
       </div>
 
       {/* Body */}
       <div className={styles.cardBody}>
-        <p className={styles.cardName}>{formatName(d.nombre_completo)}</p>
+        <p className={styles.cardName}>
+          <span className={styles.cardSurname}>{formatName(d.apellidos)}</span>
+          <span className={styles.cardGiven}>{formatName(d.nombre)}</span>
+        </p>
         <div className={styles.barRow}>
           <div className={styles.bar}>
             <div className={styles.barFill} style={{ width: `${pct}%` }} />
           </div>
-          <span className={styles.barCount}>
-            {d.total_proyectos} <span className={styles.barLabel}>{d.total_proyectos === 1 ? 'proyecto' : 'proyectos'}</span>
-          </span>
         </div>
+      </div>
+
+      {/* Count */}
+      <div className={styles.cardCount}>
+        <strong>{d.total_proyectos}</strong>
+        <span>{d.total_proyectos === 1 ? 'proyecto' : 'proyectos'}</span>
       </div>
 
       {/* Arrow */}
@@ -226,9 +257,9 @@ export default function DiputadosPage() {
           {hasFilters && (
             <>
               <div className={styles.filtersSep} aria-hidden />
-              <button className={styles.clearBtn} onClick={clearFilters}>
-                <IconX /> Limpiar
-              </button>
+              <Button variant="ghost" size="sm" onClick={clearFilters} leftIcon={<IconX />}>
+                Limpiar
+              </Button>
             </>
           )}
         </div>
@@ -267,9 +298,9 @@ export default function DiputadosPage() {
               </div>
               {visible < sorted.length && (
                 <div className={styles.loadMoreRow}>
-                  <button className={styles.loadMoreBtn} onClick={() => setVisible(v => v + 10)}>
+                  <Button variant="secondary" onClick={() => setVisible(v => v + 10)}>
                     Ver más diputados ({sorted.length - visible} restantes)
-                  </button>
+                  </Button>
                 </div>
               )}
             </>

@@ -9,22 +9,21 @@ import { formatTitle, formatName } from '@/lib/utils'
 import styles from './estadisticas.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import CountUp from '@/components/shared/CountUp'
+import { Button } from '@/components/ui/Button'
+import { TimelineAreaChart } from '@/components/charts/TimelineAreaChart'
+import { MonthlyBarsChart } from '@/components/charts/MonthlyBarsChart'
+import { Sparkline as SparkSvg } from '@/components/charts/Sparkline'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) { return n.toLocaleString('es-CR') }
 function fmtPct(n: number) { return `${n.toFixed(1)}%` }
+function toISO(d: Date) { return d.toISOString().slice(0, 10) }
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
 const PALETTE = [
-  '#06B6D4', // cyan
-  '#818CF8', // violeta suave
-  '#22C55E', // verde
-  '#F59E0B', // ámbar
-  '#EC4899', // rosa
-  '#A78BFA', // violeta
-  '#14B8A6', // teal
-  '#F97316', // naranja
+  '#06B6D4', '#818CF8', '#22C55E', '#F59E0B',
+  '#EC4899', '#A78BFA', '#14B8A6', '#F97316',
 ]
 
 const TIPO_HELP: Record<string, string> = {
@@ -36,6 +35,33 @@ const TIPO_HELP: Record<string, string> = {
   'Acuerdo Legislativo': 'Decisiones internas del plenario.',
   'Ley Especial': 'Normas para materias o sectores específicos.',
   'Reforma a la Ley': 'Modificación parcial a una ley existente.',
+}
+
+type RangoRapido = '' | 'este_mes' | 'seis_meses' | 'este_anio' | 'personalizado'
+
+const RANGO_LABEL: Record<RangoRapido, string> = {
+  '': 'Histórico (todo)',
+  'este_mes': 'Este mes',
+  'seis_meses': 'Últimos 6 meses',
+  'este_anio': 'Este año',
+  'personalizado': 'Personalizado',
+}
+
+function rangoACifras(rango: RangoRapido): { desde?: string; hasta?: string } {
+  const hoy = new Date()
+  if (rango === 'este_mes') {
+    const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    return { desde: toISO(desde), hasta: toISO(hoy) }
+  }
+  if (rango === 'seis_meses') {
+    const desde = new Date(hoy)
+    desde.setDate(desde.getDate() - 180)
+    return { desde: toISO(desde), hasta: toISO(hoy) }
+  }
+  if (rango === 'este_anio') {
+    return { desde: `${hoy.getFullYear()}-01-01`, hasta: toISO(hoy) }
+  }
+  return {}
 }
 
 function IconFilter() {
@@ -52,6 +78,16 @@ function IconX() {
       <path d="M18 6 6 18M6 6l12 12" />
     </svg>
   )
+}
+
+function IconUp() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M7 14l5-5 5 5" /></svg>
+}
+function IconDown() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
+}
+function IconFlat() {
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14" /></svg>
 }
 
 // ── Skeleton ─────────────────────────────────────────────────────────────────
@@ -79,149 +115,32 @@ function SkeletonPage() {
   )
 }
 
-// ── Sparkline (para la portada) ──────────────────────────────────────────────
-
-function Sparkline({ data }: { data: { anio: number; leyes_aprobadas: number }[] }) {
-  if (data.length < 2) return null
-  const slice = data.slice(-18)
-  const W = 360, H = 80
-  const max = Math.max(...slice.map(d => d.leyes_aprobadas), 1)
-  const step = W / (slice.length - 1)
-  const toX = (i: number) => i * step
-  const toY = (v: number) => 4 + (1 - v / max) * (H - 8)
-  const path = slice.map((d, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(d.leyes_aprobadas)}`).join(' ')
-  const last = slice[slice.length - 1]
-  return (
-    <svg className={styles.sparkSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
-      <path d={path} fill="none" stroke="#06B6D4" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={toX(slice.length - 1)} cy={toY(last.leyes_aprobadas)} r="3.5" fill="#06B6D4" />
-    </svg>
-  )
-}
-
-// ── SVG Area chart (leyes por año) con anotaciones ──────────────────────────
-
-function LeyesArea({ data }: { data: { anio: number; leyes_aprobadas: number }[] }) {
-  if (data.length < 2) return null
-  const W = 1000, H = 320
-  const pad = { t: 28, r: 28, b: 40, l: 52 }
-  const max = Math.max(...data.map(d => d.leyes_aprobadas), 1)
-  const stepX = (W - pad.l - pad.r) / (data.length - 1)
-
-  const toX = (i: number) => pad.l + i * stepX
-  const toY = (v: number) => pad.t + (1 - v / max) * (H - pad.t - pad.b)
-
-  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(d.leyes_aprobadas)}`).join(' ')
-  const areaPath = `${linePath} L${toX(data.length - 1)},${H - pad.b} L${pad.l},${H - pad.b} Z`
-
-  const peakIdx = data.reduce((m, d, i) => (d.leyes_aprobadas > data[m].leyes_aprobadas ? i : m), 0)
-  const peak = data[peakIdx]
-  const px = toX(peakIdx), py = toY(peak.leyes_aprobadas)
-
-  const gridY = [0, 0.25, 0.5, 0.75, 1].map(f => pad.t + f * (H - pad.t - pad.b))
-  const gridVals = [max, Math.round(max * 0.75), Math.round(max * 0.5), Math.round(max * 0.25), 0]
-
-  const years = data.map(d => d.anio)
-  const xTicks = years.filter(y => y % 10 === 0 || y === years[0] || y === years[years.length - 1])
-
-  return (
-    <div className={styles.chartContainer}>
-      <svg className={styles.chartSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Leyes aprobadas por año">
-        <defs>
-          <linearGradient id="leyesGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {gridY.map((y, i) => (
-          <g key={i} className={styles.chartGrid}>
-            <line x1={pad.l} x2={W - pad.r} y1={y} y2={y} stroke="#333333" strokeDasharray="2 4" strokeWidth="1" />
-            <text x={pad.l - 10} y={y + 4} textAnchor="end" fill="#888888" fontFamily="IBM Plex Mono" fontSize="16">
-              {gridVals[i]}
-            </text>
-          </g>
-        ))}
-
-        <path d={areaPath} fill="url(#leyesGrad)" />
-        <path d={linePath} fill="none" stroke="#06B6D4" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-
-        {/* Línea guía al pico + anotación (se oculta en móvil) */}
-        <g className={styles.chartAnnot}>
-          <line x1={px} x2={px} y1={py + 8} y2={pad.t - 8} stroke="#F59E0B" strokeDasharray="2 3" strokeWidth="1" opacity="0.55" />
-          <text
-            x={px}
-            y={pad.t - 14}
-            textAnchor={peakIdx > data.length * 0.75 ? 'end' : peakIdx < data.length * 0.25 ? 'start' : 'middle'}
-            fill="#F59E0B"
-            fontFamily="IBM Plex Mono"
-            fontSize="16"
-            fontWeight="700"
-            letterSpacing="0.05em"
-          >
-            PICO · {peak.anio} · {peak.leyes_aprobadas} LEYES
-          </text>
-        </g>
-        <circle cx={px} cy={py} r="6" fill="#F59E0B" stroke="#1A1A1A" strokeWidth="2.5" />
-
-        {data.map((d, i) => (
-          <g key={`hit-${d.anio}`}>
-            <rect
-              x={toX(i) - stepX / 2}
-              y={pad.t}
-              width={stepX}
-              height={H - pad.t - pad.b}
-              fill="transparent"
-            >
-              <title>{`${d.anio}: ${fmt(d.leyes_aprobadas)} leyes aprobadas`}</title>
-            </rect>
-          </g>
-        ))}
-
-        {xTicks.map(y => {
-          const idx = years.indexOf(y)
-          return (
-            <text
-              key={y}
-              x={toX(idx)}
-              y={H - 14}
-              textAnchor="middle"
-              fill="#888888"
-              fontFamily="IBM Plex Mono"
-              fontSize="16"
-              className={styles.chartXTick}
-            >
-              {y}
-            </text>
-          )
-        })}
-      </svg>
-      <p className={styles.peakCaption}>
-        Pico histórico en <strong>{peak.anio}</strong> con <strong>{fmt(peak.leyes_aprobadas)} leyes aprobadas</strong>.
-      </p>
-    </div>
-  )
-}
-
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function EstadisticasPage() {
+  const [rangoRapido, setRangoRapido] = useState<RangoRapido>('')
+  const [customDesde, setCustomDesde] = useState('')
+  const [customHasta, setCustomHasta] = useState('')
   const [periodo, setPeriodo] = useState('')
-  const [data, setData]       = useState<MetricasResponse | null>(null)
+  const [data, setData] = useState<MetricasResponse | null>(null)
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
   const [proxVencer, setProxVencer] = useState<ProximoVencer[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Rango efectivo (prioridad: custom > rápido > legislativo > histórico)
+  const { desde, hasta } = useMemo(() => {
+    if (rangoRapido === 'personalizado') return { desde: customDesde || undefined, hasta: customHasta || undefined }
+    if (rangoRapido) return rangoACifras(rangoRapido)
+    const allPeriods = getAllLegislativePeriods()
+    const relPeriods = getPeriodos()
+    const legPeriod = allPeriods.find(p => p.label === periodo)
+    const relPeriod = relPeriods.find(p => p.label === periodo)
+    return { desde: legPeriod?.desde || relPeriod?.desde(), hasta: legPeriod?.hasta }
+  }, [rangoRapido, customDesde, customHasta, periodo])
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const allPeriods = getAllLegislativePeriods()
-      const relPeriods = getPeriodos()
-      const legPeriod = allPeriods.find(p => p.label === periodo)
-      const relPeriod = relPeriods.find(p => p.label === periodo)
-      const desde = legPeriod?.desde || relPeriod?.desde()
-      const hasta = legPeriod?.hasta
-
       const [metricas, tl, prox] = await Promise.all([
         api.metricas.general({ desde, hasta }),
         api.metricas.lineaTiempo(),
@@ -235,12 +154,12 @@ export default function EstadisticasPage() {
     } finally {
       setLoading(false)
     }
-  }, [periodo])
+  }, [desde, hasta])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const periodOptions = [
-    { value: '', label: 'Histórico (todo)' },
+    { value: '', label: 'Todos los períodos' },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
     { value: '__sep__', label: '── Períodos legislativos ──', disabled: true },
     ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
@@ -255,105 +174,222 @@ export default function EstadisticasPage() {
   )
   const tipos = data?.por_tipo ?? []
   const organos = data?.organos_activos ?? []
+  const porMes = data?.por_mes ?? []
 
   const maxDip = topDip[0]?.total_proyectos ?? 1
   const maxOrg = organos[0]?.total_tramites ?? 1
 
-  // Stats del timeline para pull-quotes
   const timelineStats = useMemo(() => {
     if (timeline.length < 2) return null
     const sorted = [...timeline]
     const peak = sorted.reduce((m, d) => d.leyes_aprobadas > m.leyes_aprobadas ? d : m, sorted[0])
     const low = sorted.reduce((m, d) => d.leyes_aprobadas < m.leyes_aprobadas ? d : m, sorted[0])
     const promedio = sorted.reduce((s, d) => s + d.leyes_aprobadas, 0) / sorted.length
-    return { peak, low, promedio, totalAnios: sorted.length, desde: sorted[0].anio, hasta: sorted[sorted.length - 1].anio }
+    const ultimos3 = sorted.slice(-3)
+    const promUltimos = ultimos3.reduce((s, d) => s + d.leyes_aprobadas, 0) / Math.max(1, ultimos3.length)
+    const deltaPct = promedio > 0 ? ((promUltimos - promedio) / promedio) * 100 : 0
+    return {
+      peak, low, promedio,
+      totalAnios: sorted.length,
+      desde: sorted[0].anio,
+      hasta: sorted[sorted.length - 1].anio,
+      deltaPct,
+    }
   }, [timeline])
+
+  const mensualStats = useMemo(() => {
+    if (porMes.length === 0) return null
+    const ultimos = porMes.slice(-12)
+    const promedio = ultimos.reduce((s, d) => s + d.total, 0) / ultimos.length
+    const pico = ultimos.reduce((m, d) => d.total > m.total ? d : m, ultimos[0])
+    const valle = ultimos.reduce((m, d) => d.total < m.total ? d : m, ultimos[0])
+    // delta mes actual vs anterior
+    const ultimoMes = porMes[porMes.length - 1]
+    const mesAnterior = porMes[porMes.length - 2]
+    const delta = ultimoMes && mesAnterior && mesAnterior.total > 0
+      ? ((ultimoMes.total - mesAnterior.total) / mesAnterior.total) * 100
+      : 0
+    return { ultimos, promedio, pico, valle, ultimoMes, mesAnterior, delta }
+  }, [porMes])
 
   const topTipo = tipos[0]
   const topTipo2 = tipos[1]
   const top2Pct = (topTipo?.porcentaje ?? 0) + (topTipo2?.porcentaje ?? 0)
 
+  const topTema = categorias[0]
+  const temaMasEficaz = useMemo(() => {
+    const conMin = categorias.filter(c => c.total >= 3)
+    if (conMin.length === 0) return null
+    return conMin.reduce((m, c) => c.tasa_aprobacion > m.tasa_aprobacion ? c : m, conMin[0])
+  }, [categorias])
+
+  const urgentesCount = proxVencer.filter(p => p.dias_restantes < 30).length
+  const overlapTop = useMemo(() => {
+    const volNames = new Set(topDip.slice(0, 10).map(d => d.nombre_completo))
+    return topEfic.slice(0, 10).filter(d => volNames.has(d.nombre_completo)).length
+  }, [topDip, topEfic])
+
+  const topOrgano = organos[0]
+  const totalTramites = organos.reduce((s, o) => s + o.total_tramites, 0)
+  const topOrganoPct = topOrgano && totalTramites > 0 ? (topOrgano.total_tramites / totalTramites) * 100 : 0
+
+  const hasRapido = rangoRapido !== ''
+  const hasLegislative = periodo !== ''
+  const hasFilter = hasRapido || hasLegislative
   const isLegislativePeriod = getAllLegislativePeriods().some(p => p.label === periodo)
-  const hasFilter = periodo !== ''
   const hoy = new Date()
   const fechaHoy = hoy.toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const rangoTextoHumano = hasRapido
+    ? (rangoRapido === 'personalizado' && customDesde && customHasta
+        ? `del ${customDesde} al ${customHasta}`
+        : RANGO_LABEL[rangoRapido].toLowerCase())
+    : hasLegislative
+      ? periodo
+      : 'histórico'
+
+  const onChangeRapido = (v: RangoRapido) => {
+    setRangoRapido(v)
+    setPeriodo('')
+  }
+  const onChangePeriodo = (v: string) => {
+    setPeriodo(v)
+    setRangoRapido('')
+  }
+  const limpiarTodo = () => {
+    setRangoRapido('')
+    setPeriodo('')
+    setCustomDesde('')
+    setCustomHasta('')
+  }
 
   return (
     <div className={styles.page}>
 
-      {/* ── 00 · Portada editorial ── */}
-      <section className={styles.portada}>
+      {/* ── 00 · Hero de datos ── */}
+      <section className={styles.heroData}>
         <div className={styles.heroDots} aria-hidden />
-        <div className={styles.portadaInner}>
-          <div className={styles.portadaText}>
+        <div className={styles.heroDataInner}>
+          <div className={styles.heroDataHead}>
             <div className={styles.portadaMasthead}>
               <span className={styles.portadaEdicion}>EDICIÓN N.º {new Date().getFullYear()}</span>
               <span className={styles.portadaSep}>·</span>
               <span className={styles.portadaFecha}>ACTUALIZADO {fechaHoy.toUpperCase()}</span>
             </div>
-            <h1 className={styles.portadaTitle}>
-              La Asamblea,<br />contada en cifras.
+            <h1 className={styles.heroDataTitle}>
+              La Asamblea, <span className={styles.heroDataTitleAccent}>en cifras.</span>
             </h1>
-            <p className={styles.portadaDeck}>
-              Una lectura transparente de cómo trabaja el Congreso costarricense:
-              cuánto se propone, cuánto se aprueba y quiénes llevan el peso del trabajo legislativo.
+            <p className={styles.heroDataDeck}>
+              Cuatro números para entender cómo trabaja el Congreso costarricense. Abajo, el detalle.
             </p>
-
-            {g && (
-              <div className={styles.tickerRow}>
-                <div className={styles.tickerChip}>
-                  <span className={styles.tickerValue}>
-                    <CountUp end={g.total_proyectos} />
-                  </span>
-                  <span className={styles.tickerLabel}>proyectos presentados</span>
-                </div>
-                <div className={styles.tickerChip}>
-                  <span className={styles.tickerValue} style={{ color: 'var(--positive)' }}>
-                    <CountUp end={g.total_leyes_aprobadas} />
-                  </span>
-                  <span className={styles.tickerLabel}>leyes vigentes</span>
-                </div>
-                <div className={styles.tickerChip}>
-                  <span className={styles.tickerValue} style={{ color: '#F59E0B' }}>
-                    <CountUp end={g.tasa_aprobacion_pct} decimals={1} suffix="%" />
-                  </span>
-                  <span className={styles.tickerLabel}>tasa de aprobación</span>
-                </div>
-              </div>
-            )}
           </div>
 
-          {timeline.length > 2 && (
-            <div className={styles.portadaAside}>
-              <div className={styles.sparkKicker}>LEYES POR AÑO · ÚLT. {Math.min(18, timeline.length)} AÑOS</div>
-              <Sparkline data={timeline} />
-              <div className={styles.sparkFoot}>
-                <span>{timeline[Math.max(0, timeline.length - 18)].anio}</span>
-                <span className={styles.sparkDash} />
-                <span>{timeline[timeline.length - 1].anio}</span>
-              </div>
+          {g && (
+            <div className={styles.heroKpiGrid}>
+              <HeroKpi
+                label="Proyectos presentados"
+                sub={hasFilter ? `en ${rangoTextoHumano}` : 'desde 1949'}
+                value={<CountUp end={g.total_proyectos} />}
+                color="var(--accent)"
+              />
+              <HeroKpi
+                label="Leyes vigentes"
+                sub="completaron el trámite"
+                value={<CountUp end={g.total_leyes_aprobadas} />}
+                color="var(--positive)"
+                spark={timeline.length > 2 ? <SparkSvg data={timeline} width={160} height={32} color="var(--positive)" /> : null}
+              />
+              <HeroKpi
+                label="Tasa de aprobación"
+                sub="proyectos que llegan a ley"
+                value={<CountUp end={g.tasa_aprobacion_pct} decimals={1} suffix="%" />}
+                color="#F59E0B"
+              />
+              <HeroKpi
+                label="Años para aprobar"
+                sub="tiempo medio hasta la ley"
+                value={
+                  g.promedio_dias_aprobacion
+                    ? <CountUp end={g.promedio_dias_aprobacion / 365} decimals={1} />
+                    : '—'
+                }
+                color="#818CF8"
+              />
             </div>
           )}
         </div>
       </section>
 
+      {/* ── Resumen ejecutivo ── */}
+      {!loading && data && (
+        <ResumenEjecutivo
+          mensual={mensualStats ? {
+            ultimoMes: mensualStats.ultimoMes,
+            delta: mensualStats.delta,
+            hayAnterior: !!mensualStats.mesAnterior,
+          } : null}
+          topTema={topTema}
+          tasa={g?.tasa_aprobacion_pct ?? 0}
+          urgentes={urgentesCount}
+          hasFilter={hasFilter}
+          rangoTexto={rangoTextoHumano}
+        />
+      )}
+
       {/* ── Filters ── */}
       <div className={styles.filtersBar}>
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> Período</span>
+          <span className={styles.filtersLabel}><IconFilter /> Rango</span>
+          <div className={styles.rangoChips} role="tablist" aria-label="Rango de tiempo">
+            {(['', 'este_mes', 'seis_meses', 'este_anio', 'personalizado'] as RangoRapido[]).map(r => (
+              <button
+                key={r}
+                role="tab"
+                aria-selected={rangoRapido === r}
+                className={`${styles.rangoChip} ${rangoRapido === r ? styles.rangoChipActive : ''}`}
+                onClick={() => onChangeRapido(r)}
+              >
+                {r === '' ? 'Histórico' : RANGO_LABEL[r]}
+              </button>
+            ))}
+          </div>
+          <span className={styles.filtersSep} aria-hidden />
+          <span className={styles.filtersLabelSecondary}>Período legislativo</span>
           <FilterPill
             value={periodo}
-            onChange={setPeriodo}
-            placeholder="Histórico (todo)"
-            active={hasFilter}
+            onChange={onChangePeriodo}
+            placeholder="Todos"
+            active={hasLegislative}
             options={periodOptions}
           />
           {hasFilter && (
-            <button className={styles.clearBtn} onClick={() => setPeriodo('')}>
-              <IconX /> Limpiar
-            </button>
+            <Button variant="ghost" size="sm" onClick={limpiarTodo} leftIcon={<IconX />}>
+              Limpiar
+            </Button>
           )}
         </div>
+        {rangoRapido === 'personalizado' && (
+          <div className={styles.customRow}>
+            <label className={styles.customLabel}>
+              Desde
+              <input
+                type="date"
+                value={customDesde}
+                onChange={e => setCustomDesde(e.target.value)}
+                className={styles.customInput}
+              />
+            </label>
+            <label className={styles.customLabel}>
+              Hasta
+              <input
+                type="date"
+                value={customHasta}
+                onChange={e => setCustomHasta(e.target.value)}
+                className={styles.customInput}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -374,127 +410,81 @@ export default function EstadisticasPage() {
               <div className={styles.periodBanner}>
                 <span className={styles.periodBannerDot} />
                 <span className={styles.periodBannerText}>
-                  Mostrando datos de <strong>{periodo}</strong>
+                  Mostrando datos <strong>{rangoTextoHumano}</strong>
                   {isLegislativePeriod && ' · período legislativo'}
                 </span>
               </div>
             )}
 
-            {/* ── 01 · KPIs ── */}
-            <SectionIntro
-              num="01"
-              kicker="Los indicadores"
-              title="Seis cifras que resumen el trabajo legislativo"
-              deck="Pulso general del Congreso: volumen, eficacia y ritmo. Cada número es una puerta de entrada a una historia más larga."
-            />
-            <div className={styles.kpiGrid}>
-              <Kpi
-                roman="I"
-                eyebrow={hasFilter ? 'En el período' : 'En total'}
-                value={<CountUp end={g?.total_proyectos ?? 0} />}
-                label="Proyectos presentados"
-                help={hasFilter ? `Iniciativas ingresadas en ${periodo}.` : 'Iniciativas ingresadas desde 1949.'}
-                color="var(--accent)"
-              />
-              <Kpi
-                roman="II"
-                eyebrow="Aprobadas"
-                value={<CountUp end={g?.total_leyes_aprobadas ?? 0} />}
-                label="Leyes vigentes"
-                help="Proyectos que completaron el trámite y entraron en vigencia."
-                color="var(--positive)"
-              />
-              <Kpi
-                roman="III"
-                eyebrow={hasFilter ? 'Tasa del período' : 'Tasa histórica'}
-                value={<CountUp end={g?.tasa_aprobacion_pct ?? 0} decimals={1} suffix="%" />}
-                label="De aprobación"
-                help="Porcentaje de proyectos presentados que se convirtieron en ley."
-                color="#F59E0B"
-              />
-              <Kpi
-                roman="IV"
-                eyebrow="Tiempo promedio"
-                value={
-                  g?.promedio_dias_aprobacion
-                    ? <CountUp end={g.promedio_dias_aprobacion / 365} decimals={1} suffix=" años" />
-                    : '—'
-                }
-                label="Para aprobar una ley"
-                help="Tiempo medio entre la presentación y la aprobación final."
-                color="#818CF8"
-              />
-              <Kpi
-                roman="V"
-                eyebrow="Trámites"
-                value={g?.promedio_tramites
-                  ? <CountUp end={g.promedio_tramites} decimals={1} />
-                  : '—'}
-                label="Por proyecto (promedio)"
-                help="Pasos formales que recorre una iniciativa en promedio."
-                color="#EC4899"
-              />
-              <Kpi
-                roman="VI"
-                eyebrow={isLegislativePeriod ? 'Año en curso' : 'Este año'}
-                value={<CountUp end={g?.proyectos_este_anio ?? 0} />}
-                label={`Proyectos en ${new Date().getFullYear()}`}
-                help="Iniciativas presentadas durante el año calendario actual."
-                color="#14B8A6"
-              />
-            </div>
-
-            {/* ── 02 · El pulso (Leyes por año con pull-quotes) ── */}
-            {timelineStats && (
+            {/* ── 01 · Lo que está por vencer (urgente) ── */}
+            {proxVencer.length > 0 && (
               <>
                 <SectionIntro
-                  num="02"
-                  kicker="El pulso"
-                  title={`${timelineStats.totalAnios} años de producción legislativa`}
-                  deck={`Cantidad de proyectos convertidos en ley entre ${timelineStats.desde} y ${timelineStats.hasta}. Los picos reflejan ciclos políticos, las caídas marcan años de bloqueo o transición.`}
+                  num="01"
+                  kicker="Lo urgente"
+                  title="Proyectos por vencer"
+                  deck="Cada proyecto tiene cuatro años para ser aprobado. Si no lo logra, se archiva sin trámite. Estos son los más cercanos al límite."
                 />
-                <div className={styles.pulsoGrid}>
-                  <aside className={styles.pullQuotes}>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>AÑO PICO</div>
-                      <div className={styles.pullNum} style={{ color: '#F59E0B' }}>{timelineStats.peak.anio}</div>
-                      <figcaption>
-                        <strong>{timelineStats.peak.leyes_aprobadas}</strong> leyes aprobadas — el máximo histórico en un solo año.
-                      </figcaption>
-                    </figure>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>AÑO MÁS BAJO</div>
-                      <div className={styles.pullNum}>{timelineStats.low.anio}</div>
-                      <figcaption>
-                        Solo <strong>{timelineStats.low.leyes_aprobadas}</strong> leyes aprobadas. Ciclos de obstrucción o transición política.
-                      </figcaption>
-                    </figure>
-                    <figure className={styles.pullQuote}>
-                      <div className={styles.pullKicker}>PROMEDIO</div>
-                      <div className={styles.pullNum} style={{ color: 'var(--accent)' }}>
-                        <CountUp end={timelineStats.promedio} decimals={1} />
-                      </div>
-                      <figcaption>
-                        leyes por año a lo largo de <strong>{timelineStats.totalAnios}</strong> años de registro.
-                      </figcaption>
-                    </figure>
-                  </aside>
-                  <div className={styles.pulsoChart}>
-                    <LeyesArea data={timeline} />
-                  </div>
+                <p className={`${styles.insight} ${urgentesCount > 0 ? styles.insightUrgent : ''}`}>
+                  {urgentesCount > 0
+                    ? <><strong>{urgentesCount} {urgentesCount === 1 ? 'proyecto vence' : 'proyectos vencen'}</strong> en menos de 30 días. Si no se aprueban, se archivan.</>
+                    : <>Ningún proyecto vence en los próximos 30 días. La ventana inmediata está libre.</>}
+                </p>
+                <div className={styles.relojGrid}>
+                  {proxVencer.slice(0, 6).map((p) => {
+                    const urg = p.dias_restantes < 30 ? 'red' : p.dias_restantes < 90 ? 'amber' : 'neutral'
+                    return (
+                      <Link
+                        key={p.numero_expediente}
+                        href={`/proyectos/${p.numero_expediente}`}
+                        className={`${styles.relojCard} ${styles[`reloj_${urg}`]}`}
+                      >
+                        <div className={styles.relojHead}>
+                          <span className={styles.relojExp}>EXP. {p.numero_expediente}</span>
+                          <span className={styles.relojTipo}>{p.tipo_expediente || '—'}</span>
+                        </div>
+                        <h4 className={styles.relojTitle}>
+                          {p.titulo || 'Proyecto sin título'}
+                        </h4>
+                        <div className={styles.relojFooter}>
+                          <div className={styles.relojDays}>
+                            <strong>{p.dias_restantes}</strong>
+                            <span>días restantes</span>
+                          </div>
+                          {p.proponentes_resumen && (
+                            <div className={styles.relojProp} title={p.proponentes_resumen}>
+                              {p.proponentes_resumen}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </>
             )}
 
-            {/* ── 03 · Cartelera de temas ── */}
+            {/* ── 02 · Temas ── */}
             {categorias.length > 0 && (
               <>
                 <SectionIntro
-                  num="03"
+                  num="02"
                   kicker="¿De qué se habla?"
                   title="Los temas que mueven la agenda"
-                  deck="Ranking por volumen de proyectos presentados. El tema protagonista ocupa el espacio destacado; los siguientes componen la cartelera de la edición."
+                  deck="Ranking por volumen de proyectos presentados. El tema protagonista ocupa el espacio destacado; los demás componen la lista."
                 />
+                <p className={styles.insight}>
+                  {topTema && (
+                    <>
+                      <strong>{formatTitle(topTema.categoria)}</strong> domina la agenda con{' '}
+                      <strong>{topTema.total} proyectos</strong>
+                      {temaMasEficaz && temaMasEficaz.slug !== topTema.slug && temaMasEficaz.tasa_aprobacion > 0 && (
+                        <>, pero <strong>{formatTitle(temaMasEficaz.categoria)}</strong> tiene la mayor efectividad (<strong>{fmtPct(temaMasEficaz.tasa_aprobacion)} llega a ley</strong>)</>
+                      )}
+                      .
+                    </>
+                  )}
+                </p>
                 <div className={styles.cartelera}>
                   {categorias.slice(0, 9).map((c, i) => {
                     const color = PALETTE[i % PALETTE.length]
@@ -524,23 +514,109 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 04 · Doble podio (diputados) ── */}
-            {(topDip.length > 0 || topEfic.length > 0) && (
+            {/* ── 03 · Ritmo mensual ── */}
+            {mensualStats && porMes.length >= 3 && (
+              <>
+                <SectionIntro
+                  num="03"
+                  kicker="El ritmo"
+                  title="Proyectos presentados mes a mes"
+                  deck="Últimos 12 meses de actividad. Verde señala picos (30% sobre el promedio), ámbar indica meses bajos."
+                />
+                <p className={styles.insight}>
+                  {mensualStats.pico.total > mensualStats.promedio * 1.2 ? (
+                    <>
+                      Hubo un <strong>pico en {mensualStats.pico.mes_nombre} {mensualStats.pico.anio}</strong> con{' '}
+                      <strong>{mensualStats.pico.total} proyectos</strong> ({Math.round((mensualStats.pico.total / mensualStats.promedio - 1) * 100)}% sobre el promedio de {mensualStats.promedio.toFixed(1)}).
+                    </>
+                  ) : (
+                    <>La actividad mensual se mantiene estable alrededor de <strong>{mensualStats.promedio.toFixed(1)} proyectos por mes</strong>.</>
+                  )}
+                </p>
+                <div className={styles.mensualPanel}>
+                  <MonthlyBarsChart data={mensualStats.ultimos} height={260} />
+                </div>
+              </>
+            )}
+
+            {/* ── 04 · Pulso histórico ── */}
+            {timelineStats && (
               <>
                 <SectionIntro
                   num="04"
+                  kicker="La historia larga"
+                  title={`${timelineStats.totalAnios} años de producción legislativa`}
+                  deck={`Cantidad de proyectos convertidos en ley entre ${timelineStats.desde} y ${timelineStats.hasta}. Los picos reflejan ciclos políticos, las caídas marcan años de bloqueo o transición.`}
+                />
+                <p className={styles.insight}>
+                  {Math.abs(timelineStats.deltaPct) >= 5 ? (
+                    <>
+                      En los últimos 3 años la producción legislativa{' '}
+                      <strong>{timelineStats.deltaPct > 0 ? 'subió' : 'cayó'} un {Math.abs(timelineStats.deltaPct).toFixed(0)}%</strong>{' '}
+                      respecto al promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.
+                    </>
+                  ) : (
+                    <>Los últimos 3 años se mantienen cerca del promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.</>
+                  )}
+                </p>
+                <div className={styles.pulsoGrid}>
+                  <aside className={styles.pullQuotes}>
+                    <figure className={styles.pullQuote}>
+                      <div className={styles.pullKicker}>AÑO PICO</div>
+                      <div className={styles.pullNum} style={{ color: '#F59E0B' }}>{timelineStats.peak.anio}</div>
+                      <figcaption>
+                        <strong>{timelineStats.peak.leyes_aprobadas}</strong> leyes aprobadas — el máximo histórico en un solo año.
+                      </figcaption>
+                    </figure>
+                    <figure className={styles.pullQuote}>
+                      <div className={styles.pullKicker}>AÑO MÁS BAJO</div>
+                      <div className={styles.pullNum}>{timelineStats.low.anio}</div>
+                      <figcaption>
+                        Solo <strong>{timelineStats.low.leyes_aprobadas}</strong> leyes aprobadas. Ciclos de obstrucción o transición política.
+                      </figcaption>
+                    </figure>
+                    <figure className={styles.pullQuote}>
+                      <div className={styles.pullKicker}>PROMEDIO</div>
+                      <div className={styles.pullNum} style={{ color: 'var(--accent)' }}>
+                        <CountUp end={timelineStats.promedio} decimals={1} />
+                      </div>
+                      <figcaption>
+                        leyes por año a lo largo de <strong>{timelineStats.totalAnios}</strong> años de registro.
+                      </figcaption>
+                    </figure>
+                  </aside>
+                  <div className={styles.pulsoChart}>
+                    <TimelineAreaChart data={timeline} height={340} />
+                    <p className={styles.peakCaption}>
+                      Pico histórico en <strong>{timelineStats.peak.anio}</strong> con{' '}
+                      <strong>{fmt(timelineStats.peak.leyes_aprobadas)} leyes aprobadas</strong>.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── 05 · Diputados ── */}
+            {(topDip.length > 0 || topEfic.length > 0) && (
+              <>
+                <SectionIntro
+                  num="05"
                   kicker="Los protagonistas"
                   title="Quiénes proponen · quiénes aprueban"
                   deck={
                     <>
                       Dos rankings distintos. A la izquierda, <strong>volumen</strong>: los que presentan más iniciativas.
                       A la derecha, <strong>eficacia</strong>: los que logran que un porcentaje alto de sus proyectos se convierta en ley.
-                      Volumen no es eficacia.
                     </>
                   }
                 />
+                {topEfic.length > 0 && (
+                  <p className={styles.insight}>
+                    Solo <strong>{overlapTop} de los 10</strong> diputados más activos aparecen también en el top de eficacia.{' '}
+                    <strong>Volumen no garantiza resultado.</strong>
+                  </p>
+                )}
                 <div className={styles.podioGrid}>
-                  {/* Columna A — Volumen */}
                   <div className={styles.podioCol}>
                     <div className={styles.podioColHead}>
                       <span className={styles.podioColKicker}>COLUMNA A</span>
@@ -574,7 +650,6 @@ export default function EstadisticasPage() {
                     </div>
                   </div>
 
-                  {/* Columna B — Eficacia */}
                   {topEfic.length > 0 && (
                     <div className={styles.podioCol}>
                       <div className={styles.podioColHead}>
@@ -606,59 +681,10 @@ export default function EstadisticasPage() {
                     </div>
                   )}
                 </div>
-                <p className={styles.podioNote}>
-                  <em>Volumen no es eficacia.</em> Comparar ambas columnas revela quiénes trabajan mucho y quiénes, además, logran que lo suyo llegue a la meta.
-                </p>
               </>
             )}
 
-            {/* ── 05 · El reloj legislativo ── */}
-            {proxVencer.length > 0 && (
-              <>
-                <SectionIntro
-                  num="05"
-                  kicker="El reloj"
-                  title="Lo que está por vencer"
-                  deck="Proyectos cuyo plazo cuatrienal expira pronto. Si no se aprueban a tiempo, se archivan. Ordenados por urgencia."
-                />
-                <div className={styles.relojGrid}>
-                  {proxVencer.slice(0, 6).map((p) => {
-                    const urg = p.dias_restantes < 30 ? 'red' : p.dias_restantes < 90 ? 'amber' : 'neutral'
-                    return (
-                      <Link
-                        key={p.numero_expediente}
-                        href={`/proyectos/${p.numero_expediente}`}
-                        className={`${styles.relojCard} ${styles[`reloj_${urg}`]}`}
-                      >
-                        <div className={styles.relojHead}>
-                          <span className={styles.relojExp}>EXP. {p.numero_expediente}</span>
-                          <span className={styles.relojTipo}>{p.tipo_expediente || '—'}</span>
-                        </div>
-                        <h4 className={styles.relojTitle}>
-                          {p.titulo || 'Proyecto sin título'}
-                        </h4>
-                        <div className={styles.relojFooter}>
-                          <div className={styles.relojDays}>
-                            <strong>{p.dias_restantes}</strong>
-                            <span>días restantes</span>
-                          </div>
-                          {p.proponentes_resumen && (
-                            <div className={styles.relojProp} title={p.proponentes_resumen}>
-                              {p.proponentes_resumen}
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-                <p className={styles.figcaption}>
-                  Los proyectos en la Asamblea tienen un plazo de <strong>cuatro años</strong> para ser aprobados. Vencido el plazo, se archivan sin trámite.
-                </p>
-              </>
-            )}
-
-            {/* ── 06 · Anatomía de un expediente ── */}
+            {/* ── 06 · Anatomía (tipos) ── */}
             {tipos.length > 0 && (
               <>
                 <SectionIntro
@@ -721,7 +747,7 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 07 · Órganos en acción ── */}
+            {/* ── 07 · Órganos ── */}
             {organos.length > 0 && (
               <>
                 <SectionIntro
@@ -730,6 +756,11 @@ export default function EstadisticasPage() {
                   title="Dónde se mueve el trabajo legislativo"
                   deck="Comisiones, departamentos y oficinas con más trámites procesados: cada paso formal registrado sobre un expediente."
                 />
+                {topOrgano && (
+                  <p className={styles.insight}>
+                    <strong>{topOrgano.organo}</strong> concentra el <strong>{fmtPct(topOrganoPct)}</strong> de los trámites registrados.
+                  </p>
+                )}
                 <div className={styles.mastheadPanel}>
                   {organos.slice(0, 10).map((o, i) => {
                     const pct = Math.max(6, (o.total_tramites / maxOrg) * 100)
@@ -759,9 +790,37 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 08 · Colofón ── */}
+            {/* ── 08 · Indicadores complementarios ── */}
+            <SectionIntro
+              num="08"
+              kicker="También importa"
+              title="Dos indicadores complementarios"
+              deck="Ritmo y actividad reciente. No son las cifras estrella, pero contextualizan el trabajo legislativo."
+            />
+            <div className={styles.kpiGridMini}>
+              <Kpi
+                roman="V"
+                eyebrow="Trámites"
+                value={g?.promedio_tramites
+                  ? <CountUp end={g.promedio_tramites} decimals={1} />
+                  : '—'}
+                label="Por proyecto (promedio)"
+                help="Pasos formales que recorre una iniciativa en promedio."
+                color="#EC4899"
+              />
+              <Kpi
+                roman="VI"
+                eyebrow={isLegislativePeriod ? 'Año en curso' : 'Este año'}
+                value={<CountUp end={g?.proyectos_este_anio ?? 0} />}
+                label={`Proyectos en ${new Date().getFullYear()}`}
+                help="Iniciativas presentadas durante el año calendario actual."
+                color="#14B8A6"
+              />
+            </div>
+
+            {/* ── 09 · Colofón ── */}
             <div className={styles.colofon}>
-              <div className={styles.colofonKicker}>08 · COLOFÓN</div>
+              <div className={styles.colofonKicker}>09 · COLOFÓN</div>
               <h3 className={styles.colofonTitle}>Sobre esta edición</h3>
               <div className={styles.colofonCols}>
                 <div>
@@ -798,6 +857,62 @@ export default function EstadisticasPage() {
 
 // ── Subcomponents ────────────────────────────────────────────────────────────
 
+function ResumenEjecutivo({
+  mensual, topTema, tasa, urgentes, hasFilter, rangoTexto,
+}: {
+  mensual: { ultimoMes: { total: number; mes_nombre: string; anio: number } | undefined; delta: number; hayAnterior: boolean } | null
+  topTema: { categoria: string; total: number } | undefined
+  tasa: number
+  urgentes: number
+  hasFilter: boolean
+  rangoTexto: string
+}) {
+  const deltaAbs = mensual ? Math.abs(mensual.delta) : 0
+  const isEstable = deltaAbs < 5
+  const deltaColor = isEstable ? 'var(--ink-muted)' : mensual && mensual.delta > 0 ? 'var(--positive)' : 'var(--danger)'
+  const DeltaIcon = isEstable ? IconFlat : mensual && mensual.delta > 0 ? IconUp : IconDown
+
+  return (
+    <section className={styles.resumen}>
+      <div className={styles.resumenInner}>
+        <div className={styles.resumenKicker}>
+          <span className={styles.resumenDot} />
+          RESUMEN · HOY
+        </div>
+        <ul className={styles.resumenList}>
+          {mensual?.ultimoMes && (
+            <li className={styles.resumenItem}>
+              En <strong>{mensual.ultimoMes.mes_nombre.toLowerCase()}</strong> se presentaron{' '}
+              <strong>{mensual.ultimoMes.total} proyectos</strong>
+              {mensual.hayAnterior && (
+                <span className={styles.resumenDelta} style={{ color: deltaColor }}>
+                  <DeltaIcon />
+                  {isEstable ? 'estable' : `${mensual.delta > 0 ? '+' : ''}${mensual.delta.toFixed(0)}% vs mes anterior`}
+                </span>
+              )}.
+            </li>
+          )}
+          {topTema && (
+            <li className={styles.resumenItem}>
+              El tema más discutido es <strong>{topTema.categoria.toLowerCase()}</strong>, con <strong>{topTema.total} iniciativas</strong>.
+            </li>
+          )}
+          {tasa > 0 && (
+            <li className={styles.resumenItem}>
+              Solo el <strong>{tasa.toFixed(0)}%</strong> de los proyectos llega a ser ley{hasFilter ? ` ${rangoTexto}` : ' (histórico)'}.
+            </li>
+          )}
+          {urgentes > 0 && (
+            <li className={styles.resumenItem}>
+              <strong style={{ color: 'var(--danger)' }}>{urgentes} {urgentes === 1 ? 'expediente vence' : 'expedientes vencen'}</strong> en menos de 30 días.
+            </li>
+          )}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 function SectionIntro({ num, kicker, title, deck }: {
   num: string; kicker: string; title: string; deck: React.ReactNode
 }) {
@@ -810,6 +925,24 @@ function SectionIntro({ num, kicker, title, deck }: {
       </div>
       <h2 className={styles.sectionTitle}>{title}</h2>
       <p className={styles.sectionDeck}>{deck}</p>
+    </div>
+  )
+}
+
+function HeroKpi({ label, sub, value, color, spark }: {
+  label: string
+  sub: string
+  value: React.ReactNode
+  color: string
+  spark?: React.ReactNode
+}) {
+  return (
+    <div className={styles.heroKpi} style={{ '--kpi-color': color } as React.CSSProperties}>
+      <div className={styles.heroKpiAccent} />
+      <div className={styles.heroKpiValue}>{value}</div>
+      <div className={styles.heroKpiLabel}>{label}</div>
+      <div className={styles.heroKpiSub}>{sub}</div>
+      {spark && <div className={styles.heroKpiSpark}>{spark}</div>}
     </div>
   )
 }

@@ -9,6 +9,10 @@ import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
 import { getPeriodos, getAllLegislativePeriods } from '@/lib/periodos'
 import styles from './proyectos.module.css'
 import FilterPill from '@/components/ui/FilterPill'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { EstadoChip } from '@/components/ui/EstadoChip'
+import { ESTADO_FILTROS, clasificarEstado } from '@/lib/estados'
 
 const POR_PAGINA = 10
 
@@ -83,29 +87,24 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
       <div className={styles.cardAccent} />
 
       <div className={styles.cardBody}>
-        {/* Top row: exp number + law badge (right-aligned) */}
+        {/* Top row: exp number + estado chip */}
         <div className={styles.cardTop}>
           <span className={styles.expediente}>Exp. {p.numero_expediente}</span>
-          {isLey && (
-            <span className={styles.badgeLey}>
-              <IconScale /> Ley N°{p.numero_ley}
-            </span>
-          )}
+          <EstadoChip
+            estadoActual={p.estado_actual}
+            esLey={isLey}
+            numeroLey={p.numero_ley}
+            size="sm"
+          />
         </div>
 
         {/* Title */}
         <h2 className={styles.cardTitle}>{formatTitle(p.titulo)}</h2>
 
-        {/* Meta row: tipo · estado · fecha · proponentes · trámites */}
+        {/* Meta row: tipo · fecha · proponentes · trámites */}
         <div className={styles.cardMeta}>
           {p.tipo_expediente && (
             <span className={styles.metaTipo}>{abbreviateTipo(p.tipo_expediente)}</span>
-          )}
-          {!isLey && p.estado_actual && (
-            <>
-              <span className={styles.metaSep} aria-hidden>·</span>
-              <span className={styles.metaEstado}>{p.estado_actual}</span>
-            </>
           )}
           {p.fecha_inicio && (
             <>
@@ -159,8 +158,9 @@ function ProyectosContent() {
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
   const [tipo, setTipo]           = useState('')
+  const [estado, setEstado]       = useState(() => searchParams.get('estado') || '')
   const [orden, setOrden]         = useState('reciente')
-  const [soloLeyes, setSoloLeyes] = useState(false)
+  const [soloLeyes, setSoloLeyes] = useState(() => searchParams.get('estado') === 'ley')
   const [pagina, setPagina]       = useState(1)
 
   // Data state
@@ -234,11 +234,16 @@ function ProyectosContent() {
   }, [pagina])
 
   const clearFilters = () => {
-    setQuery(''); setCategoria(''); setPeriodo(''); setTipo('')
+    setQuery(''); setCategoria(''); setPeriodo(''); setTipo(''); setEstado('')
     setOrden('reciente'); setSoloLeyes(false); setPagina(1)
   }
 
-  const hasFilters = query || categoria || periodo || tipo || soloLeyes || orden !== 'reciente'
+  const hasFilters = query || categoria || periodo || tipo || estado || soloLeyes || orden !== 'reciente'
+
+  // Filtro client-side por estado (el backend solo expone texto libre)
+  const proyectosFiltrados = estado
+    ? proyectos.filter(p => clasificarEstado(p.estado_actual, p.es_ley) === estado)
+    : proyectos
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
@@ -305,14 +310,13 @@ function ProyectosContent() {
                 ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
               ]}
             />
+
             <FilterPill
-              value={tipo}
-              onChange={setTipo}
-              placeholder="Todos los tipos"
-              options={[
-                { value: '', label: 'Todos los tipos' },
-                ...tipos.map(t => ({ value: t.tipo_expediente, label: t.tipo_expediente })),
-              ]}
+              value={estado}
+              onChange={setEstado}
+              placeholder="Todos los estados"
+              active={estado !== ''}
+              options={ESTADO_FILTROS}
             />
             <FilterPill
               value={orden}
@@ -365,26 +369,31 @@ function ProyectosContent() {
             <div className={styles.list}>
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)}
             </div>
-          ) : proyectos.length === 0 ? (
-            <div className={styles.empty}>
-              <p className={styles.emptyTitle}>Sin resultados</p>
-              <p className={styles.emptyDesc}>Intentá con otros filtros o una búsqueda diferente.</p>
-              <button className={styles.emptyBtn} onClick={clearFilters}>Limpiar filtros</button>
-            </div>
+          ) : proyectosFiltrados.length === 0 ? (
+            <EmptyState
+              title="Sin resultados"
+              description={estado ? `Ningún proyecto coincide con el estado seleccionado en esta página. Probá quitar el filtro de estado o cambiar de página.` : "Intentá con otros filtros o una búsqueda diferente."}
+              actions={
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Limpiar filtros
+                </Button>
+              }
+            />
           ) : (
             <div className={styles.list}>
-              {proyectos.map(p => <ProyectoCard key={p.id} p={p} />)}
+              {proyectosFiltrados.map(p => <ProyectoCard key={p.id} p={p} />)}
             </div>
           )}
 
           {/* Pagination */}
           {paginacion && paginacion.total_paginas > 1 && !loading && (
             <div className={styles.pagination}>
-              <button
-                className={styles.pageBtn}
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={pagina <= 1}
                 onClick={() => setPagina(p => p - 1)}
-              >← Anterior</button>
+              >← Anterior</Button>
 
               <div className={styles.pageNums}>
                 {Array.from({ length: Math.min(paginacion.total_paginas, 10) }, (_, i) => {
@@ -409,11 +418,12 @@ function ProyectosContent() {
                 })}
               </div>
 
-              <button
-                className={styles.pageBtn}
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={pagina >= paginacion.total_paginas}
                 onClick={() => setPagina(p => p + 1)}
-              >Siguiente →</button>
+              >Siguiente →</Button>
             </div>
           )}
 

@@ -1,0 +1,33 @@
+.tooltip {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-md);
+  font-family: var(--body);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.value {
+  font-family: var(--serif);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--accent);
+}
+
+.sub {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  margin-top: 2px;
+}

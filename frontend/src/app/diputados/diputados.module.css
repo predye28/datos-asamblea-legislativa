@@ -261,7 +261,44 @@
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
 }
 
-/* ── Rank badge ── */
+/* ── Avatar + rank overlay ── */
+.avatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.rankBadge {
+  position: absolute;
+  bottom: -6px;
+  right: -8px;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--paper-card);
+}
+
+/* ── Rank badge (legacy, reused for colors) ── */
 .rank {
   flex-shrink: 0;
   width: 42px;
@@ -308,17 +345,33 @@
 }
 
 .cardName {
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.15s;
-  letter-spacing: -0.01em;
   margin-bottom: 10px;
+  min-width: 0;
 }
+.cardSurname {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+.cardGiven {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  letter-spacing: 0;
+}
+.card:hover .cardSurname { color: #fff; }
 
 .card:hover .cardName {
   color: #fff;
@@ -328,6 +381,32 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.cardCount {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 8px 0 16px;
+  border-left: 1px dashed var(--rule);
+}
+.cardCount strong {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+.cardCount span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 4px;
 }
 
 .bar {
@@ -506,7 +585,7 @@
   }
 
   .card {
-    padding: 14px 16px;
+    padding: 14px 14px;
     gap: 12px;
   }
 
@@ -514,13 +593,24 @@
     opacity: 1;
   }
 
-  .cardName {
-    font-size: 14px;
+  .cardSurname { font-size: 15px; }
+  .cardGiven { font-size: 12px; }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+  .rankBadge {
+    min-width: 24px;
+    height: 20px;
+    font-size: 10px;
   }
 
-  .rank {
-    width: 36px;
-    height: 36px;
-    font-size: 11px;
+  .cardCount {
+    padding: 0 4px 0 10px;
   }
+  .cardCount strong { font-size: 20px; }
+  .cardCount span { font-size: 9px; }
 }

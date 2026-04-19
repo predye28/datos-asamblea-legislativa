@@ -44,12 +44,17 @@ export default function Navbar() {
     body.style.top = `-${scrollY}px`
     body.style.width = '100%'
     body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
     return () => {
       body.style.position = prev.position
       body.style.top = prev.top
       body.style.width = prev.width
       body.style.overflow = prev.overflow
       window.scrollTo(0, scrollY)
+      window.removeEventListener('keydown', onKey)
     }
   }, [menuOpen])
 
@@ -67,6 +72,7 @@ export default function Navbar() {
                 key={l.href}
                 href={l.href}
                 className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
+                aria-current={pathname === l.href ? 'page' : undefined}
               >
                 {l.label}
               </Link>
@@ -100,7 +106,10 @@ export default function Navbar() {
         />
       )}
 
-      <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ''}`}>
+      <div
+        className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ''}`}
+        aria-hidden={!menuOpen}
+      >
         <nav aria-label="Menú móvil">
           {NAV_LINKS.map((l) => (
             <Link
@@ -108,6 +117,8 @@ export default function Navbar() {
               href={l.href}
               className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
               onClick={() => setMenuOpen(false)}
+              aria-current={pathname === l.href ? 'page' : undefined}
+              tabIndex={menuOpen ? 0 : -1}
             >
               {l.label}
             </Link>
