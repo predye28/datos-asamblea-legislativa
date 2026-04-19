@@ -127,18 +127,31 @@
   background: var(--paper-warm);
   border-bottom: 1px solid var(--rule);
   position: sticky;
-  top: 78px;
+  top: var(--nav-h);
   z-index: 100;
 }
 
 .filtersInner {
-  max-width: 1240px;
+  max-width: var(--container-max);
   margin: 0 auto;
-  padding: 12px 40px;
+  padding: 12px var(--container-pad);
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .filtersInner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 10px var(--container-pad);
+  }
+  .filtersInner::-webkit-scrollbar { display: none; }
+  .filtersInner > * { scroll-snap-align: start; flex-shrink: 0; }
 }
 
 .filtersLabel {

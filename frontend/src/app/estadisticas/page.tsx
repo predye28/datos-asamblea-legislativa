@@ -92,7 +92,7 @@ function Sparkline({ data }: { data: { anio: number; leyes_aprobadas: number }[]
   const path = slice.map((d, i) => `${i === 0 ? 'M' : 'L'}${toX(i)},${toY(d.leyes_aprobadas)}`).join(' ')
   const last = slice[slice.length - 1]
   return (
-    <svg className={styles.sparkSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
+    <svg className={styles.sparkSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
       <path d={path} fill="none" stroke="#06B6D4" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={toX(slice.length - 1)} cy={toY(last.leyes_aprobadas)} r="3.5" fill="#06B6D4" />
     </svg>
@@ -126,7 +126,7 @@ function LeyesArea({ data }: { data: { anio: number; leyes_aprobadas: number }[]
 
   return (
     <div className={styles.chartContainer}>
-      <svg className={styles.chartSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Leyes aprobadas por año">
+      <svg className={styles.chartSvg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Leyes aprobadas por año">
         <defs>
           <linearGradient id="leyesGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.45" />
@@ -163,6 +163,20 @@ function LeyesArea({ data }: { data: { anio: number; leyes_aprobadas: number }[]
           </text>
         </g>
         <circle cx={px} cy={py} r="6" fill="#F59E0B" stroke="#1A1A1A" strokeWidth="2.5" />
+
+        {data.map((d, i) => (
+          <g key={`hit-${d.anio}`}>
+            <rect
+              x={toX(i) - stepX / 2}
+              y={pad.t}
+              width={stepX}
+              height={H - pad.t - pad.b}
+              fill="transparent"
+            >
+              <title>{`${d.anio}: ${fmt(d.leyes_aprobadas)} leyes aprobadas`}</title>
+            </rect>
+          </g>
+        ))}
 
         {xTicks.map(y => {
           const idx = years.indexOf(y)

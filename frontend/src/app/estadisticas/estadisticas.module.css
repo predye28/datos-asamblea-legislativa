@@ -19,8 +19,8 @@
 }
 .portadaInner {
   position: relative; z-index: 1;
-  max-width: 1240px; margin: 0 auto;
-  padding: 0 40px;
+  max-width: var(--container-max); margin: 0 auto;
+  padding: 0 var(--container-pad);
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 56px;
@@ -129,12 +129,12 @@
   background: var(--paper-warm);
   border-bottom: 1px solid var(--rule);
   position: sticky;
-  top: 78px;
+  top: var(--nav-h);
   z-index: 100;
 }
 .filtersInner {
-  max-width: 1240px; margin: 0 auto;
-  padding: 12px 40px;
+  max-width: var(--container-max); margin: 0 auto;
+  padding: 12px var(--container-pad);
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .filtersLabel {
@@ -187,7 +187,7 @@
 
 /* ── Main layout ──────────────────────────────────────────── */
 .main { padding: 48px 0 96px; }
-.container { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+.container { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-pad); }
 
 /* ── Section intro (editorial) ────────────────────────────── */
 .sectionIntro {
@@ -675,9 +675,9 @@
 .relojCard:hover {
   transform: translateY(-3px);
 }
-.reloj_red    { border-left-color: #ef4444; }
+.reloj_red    { border-left-color: #ef4444; background: linear-gradient(180deg, rgba(239,68,68,0.06), transparent 60%), #181c1e; }
 .reloj_red:hover   { border-color: rgba(239,68,68,0.5); border-left-color: #ef4444; }
-.reloj_amber  { border-left-color: #F59E0B; }
+.reloj_amber  { border-left-color: #F59E0B; background: linear-gradient(180deg, rgba(245,158,11,0.05), transparent 60%), #181c1e; }
 .reloj_amber:hover { border-color: rgba(245,158,11,0.45); border-left-color: #F59E0B; }
 .reloj_neutral { border-left-color: var(--ink-faint); }
 .reloj_neutral:hover { border-color: rgba(255,255,255,0.15); }
@@ -1136,17 +1136,48 @@
   .dipMeta strong { font-size: 16px; }
 }
 
+@media (max-width: 720px) {
+  .relojGrid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 8px;
+    margin: 0 calc(-1 * var(--container-pad));
+    padding-left: var(--container-pad);
+    padding-right: var(--container-pad);
+  }
+  .relojGrid::-webkit-scrollbar { display: none; }
+  .relojCard { scroll-snap-align: start; }
+
+  .stackedBar, .stackedTicks { display: none; }
+  .glosario { margin-top: 10px; }
+
+  .kpiCard { padding: 20px 18px 18px; }
+  .kpiBig { font-size: clamp(28px, 9vw, 38px); }
+}
+
 @media (max-width: 520px) {
   .portada { padding: 40px 0 32px; }
   .portadaTitle { font-size: clamp(36px, 10vw, 52px); }
   .portadaMasthead { font-size: 10px; }
 
-  .tickerRow { flex-direction: column; align-items: flex-start; }
-  .tickerChip { width: 100%; }
+  .tickerRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--container-pad));
+    padding: 0 var(--container-pad) 4px;
+  }
+  .tickerRow::-webkit-scrollbar { display: none; }
+  .tickerChip { flex-shrink: 0; scroll-snap-align: start; }
 
-  .kpiGrid { grid-template-columns: 1fr; gap: 12px; }
-  .skKpiGrid { grid-template-columns: 1fr; }
-  .kpiBig { font-size: 38px; }
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .skKpiGrid { grid-template-columns: repeat(2, 1fr); }
 
   .cartelera { grid-template-columns: 1fr; }
   .cartHero { grid-column: span 1; min-height: 200px; }
@@ -1157,7 +1188,6 @@
   .relojDays strong { font-size: 28px; }
   .relojProp { max-width: 50%; }
 
-  .stackedBar { height: 36px; }
   .anatomiaBig { font-size: 46px; }
 
   .sectionTitle { font-size: 24px; }

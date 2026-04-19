@@ -2,16 +2,16 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  height: 78px;
+  height: var(--nav-h);
   background: var(--paper);
   border-bottom: 1px solid var(--rule);
   box-shadow: 0 1px 16px rgba(0, 0, 0, 0.45);
 }
 
 .container {
-  max-width: 1240px;
+  max-width: var(--container-max);
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 var(--container-pad);
   height: 100%;
   display: flex;
   align-items: center;
@@ -173,10 +173,10 @@
 /* ── Mobile menu ── */
 .mobileMenu {
   position: fixed;
-  top: 78px;
+  top: var(--nav-h);
   right: 0;
   bottom: 0;
-  width: min(300px, 88vw);
+  width: min(320px, 88vw);
   background: var(--paper-warm);
   border-left: 1px solid var(--rule);
   z-index: 950;
@@ -186,10 +186,15 @@
   gap: 4px;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  visibility: hidden;
 }
 
 .mobileMenuOpen {
   transform: translateX(0);
+  visibility: visible;
 }
 
 .mobileLink {
@@ -223,7 +228,7 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .nav {
     display: none;
   }
@@ -237,12 +242,12 @@
   }
 }
 
-@media (max-width: 480px) {
-  .container {
-    padding: 0 20px;
-  }
-
+@media (max-width: 720px) {
   .logo {
     font-size: 18px;
+  }
+
+  .langPill {
+    display: none;
   }
 }
