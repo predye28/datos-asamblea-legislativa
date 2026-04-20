@@ -22,6 +22,7 @@
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.2s;
+  will-change: transform, opacity;
 }
 
 .decTopRight {
@@ -36,6 +37,7 @@
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.35s;
+  will-change: transform, opacity;
 }
 
 .decBotLeft {
@@ -50,6 +52,7 @@
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.5s;
+  will-change: transform, opacity;
 }
 
 /* ── Warm center glow ── */
@@ -67,6 +70,7 @@
       transparent 70%);
   pointer-events: none;
   animation: glowPulse 3s ease-in-out 1s infinite alternate;
+  will-change: transform, opacity;
 }
 
 /* ── Container ── */
@@ -150,6 +154,7 @@
   margin-bottom: 16px;
   animation: bloomIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.72s;
+  will-change: transform, opacity;
 }
 
 .accent {
@@ -166,6 +171,7 @@
   margin-bottom: 36px;
   animation: bloomIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 1.05s;
+  will-change: transform, opacity;
 }
 
 /* Divider removed for continuity */
@@ -214,13 +220,11 @@
   from {
     opacity: 0;
     transform: scale(0.88) translateY(10px);
-    filter: blur(8px);
   }
 
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
-    filter: blur(0);
   }
 }
 

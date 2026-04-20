@@ -44,7 +44,7 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 50   # Total de páginas a procesar en este run
+TOTAL_PAGINAS_POR_RUN = 10   # Total de páginas a procesar en este run
 N_WORKERS             = 4      # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
@@ -139,6 +139,33 @@ def dividir_rangos(inicio: int, total: int, n: int) -> list[tuple[int, int]]:
         rangos.append((pagina_actual, fin))
         pagina_actual = fin + 1
     return rangos
+
+
+# ══════════════════════════════════════════════════════════════════════
+# MONITOR DE WORKERS
+# ══════════════════════════════════════════════════════════════════════
+
+class WorkerMonitor:
+    """
+    Coordina el estado de los workers para que si uno falla (especialmente
+    uno de páginas bajas), los demás se enteren y se detengan.
+    """
+    def __init__(self):
+        self._min_interrupted_page = float('inf')
+        self._lock = asyncio.Lock()
+
+    async def reportar_interrupcion(self, pagina: int):
+        """Registra que un worker se detuvo en cierta página."""
+        async with self._lock:
+            if pagina < self._min_interrupted_page:
+                self._min_interrupted_page = pagina
+
+    async def deberia_detenerse(self, pagina_actual: int) -> tuple[bool, int]:
+        """Consulta si este worker debería detenerse por una interrupción previa."""
+        async with self._lock:
+            if pagina_actual > self._min_interrupted_page:
+                return True, int(self._min_interrupted_page)
+            return False, 0
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -827,6 +854,7 @@ async def worker(
     pagina_inicio: int,
     pagina_fin: int,
     worker_id: int,
+    monitor: WorkerMonitor
 ) -> tuple[list, int, bool]:
     """
     Lanza un browser independiente y procesa el rango [pagina_inicio, pagina_fin].
@@ -895,6 +923,12 @@ async def worker(
         max_paginas_worker = pagina_fin - pagina_inicio + 1
 
         while paginas_procesadas < max_paginas_worker:
+            # --- Check de monitor ---
+            stoppy, pag_fallida = await monitor.deberia_detenerse(pagina_actual)
+            if stoppy:
+                log(f"DETENCIÓN PREVENTIVA: Se detectó fallo en página {pag_fallida}. Cancelando trabajo redundante.", worker_id, "WARN")
+                break
+
             if pagina_actual > MAX_PAGINA_TOTAL:
                 log(f"Limite total ({MAX_PAGINA_TOTAL}) alcanzado.", worker_id, "WARN")
                 break
@@ -917,11 +951,13 @@ async def worker(
 
                 if not reintento_ok:
                     log(f"Portal no responde tras {MAX_REINTENTOS_SESION} reintentos. Worker detenido en pagina {pagina_actual}.", worker_id, "ERROR")
+                    await monitor.reportar_interrupcion(pagina_actual)
                     break  # completado sigue False, pagina_actual = dónde se cayó
                 continue
 
             elif resultado == "error_portal":
                 log(f"Error de portal en pagina {pagina_actual}. Deteniendo worker.", worker_id, "ERROR")
+                await monitor.reportar_interrupcion(pagina_actual)
                 break
 
             # Página OK
@@ -947,6 +983,7 @@ async def worker(
 
     except Exception as e:
         log(f"Excepcion inesperada: {e}", worker_id, "ERROR")
+        await monitor.reportar_interrupcion(pagina_actual)
         # pagina_actual queda donde estaba → el main lo usa para el checkpoint
 
     estado = "COMPLETO" if completado else f"INTERRUMPIDO en pag {pagina_actual}"
@@ -998,9 +1035,11 @@ async def main():
     log(f"Lanzando {n_workers} workers en paralelo...")
     log("=" * 60)
 
+    monitor = WorkerMonitor()
+
     async with async_playwright() as playwright:
         tareas = [
-            worker(playwright, ini, fin, worker_id=i)
+            worker(playwright, ini, fin, worker_id=i, monitor=monitor)
             for i, (ini, fin) in enumerate(rangos)
         ]
         resultados = await asyncio.gather(*tareas, return_exceptions=True)

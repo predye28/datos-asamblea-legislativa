@@ -48,7 +48,6 @@ export default function ResumenSemanal() {
           api.proyectos.list({ desde: toISO(desde), hasta: toISO(hasta), solo_leyes: true, por_pagina: 30, orden: 'reciente' }),
           api.metricas.general({ desde: toISO(desde), hasta: toISO(hasta) }),
           api.metricas.proximosVencer(rango === 'semana' ? 30 : rango === 'mes' ? 60 : 90).catch(() => ({ datos: [] as ProximoVencer[] })),
-          new Promise(r => setTimeout(r, 1000))
         ])
 
         if (cancelled) return
