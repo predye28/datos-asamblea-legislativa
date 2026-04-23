@@ -88,6 +88,8 @@ def metricas(
         FROM proponentes pr
         JOIN proyectos p ON p.id = pr.proyecto_id
         {where.replace('fecha_inicio', 'p.fecha_inicio')}
+        AND UPPER(COALESCE(pr.nombre, '')) != 'PODER EJECUTIVO'
+        AND UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'
     """, tuple(params)) or 0
 
     avg_tramites = fetchval(f"""
@@ -176,6 +178,8 @@ def metricas(
         JOIN proyectos p ON p.id = pr.proyecto_id
         {where.replace('fecha_inicio', 'p.fecha_inicio')}
         AND (pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)
+        AND UPPER(COALESCE(pr.nombre, '')) != 'PODER EJECUTIVO'
+        AND UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'
         GROUP BY pr.apellidos, pr.nombre
         ORDER BY total_proyectos DESC
         LIMIT 10
@@ -252,6 +256,8 @@ def metricas(
         JOIN proyectos p ON p.id = pr.proyecto_id
         {where.replace('fecha_inicio', 'p.fecha_inicio')}
         AND (pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)
+        AND UPPER(COALESCE(pr.nombre, '')) != 'PODER EJECUTIVO'
+        AND UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'
         GROUP BY pr.apellidos, pr.nombre
         HAVING COUNT(DISTINCT pr.proyecto_id) >= 5
         ORDER BY (COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END)::float / NULLIF(COUNT(DISTINCT pr.proyecto_id), 0)) DESC, total_proyectos DESC
@@ -436,7 +442,11 @@ def diputados_ranking(desde: str = None, hasta: str = None, q: str = None):
     Retorna la lista completa de diputados (proponentes) ordenada por cantidad de proyectos.
     Si se proporciona `q` (búsqueda), ignora el rango de fechas para buscar en todo el histórico de la BD.
     """
-    condiciones = ["(pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)"]
+    condiciones = [
+        "(pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)",
+        "UPPER(COALESCE(pr.nombre, '')) != 'PODER EJECUTIVO'",
+        "UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'"
+    ]
     params = []
 
     if q:

@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useRef, CSSProperties } from 'react'
+import { useEffect, useState, useRef, CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse } from '@/lib/api'
 import styles from './FeatureBlocks.module.css'
 
-type DataItem = { value: string; label: string }
+type DataItem = { value: string; label: ReactNode }
 
 const fmt = (n: number | undefined | null): string =>
   n == null ? '—' : n.toLocaleString('es-CR')
@@ -57,39 +57,54 @@ function buildProyectos(data: MetricasResponse | null): DataItem[] {
     return [
       { value: '—', label: 'proyectos registrados' },
       { value: '—', label: 'presentados este año' },
-      { value: '—', label: 'llegan a ser ley' },
+      { value: '—', label: 'de aprobación histórica' },
     ]
   }
   const g = data.general
   return [
     { value: fmt(g.total_proyectos), label: 'proyectos registrados' },
     { value: fmt(g.proyectos_este_anio), label: 'presentados este año' },
-    { value: `${Math.round(g.tasa_aprobacion_pct)}%`, label: 'llegan a ser ley' },
+    { value: `${Math.round(g.tasa_aprobacion_pct)}%`, label: 'de aprobación histórica' },
   ]
 }
 
 function buildEstadisticas(data: MetricasResponse | null): DataItem[] {
   if (!data) {
     return [
-      { value: '—', label: 'tasa de aprobación' },
-      { value: '—', label: 'leyes vigentes' },
-      { value: '—', label: 'tiempo promedio' },
+      { value: '—', label: 'de proyectos se vuelven ley' },
+      { value: '—', label: 'total de leyes aprobadas' },
+      { value: '—', label: 'para aprobar una ley (promedio)' },
     ]
   }
   const g = data.general
-  const años = g.promedio_dias_aprobacion / 365
-  const tiempo = años >= 2 ? `${Math.round(años)} años` : `${años.toFixed(1)} años`
+  const dias = g.promedio_dias_aprobacion
+  let tiempo = ''
+  if (dias < 30) {
+    const d = Math.round(dias)
+    tiempo = d === 1 ? '1 día' : `${d} días`
+  } else if (dias < 365) {
+    const m = Math.round(dias / 30.44)
+    tiempo = m === 1 ? '1 mes' : `${m} meses`
+  } else {
+    const años = dias / 365
+    if (años >= 2) {
+      tiempo = `${Math.round(años)} años`
+    } else {
+      const formatted = años.toFixed(1)
+      tiempo = formatted === '1.0' ? '1 año' : `${formatted} años`
+    }
+  }
   return [
-    { value: `${Math.round(g.tasa_aprobacion_pct)}%`, label: 'tasa de aprobación' },
-    { value: fmt(g.total_leyes_aprobadas), label: 'leyes vigentes' },
-    { value: tiempo, label: 'tiempo promedio de aprobación' },
+    { value: `${Math.round(g.tasa_aprobacion_pct)}%`, label: 'de proyectos se vuelven ley' },
+    { value: fmt(g.total_leyes_aprobadas), label: 'total de leyes aprobadas' },
+    { value: tiempo, label: 'para aprobar una ley (promedio)' },
   ]
 }
 
 function buildDiputados(data: MetricasResponse | null): DataItem[] {
   if (!data) {
     return [
-      { value: '—', label: 'diputados activos' },
+      { value: '—', label: 'diputados registrados históricamente' },
       { value: '—', label: 'diputado más activo' },
       { value: '—', label: 'mejor eficacia' },
     ]
@@ -97,10 +112,17 @@ function buildDiputados(data: MetricasResponse | null): DataItem[] {
   const g = data.general
   const top = data.top_diputados[0]
   const eficaz = data.top_diputados_eficacia?.[0]
+  
+  const getName = (d?: { apellidos?: string; nombre_completo?: string }) => {
+    if (!d) return ''
+    const raw = d.apellidos?.trim() || d.nombre_completo?.trim() || ''
+    return raw.toLowerCase().replace(/(?:^|\s)\S/g, (a) => a.toUpperCase())
+  }
+
   return [
-    { value: String(g.total_diputados_activos), label: 'diputados activos' },
-    { value: top ? `${top.total_proyectos}` : '—', label: top ? `proyectos del más activo (${top.apellidos})` : 'diputado más activo' },
-    { value: eficaz ? `${Math.round(eficaz.tasa_aprobacion)}%` : '—', label: eficaz ? `mejor eficacia (${eficaz.apellidos})` : 'mejor eficacia' },
+    { value: String(g.total_diputados_activos), label: 'diputados registrados históricamente' },
+    { value: top ? `${top.total_proyectos}` : '—', label: top ? <span>proyectos liderados por el más activo (<strong>{getName(top)}</strong>)</span> : 'diputado más activo' },
+    { value: eficaz ? `${Math.round(eficaz.tasa_aprobacion)}%` : '—', label: eficaz ? <span>de efectividad del diputado más eficaz (<strong>{getName(eficaz)}</strong>)</span> : 'mejor eficacia' },
   ]
 }
 
