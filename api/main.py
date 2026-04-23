@@ -2,6 +2,7 @@
 main.py — API principal del portal ciudadano de la Asamblea Legislativa CR
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import proyectos, metricas, categorias
@@ -17,10 +18,13 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# ── CORS ── permite que el frontend (cualquier origen en dev) consuma la API
+# ── CORS ── en producción setear CORS_ORIGINS=https://midominio.com
+_raw_origins = os.getenv("CORS_ORIGINS", "*")
+_origins = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # en producción restringir al dominio del front
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],

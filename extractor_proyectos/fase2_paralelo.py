@@ -29,7 +29,7 @@ Uso:
 
 import argparse
 import asyncio
-import json
+import logging
 import os
 import re
 import sys
@@ -44,8 +44,8 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 20   # Total de páginas a procesar en este run
-N_WORKERS             = 3     # Número de browsers en paralelo
+TOTAL_PAGINAS_POR_RUN = 10   # Total de páginas a procesar en este run
+N_WORKERS             = 3    # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
 # CONSTANTES  (no es necesario cambiar estas)
@@ -59,8 +59,11 @@ URL_BASE = (
 TEXTO_BOTON_ENTRADA   = "Expedientes Legislativos - Consulta"
 REGISTROS_POR_PAG     = "10"
 PAGINA_INICIO_FASE2   = 11
-MAX_PAGINA_TOTAL      = 2200
 MAX_REINTENTOS_SESION = 3
+MAX_PAGINA_TOTAL      = 99999  # backstop de emergencia; la detección real es por wrap
+
+SLEEP_BETWEEN_BATCHES = 60    # segundos entre lotes en modo daemon
+SLEEP_AT_CYCLE_END    = 3600  # segundos de espera al completar un ciclo completo
 
 # Tiempos de espera (ms)
 ESPERA_CARGA_GRILLA = 5_000
@@ -69,6 +72,13 @@ ESPERA_CLIC_TAB     = 1_500
 ESPERA_CLIC_PAGINA  = 4_000
 
 IS_CI = os.getenv("CI", "false").lower() == "true"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[logging.StreamHandler()],
+)
+logger = logging.getLogger("fase2")
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -87,6 +97,8 @@ def parsear_args():
                         help=f"Número de workers (default: {N_WORKERS})")
     parser.add_argument("--total",   type=int, default=None,
                         help=f"Total de páginas a procesar (default: {TOTAL_PAGINAS_POR_RUN})")
+    parser.add_argument("--daemon",  action="store_true",
+                        help="Correr en bucle infinito (modo Docker/servidor)")
     return parser.parse_args()
 
 
@@ -109,18 +121,17 @@ _WORKER_LABELS = [
 ]
 
 def log(msg: str, worker_id: int = -1, nivel: str = "INFO"):
-    """
-    Print con timestamp, prefijo de worker y nivel.
-    nivel: INFO | WARN | ERROR | OK
-    """
-    ts     = datetime.now().strftime("%H:%M:%S")
-    if worker_id >= 0 and worker_id < len(_WORKER_LABELS):
-        prefix = f"[{_WORKER_LABELS[worker_id]}]"
-    else:
-        prefix = "[MAIN]"
+    ts = datetime.now().strftime("%H:%M:%S")
+    prefix = f"[{_WORKER_LABELS[worker_id]}]" if 0 <= worker_id < len(_WORKER_LABELS) else "[MAIN]"
     iconos = {"INFO": " ", "WARN": "*", "ERROR": "!", "OK": "+"}
-    icono  = iconos.get(nivel, " ")
-    print(f"[{ts}]{prefix}{icono} {msg}".encode('ascii', 'ignore').decode('ascii'), flush=True)
+    icono = iconos.get(nivel, " ")
+    line = f"[{ts}]{prefix}{icono} {msg}".encode("ascii", "ignore").decode("ascii")
+    if nivel == "ERROR":
+        logger.error(line)
+    elif nivel == "WARN":
+        logger.warning(line)
+    else:
+        logger.info(line)
 
 
 def dividir_rangos(inicio: int, total: int, n: int) -> list[tuple[int, int]]:
@@ -719,6 +730,21 @@ async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
     return False
 
 
+async def leer_pagina_actual(frame) -> int | None:
+    """Lee el número de página real que muestra el sitio en el input de paginación."""
+    try:
+        inp = (
+            await frame.query_selector("input.ctrl-tabla-ira") or
+            await frame.query_selector("input[title='Página actual']")
+        )
+        if not inp:
+            return None
+        val = await inp.input_value()
+        return int(val) if val and val.strip().isdigit() else None
+    except Exception:
+        return None
+
+
 # ══════════════════════════════════════════════════════════════════════
 # EXPORTAR EXCEL
 # ══════════════════════════════════════════════════════════════════════
@@ -855,20 +881,20 @@ async def worker(
     pagina_fin: int,
     worker_id: int,
     monitor: WorkerMonitor
-) -> tuple[list, int, bool]:
+) -> tuple[list, int, bool, bool]:
     """
     Lanza un browser independiente y procesa el rango [pagina_inicio, pagina_fin].
 
     Retorna:
-      (proyectos_extraidos, ultima_pagina_procesada, completado_sin_errores)
+      (proyectos_extraidos, ultima_pagina_procesada, completado_sin_errores, ciclo_completo)
 
-    El flag `completado_sin_errores` es True solo si el worker terminó su
-    rango completo. Si se cayó a mitad, es False y `ultima_pagina_procesada`
-    indica desde dónde hay que reanudar.
+    `ciclo_completo` es True cuando el sitio hizo wrap a la página 1, indicando
+    que se recorrió toda la base de datos y hay que reiniciar desde el inicio.
     """
-    proyectos     = []
-    pagina_actual = pagina_inicio
-    completado    = False  # se pone True solo si termina el rango completo
+    proyectos      = []
+    pagina_actual  = pagina_inicio
+    completado     = False
+    ciclo_completo = False
 
     log(f"Iniciando — rango paginas {pagina_inicio} -> {pagina_fin} ({pagina_fin - pagina_inicio + 1} pags)", worker_id)
 
@@ -900,14 +926,14 @@ async def worker(
         if not await navegar_a_expedientes(page, worker_id):
             log("No se pudo navegar al modulo. Terminando worker.", worker_id, "ERROR")
             await browser.close()
-            return proyectos, pagina_actual, completado
+            return proyectos, pagina_actual, completado, ciclo_completo
 
         await page.wait_for_timeout(3_000)
         frame = await encontrar_frame_con_grilla(page)
         if not frame:
             log("Grilla no encontrada. Terminando worker.", worker_id, "ERROR")
             await browser.close()
-            return proyectos, pagina_actual, completado
+            return proyectos, pagina_actual, completado, ciclo_completo
 
         await cambiar_registros_por_pagina(frame, page, REGISTROS_POR_PAG)
         await page.wait_for_timeout(4_000)
@@ -916,7 +942,17 @@ async def worker(
             if not await ir_a_pagina_directa(frame, page, pagina_inicio, worker_id):
                 log(f"No se pudo llegar a pagina {pagina_inicio}. Terminando worker.", worker_id, "ERROR")
                 await browser.close()
-                return proyectos, pagina_actual, completado
+                return proyectos, pagina_actual, completado, ciclo_completo
+
+            # Si el sitio devolvió una página menor a la pedida, hizo wrap → fin del dataset
+            pagina_real = await leer_pagina_actual(frame)
+            log(f"Salto directo: pag real={pagina_real} | pedida={pagina_inicio}", worker_id)
+            if pagina_real is not None and pagina_real < pagina_inicio:
+                log(f"Wrap al saltar: sitio mostró pag {pagina_real} (pedida {pagina_inicio}). Ciclo completo.", worker_id, "OK")
+                ciclo_completo = True
+                completado = True
+                await browser.close()
+                return proyectos, pagina_actual, completado, ciclo_completo
 
         # ── Loop de páginas del worker ──────────────────────────────
         paginas_procesadas = 0
@@ -977,6 +1013,16 @@ async def worker(
                 pagina_actual += 1
                 break
 
+            # Si el sitio volvió a una página anterior, detectamos el wrap (fin del dataset)
+            pagina_real = await leer_pagina_actual(frame)
+            log(f"Navegacion: pag real={pagina_real} | esperada={pagina_actual + 1}", worker_id)
+            if pagina_real is not None and pagina_real < pagina_actual:
+                log(f"Wrap detectado: sitio mostró pag {pagina_real} (esperada {pagina_actual + 1}). Ciclo completo.", worker_id, "OK")
+                ciclo_completo = True
+                completado = True
+                pagina_actual += 1
+                break
+
             pagina_actual += 1
 
         await browser.close()
@@ -988,7 +1034,30 @@ async def worker(
 
     estado = "COMPLETO" if completado else f"INTERRUMPIDO en pag {pagina_actual}"
     log(f"Fin worker | {len(proyectos)} proyectos | {estado}", worker_id, "OK" if completado else "WARN")
-    return proyectos, pagina_actual, completado
+    return proyectos, pagina_actual, completado, ciclo_completo
+
+
+# ══════════════════════════════════════════════════════════════════════
+# SEÑALES
+# ══════════════════════════════════════════════════════════════════════
+
+_stop = False
+
+def _setup_signal_handlers():
+    import signal
+    def _handler(_sig, _frame):
+        global _stop
+        log("Senal de parada recibida. Terminando al final del lote actual...", nivel="WARN")
+        _stop = True
+    signal.signal(signal.SIGTERM, _handler)
+    signal.signal(signal.SIGINT, _handler)
+
+async def _interruptible_sleep(seconds: int):
+    """Sleep que se interrumpe en menos de 1s si llega SIGTERM/SIGINT."""
+    for _ in range(seconds):
+        if _stop:
+            break
+        await asyncio.sleep(1)
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -997,151 +1066,161 @@ async def worker(
 
 async def main():
     args = parsear_args()
-    inicio = datetime.now()
+    _setup_signal_handlers()
 
-    # Aplicar overrides desde CLI si los hay
     n_workers  = args.workers or N_WORKERS
     total_pags = args.total   or TOTAL_PAGINAS_POR_RUN
+    primera_iter = True
 
-    # Determinar página de inicio
-    if args.reset:
-        pagina_inicio = PAGINA_INICIO_FASE2
-        log(f"--reset: checkpoint reiniciado a página {PAGINA_INICIO_FASE2}")
-    elif args.pagina:
-        pagina_inicio = args.pagina
-        log(f"--pagina: saltando directamente a página {pagina_inicio}")
-    else:
-        pagina_inicio = leer_checkpoint_db()
-        log(f"Checkpoint leído de DB: página {pagina_inicio}")
+    while True:
+        if _stop:
+            log("Parada solicitada. Saliendo limpiamente.", nivel="WARN")
+            break
 
-    pagina_fin = pagina_inicio + total_pags - 1
+        inicio = datetime.now()
 
-    # Dividir el rango equitativamente entre workers
-    rangos = dividir_rangos(pagina_inicio, total_pags, n_workers)
-
-    log("=" * 60)
-    log("FASE 2 PARALELA — Backfill SIL Asamblea Legislativa CR")
-    log("=" * 60)
-    log(f"Inicio:          {inicio:%Y-%m-%d %H:%M:%S}")
-    log(f"Rango total:     páginas {pagina_inicio} → {pagina_fin}")
-    log(f"Total páginas:   {total_pags}")
-    log(f"Workers:         {n_workers}")
-    for i, (ini, fin) in enumerate(rangos):
-        log(f"  Worker {i}: páginas {ini} → {fin} ({fin-ini+1} páginas)")
-    log("=" * 60)
-
-    # Lanzar todos los workers en paralelo con asyncio.gather
-    log("=" * 60)
-    log(f"Lanzando {n_workers} workers en paralelo...")
-    log("=" * 60)
-
-    monitor = WorkerMonitor()
-
-    async with async_playwright() as playwright:
-        tareas = [
-            worker(playwright, ini, fin, worker_id=i, monitor=monitor)
-            for i, (ini, fin) in enumerate(rangos)
-        ]
-        resultados = await asyncio.gather(*tareas, return_exceptions=True)
-
-    # ── Analizar resultados de cada worker ─────────────────────────
-    log("=" * 60)
-    log("Resultados por worker:")
-    log("=" * 60)
-
-    todos_proyectos     = []
-    workers_completos   = []
-    workers_incompletos = []  # (worker_id, pagina_donde_se_cayo)
-
-    for i, resultado in enumerate(resultados):
-        ini_w, fin_w = rangos[i]
-
-        # Si gather capturó una excepción no manejada del worker
-        if isinstance(resultado, Exception):
-            log(f"  Worker {i} FALLO con excepcion: {resultado}", nivel="ERROR")
-            workers_incompletos.append((i, ini_w))  # se cayó al inicio = peor caso
-            continue
-
-        proyectos_w, ultima_pag_w, completo_w = resultado
-        todos_proyectos.extend(proyectos_w)
-
-        if completo_w:
-            log(f"  Worker {i} COMPLETO  | pags {ini_w}-{fin_w} | {len(proyectos_w)} proyectos", nivel="OK")
-            workers_completos.append(i)
+        # --reset y --pagina solo aplican en la primera iteracion
+        if primera_iter and args.reset:
+            pagina_inicio = PAGINA_INICIO_FASE2
+            log(f"--reset: checkpoint reiniciado a pagina {PAGINA_INICIO_FASE2}")
+        elif primera_iter and args.pagina:
+            pagina_inicio = args.pagina
+            log(f"--pagina: saltando directamente a pagina {pagina_inicio}")
         else:
-            log(f"  Worker {i} INCOMPLETO| pags {ini_w}-{fin_w} | cayo en pag {ultima_pag_w} | {len(proyectos_w)} proyectos", nivel="WARN")
-            workers_incompletos.append((i, ultima_pag_w))
+            pagina_inicio = leer_checkpoint_db()
+            log(f"Checkpoint leido de DB: pagina {pagina_inicio}")
+        primera_iter = False
 
-    # ── Determinar checkpoint seguro ───────────────────────────────
-    # El checkpoint = la pagina MAS BAJA donde algun worker se cayo.
-    # Asi el proximo run re-procesa desde el primer gap, sin perder nada.
-    if workers_incompletos:
-        pagina_minima_caida = min(pag for _, pag in workers_incompletos)
-        proxima = pagina_minima_caida
-        log(f"", nivel="WARN")
-        log(f"ATENCION: {len(workers_incompletos)} worker(s) no completaron su rango.", nivel="WARN")
-        log(f"  Workers incompletos: {[f'W{i}@pag{p}' for i, p in workers_incompletos]}", nivel="WARN")
-        log(f"  Checkpoint guardado en pagina {proxima} (primera pagina con dato faltante).", nivel="WARN")
-        log(f"  El proximo run continuara desde ahi para no perder paginas.", nivel="WARN")
-    else:
-        # Todos completaron — avanzar al final del rango
-        proxima = pagina_fin + 1
-        if proxima > MAX_PAGINA_TOTAL:
+        pagina_fin = pagina_inicio + total_pags - 1
+        rangos = dividir_rangos(pagina_inicio, total_pags, n_workers)
+
+        log("=" * 60)
+        log("FASE 2 PARALELA — Backfill SIL Asamblea Legislativa CR")
+        log("=" * 60)
+        log(f"Inicio:          {inicio:%Y-%m-%d %H:%M:%S}")
+        log(f"Rango total:     paginas {pagina_inicio} -> {pagina_fin}")
+        log(f"Total paginas:   {total_pags}")
+        log(f"Workers:         {n_workers}")
+        for i, (ini, fin) in enumerate(rangos):
+            log(f"  Worker {i}: paginas {ini} -> {fin} ({fin-ini+1} paginas)")
+        log("=" * 60)
+        log(f"Lanzando {n_workers} workers en paralelo...")
+        log("=" * 60)
+
+        monitor = WorkerMonitor()
+
+        async with async_playwright() as playwright:
+            tareas = [
+                worker(playwright, ini, fin, worker_id=i, monitor=monitor)
+                for i, (ini, fin) in enumerate(rangos)
+            ]
+            resultados = await asyncio.gather(*tareas, return_exceptions=True)
+
+        # ── Analizar resultados de cada worker ─────────────────────────
+        log("=" * 60)
+        log("Resultados por worker:")
+        log("=" * 60)
+
+        todos_proyectos     = []
+        workers_completos   = []
+        workers_incompletos = []
+        wrap_detectado      = False
+
+        for i, resultado in enumerate(resultados):
+            ini_w, fin_w = rangos[i]
+
+            if isinstance(resultado, Exception):
+                log(f"  Worker {i} FALLO con excepcion: {resultado}", nivel="ERROR")
+                workers_incompletos.append((i, ini_w))
+                continue
+
+            proyectos_w, ultima_pag_w, completo_w, ciclo_w = resultado
+            todos_proyectos.extend(proyectos_w)
+            if ciclo_w:
+                wrap_detectado = True
+
+            if completo_w:
+                log(f"  Worker {i} COMPLETO  | pags {ini_w}-{fin_w} | {len(proyectos_w)} proyectos", nivel="OK")
+                workers_completos.append(i)
+            else:
+                log(f"  Worker {i} INCOMPLETO| pags {ini_w}-{fin_w} | cayo en pag {ultima_pag_w} | {len(proyectos_w)} proyectos", nivel="WARN")
+                workers_incompletos.append((i, ultima_pag_w))
+
+        # ── Determinar checkpoint seguro ───────────────────────────────
+        if wrap_detectado:
+            # El sitio llegó a la última página y volvió al inicio: ciclo completo
             proxima = PAGINA_INICIO_FASE2
-            log("Ciclo completo. Proximo run desde el inicio.", nivel="OK")
+            log("Wrap detectado: dataset recorrido completo. Proximo ciclo desde el inicio.", nivel="OK")
+        elif workers_incompletos:
+            pagina_minima_caida = min(pag for _, pag in workers_incompletos)
+            proxima = pagina_minima_caida
+            log("", nivel="WARN")
+            log(f"ATENCION: {len(workers_incompletos)} worker(s) no completaron su rango.", nivel="WARN")
+            log(f"  Workers incompletos: {[f'W{i}@pag{p}' for i, p in workers_incompletos]}", nivel="WARN")
+            log(f"  Checkpoint guardado en pagina {proxima} (primera pagina con dato faltante).", nivel="WARN")
         else:
-            log(f"Todos los workers completaron su rango. Proximo run desde pagina {proxima}.", nivel="OK")
+            proxima = pagina_fin + 1
+            log(f"Todos los workers completaron. Proximo run desde pagina {proxima}.", nivel="OK")
 
-    # Ordenar proyectos para consistencia
-    todos_proyectos.sort(key=lambda p: int(p.get("numero_expediente", 0) or 0))
-    log(f"Total combinado: {len(todos_proyectos)} proyectos de {n_workers} workers.")
+        todos_proyectos.sort(key=lambda p: int(p.get("numero_expediente", 0) or 0))
+        log(f"Total combinado: {len(todos_proyectos)} proyectos de {n_workers} workers.")
 
-    # ── Sync a base de datos ───────────────────────────────────────
-    stats = {}
-    if todos_proyectos:
-        log("-" * 55)
-        log("SINCRONIZACION CON BASE DE DATOS")
-        log("-" * 55)
+        # ── Sync a base de datos ───────────────────────────────────────
+        stats = {}
+        if todos_proyectos:
+            log("-" * 55)
+            log("SINCRONIZACION CON BASE DE DATOS")
+            log("-" * 55)
+            try:
+                crear_tablas()
+                stats = sync_proyectos(todos_proyectos)
+                log(f"Sincronizacion exitosa de {len(todos_proyectos)} proyectos.", nivel="OK")
+            except Exception as e:
+                log(f"Error critico al sincronizar la BD: {e}", nivel="ERROR")
+                guardar_checkpoint_db(proxima)
+                if not args.daemon:
+                    sys.exit(1)
+                log("Modo daemon: continuando en el proximo lote...", nivel="WARN")
+        else:
+            log("No se extrajeron proyectos en este run.", nivel="WARN")
+
+        # ── Guardar checkpoint ─────────────────────────────────────────
+        guardar_checkpoint_db(proxima)
+
+        # ── Heartbeat para Docker health check ────────────────────────
         try:
-            crear_tablas()
-            stats = sync_proyectos(todos_proyectos)
-            log(f"Sincronizacion exitosa de {len(todos_proyectos)} proyectos.", nivel="OK")
-        except Exception as e:
-            log(f"Error critico al sincronizar la BD: {e}", nivel="ERROR")
-            # Guardar checkpoint igualmente para no perder la posicion
-            guardar_checkpoint_db(proxima)
-            sys.exit(1)
-    else:
-        log("No se extrajeron proyectos en este run.", nivel="WARN")
+            with open("/tmp/scraper_heartbeat", "w") as hb:
+                hb.write(datetime.now().isoformat())
+        except Exception:
+            pass
 
-    # ── Guardar checkpoint ────────────────────────────────────────
-    guardar_checkpoint_db(proxima)
+        duracion = datetime.now() - inicio
 
-    # ── Exportar JSON y Excel ─────────────────────────────────────
-    # ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # json_file  = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.json"
-    # excel_file = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.xlsx"
+        log("=" * 60)
+        log("RESUMEN FASE 2 PARALELA")
+        log("=" * 60)
+        log(f"Rango planificado: pags {pagina_inicio} -> {pagina_fin}")
+        log(f"Workers usados:    {n_workers}")
+        log(f"  Completados:     {len(workers_completos)}")
+        log(f"  Incompletos:     {len(workers_incompletos)}")
+        log(f"Proyectos totales: {len(todos_proyectos)}")
+        log(f"DB sincronizados:  {stats.get('actualizados', 0)}")
+        log(f"DB errores:        {stats.get('errores', 0)}")
+        log(f"Proximo inicio:    pagina {proxima}")
+        log(f"Duracion total:    {str(duracion).split('.')[0]}")
+        log("=" * 60)
 
-    # with open(json_file, "w", encoding="utf-8") as f:
-    #     json.dump(todos_proyectos, f, ensure_ascii=False, indent=2)
-    # log(f"JSON guardado: {json_file}")
-    # exportar_excel(todos_proyectos, excel_file)
+        # ── Modo single run: terminar ──────────────────────────────────
+        if not args.daemon:
+            break
 
-    duracion = datetime.now() - inicio
-
-    log("=" * 60)
-    log("RESUMEN FASE 2 PARALELA")
-    log("=" * 60)
-    log(f"Rango planificado: pags {pagina_inicio} -> {pagina_fin}")
-    log(f"Workers usados:    {n_workers}")
-    log(f"  Completados:     {len(workers_completos)}")
-    log(f"  Incompletos:     {len(workers_incompletos)}")
-    log(f"Proyectos totales: {len(todos_proyectos)}")
-    log(f"DB sincronizados:  {stats.get('actualizados', 0)}")
-    log(f"DB errores:        {stats.get('errores', 0)}")
-    log(f"Proximo inicio:    pagina {proxima}")
-    log(f"Duracion total:    {str(duracion).split('.')[0]}")
-    log("=" * 60)
+        # ── Modo daemon: pausar antes del siguiente lote ───────────────
+        if proxima == PAGINA_INICIO_FASE2:
+            log(f"Esperando {SLEEP_AT_CYCLE_END}s antes del proximo ciclo...", nivel="INFO")
+            await _interruptible_sleep(SLEEP_AT_CYCLE_END)
+        else:
+            log(f"Esperando {SLEEP_BETWEEN_BATCHES}s antes del siguiente lote...", nivel="INFO")
+            await _interruptible_sleep(SLEEP_BETWEEN_BATCHES)
 
 
 if __name__ == "__main__":

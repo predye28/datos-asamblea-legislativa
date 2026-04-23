@@ -1,0 +1,61 @@
+services:
+
+  # ── Reverse proxy: entrada única al puerto 80 ──────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+
+  # ── API FastAPI ────────────────────────────────────────────────
+  api:
+    build: ./api
+    env_file: .env
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  # ── Frontend Next.js ───────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Lee NEXT_PUBLIC_API_URL del .env para inyectarlo en el build
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    env_file: .env
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  # ── Scraper Fase 2 (bucle infinito) ───────────────────────────
+  scraper-fase2:
+    build: ./extractor_proyectos
+    command: python fase2_paralelo.py --daemon --workers 2
+    env_file: .env
+    environment:
+      - CI=true          # Chromium headless obligatorio en Docker
+    restart: unless-stopped
+    healthcheck:
+      # Falla si el heartbeat tiene más de 10 minutos sin actualizarse
+      test: ["CMD", "find", "/tmp/scraper_heartbeat", "-mmin", "-10"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+
+  # ── Scraper Fase 1 (cron diario) ──────────────────────────────
+  scraper-fase1:
+    build: ./extractor_proyectos
+    # El entrypoint corre crond en primer plano y ejecuta fase1 a las 8:00 UTC (2am CR)
+    command: >
+      sh -c "echo '0 8 * * * cd /app && python fase1_scraper.py >> /var/log/fase1.log 2>&1'
+             | crontab - && crond -f -l 2"
+    env_file: .env
+    environment:
+      - CI=true
+    restart: unless-stopped

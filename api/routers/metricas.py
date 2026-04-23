@@ -12,6 +12,7 @@ Endpoint
 import time
 from fastapi import APIRouter
 from database import fetchall, fetchone, fetchval
+from constants import MESES_ES
 from models import (
     MetricasResponse,
     MetricaGeneral,
@@ -19,18 +20,11 @@ from models import (
     ProyectosPorMes,
     DiputadoRanking,
     OrganoActividad,
-    OrganoActividad,
     ProyectosPorCategoria,
     DiputadoEficacia,
 )
 
 router = APIRouter()
-
-MESES_ES = {
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo",  6: "Junio",   7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
-}
 
 _cache_metricas = {}
 CACHE_TTL = 300 # 5 minutes

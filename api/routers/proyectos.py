@@ -28,12 +28,6 @@ from models import (
 
 router = APIRouter()
 
-MESES_ES = {
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo",  6: "Junio",   7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
-}
-
 
 # ══════════════════════════════════════════════════════════════════════
 # HELPERS INTERNOS
@@ -325,7 +319,6 @@ def buscar_proyectos(
     rows = fetchall(sql, tuple(params_query))
     datos = _enriquecer_batch(rows)
 
-    import math
     total_paginas = math.ceil(total / por_pagina) if total else 1
 
     return ProyectosResponse(

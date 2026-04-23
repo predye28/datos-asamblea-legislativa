@@ -25,7 +25,11 @@ node_modules/
 !extractor_proyectos/checkpoint.json
 *.xlsx
 *.png
-documentos/
+extractor_proyectos/documentos/
+extractor_proyectos/exports/
+
+# ── Frontend viejo (eliminado) ────────────────
+asamblea-portal-frontend/
 
 # ── IDEs ──────────────────────────────────────
 .idea/
