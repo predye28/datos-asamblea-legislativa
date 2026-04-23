@@ -2,6 +2,7 @@
   from {
     transform: translateY(-720px);
   }
+
   to {
     transform: translateY(0);
   }
@@ -17,18 +18,20 @@
 .wave {
   display: block;
   width: 100%;
-  height: 80px;
+  height: 120px;
   margin: 0;
   position: relative;
   z-index: 2;
   background: transparent;
-  fill: #0C0C0C; /* Pillars section color */
+  fill: #0C0C0C;
+  /* Pillars section color */
 }
 
-.section > .wave:first-of-type {
+.section>.wave:first-of-type {
   margin-bottom: -1px;
 }
-.section > .wave:last-of-type {
+
+.section>.wave:last-of-type {
   margin-top: -1px;
 }
 
@@ -65,7 +68,7 @@
 }
 
 .container {
-  max-width: var(--max-w);
+  max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 40px;
   position: relative;

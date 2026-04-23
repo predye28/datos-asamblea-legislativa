@@ -124,10 +124,12 @@
 
 /* ── Filters bar ── */
 .filtersBar {
-  background: var(--paper-warm);
+  background: #1e1d1b;
+  border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
   position: relative;
   z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .filtersInner {
@@ -168,15 +170,15 @@
 .filtersLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-faint);
   flex-shrink: 0;
-  margin-right: 4px;
+  margin-right: 8px;
 }
 
 .selects {

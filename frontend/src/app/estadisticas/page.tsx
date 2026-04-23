@@ -334,21 +334,7 @@ export default function EstadisticasPage() {
         </div>
       </section>
 
-      {/* ── Resumen ejecutivo ── */}
-      {globalData && data && (
-        <ResumenEjecutivo
-          mensual={mensualStats ? {
-            ultimoMes: mensualStats.ultimoMes,
-            delta: mensualStats.delta,
-            hayAnterior: !!mensualStats.mesAnterior,
-          } : null}
-          topTema={globalTopTema}
-          tasa={g?.tasa_aprobacion_pct ?? 0}
-          urgentes={urgentesCount}
-          hasFilter={false}
-          rangoTexto=""
-        />
-      )}
+
 
       {/* ── Filters ── */}
       <div className={styles.filtersBar}>
@@ -810,61 +796,7 @@ export default function EstadisticasPage() {
 
 // ── Subcomponents ────────────────────────────────────────────────────────────
 
-function ResumenEjecutivo({
-  mensual, topTema, tasa, urgentes, hasFilter, rangoTexto,
-}: {
-  mensual: { ultimoMes: { total: number; mes_nombre: string; anio: number } | undefined; delta: number; hayAnterior: boolean } | null
-  topTema: { categoria: string; total: number } | undefined
-  tasa: number
-  urgentes: number
-  hasFilter: boolean
-  rangoTexto: string
-}) {
-  const deltaAbs = mensual ? Math.abs(mensual.delta) : 0
-  const isEstable = deltaAbs < 5
-  const deltaColor = isEstable ? 'var(--ink-muted)' : mensual && mensual.delta > 0 ? 'var(--positive)' : 'var(--danger)'
-  const DeltaIcon = isEstable ? IconFlat : mensual && mensual.delta > 0 ? IconUp : IconDown
 
-  return (
-    <section className={styles.resumen}>
-      <div className={styles.resumenInner}>
-        <div className={styles.resumenKicker}>
-          <span className={styles.resumenDot} />
-          RESUMEN · HOY
-        </div>
-        <ul className={styles.resumenList}>
-          {mensual?.ultimoMes && (
-            <li className={styles.resumenItem}>
-              En <strong>{mensual.ultimoMes.mes_nombre.toLowerCase()}</strong> se presentaron{' '}
-              <strong>{mensual.ultimoMes.total} proyectos</strong>
-              {mensual.hayAnterior && (
-                <span className={styles.resumenDelta} style={{ color: deltaColor }}>
-                  <DeltaIcon />
-                  {isEstable ? 'estable' : `${mensual.delta > 0 ? '+' : ''}${mensual.delta.toFixed(0)}% vs mes anterior`}
-                </span>
-              )}.
-            </li>
-          )}
-          {topTema && (
-            <li className={styles.resumenItem}>
-              El tema más discutido es <strong>{topTema.categoria.toLowerCase()}</strong>, con <strong>{topTema.total} iniciativas</strong>.
-            </li>
-          )}
-          {tasa > 0 && (
-            <li className={styles.resumenItem}>
-              Solo el <strong>{tasa.toFixed(0)}%</strong> de los proyectos llega a ser ley{hasFilter ? ` ${rangoTexto}` : ' (histórico)'}.
-            </li>
-          )}
-          {urgentes > 0 && (
-            <li className={styles.resumenItem}>
-              <strong style={{ color: 'var(--danger)' }}>{urgentes} {urgentes === 1 ? 'expediente vence' : 'expedientes vencen'}</strong> en menos de 30 días.
-            </li>
-          )}
-        </ul>
-      </div>
-    </section>
-  )
-}
 
 function SectionIntro({ num, kicker, title, deck, filtro }: {
   num: string; kicker: string; title: string; deck: React.ReactNode; filtro?: string

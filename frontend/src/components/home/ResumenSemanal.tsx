@@ -150,88 +150,110 @@ export default function ResumenSemanal() {
           />
         </div>
 
-        {/* Bandas narrativas */}
-        <div className={styles.bandas}>
-          {/* Lo más propuesto */}
-          <Banda
-            titulo="Lo más propuesto"
-            loading={loading}
-            empty={!topTema || totalProyectos === 0}
-            emptyText="Sin iniciativas en el período. Probá con un rango más amplio."
-          >
-            {topTema && (
-              <p className={styles.bandaText}>
-                El tema <strong>{topTema.categoria}</strong> domina la agenda con{' '}
-                <strong>{topTema.total} proyectos</strong> en el período
-                {topTema.tasa_aprobacion > 0 && (
-                  <> · <span className={styles.bandaHint}>{Math.round(topTema.tasa_aprobacion)}% llega a ser ley</span></>
-                )}.
-              </p>
-            )}
-            <Link href={topTema ? `/proyectos?categoria=${topTema.slug}` : '/proyectos'} className={styles.bandaCta}>
-              Ver proyectos del tema →
-            </Link>
-          </Banda>
+        {/* Editorial de Periodismo */}
+        <div className={styles.editorial}>
+          <div className={styles.editorialInner}>
+            <div className={styles.editorialColumn}>
+              
+              {/* Lo más propuesto */}
+              <article className={styles.editorialItem}>
+                <h3 className={styles.editorialItemTitle}>Lo más propuesto</h3>
+                {loading ? (
+                  <div className={styles.bandaSkeleton} aria-hidden />
+                ) : !topTema || totalProyectos === 0 ? (
+                  <p className={styles.bandaEmpty}>Sin iniciativas en el período. Probá con un rango más amplio.</p>
+                ) : (
+                  <>
+                    <p className={styles.bandaText}>
+                      El tema <strong>{topTema.categoria}</strong> domina la agenda con{' '}
+                      <strong>{topTema.total} proyectos</strong> en el período
+                      {topTema.tasa_aprobacion > 0 && (
+                        <> · <span className={styles.bandaHint}>{Math.round(topTema.tasa_aprobacion)}% llega a ser ley</span></>
+                      )}.
+                    </p>
+                    <Link href={topTema ? `/proyectos?categoria=${topTema.slug}` : '/proyectos'} className={styles.bandaCta}>
+                      Ver proyectos del tema →
+                    </Link>
+                  </>
+                )}
+              </article>
 
-          {/* Lo que se aprobó */}
-          <Banda
-            titulo="Lo que se aprobó"
-            loading={loading}
-            empty={totalLeyes === 0}
-            emptyText="Ninguna ley entró en vigencia en este período. Los trámites legislativos suelen tomar años."
-          >
-            <p className={styles.bandaText}>
-              <strong>{totalLeyes} {totalLeyes === 1 ? 'ley' : 'leyes'}</strong>{' '}
-              {totalLeyes === 1 ? 'entró' : 'entraron'} en vigencia.
-              {leyes[0] && (
-                <> La más reciente: <em>{formatTitle(leyes[0].titulo)}</em>.</>
-              )}
-            </p>
-            <Link href="/proyectos?estado=ley" className={styles.bandaCta}>
-              Ver leyes vigentes →
-            </Link>
-          </Banda>
+              {/* Lo que se aprobó */}
+              <article className={styles.editorialItem}>
+                <h3 className={styles.editorialItemTitle}>Lo que se aprobó</h3>
+                {loading ? (
+                  <div className={styles.bandaSkeleton} aria-hidden />
+                ) : totalLeyes === 0 ? (
+                  <p className={styles.bandaEmpty}>Ninguna ley entró en vigencia en este período. Los trámites legislativos suelen tomar años.</p>
+                ) : (
+                  <>
+                    <p className={styles.bandaText}>
+                      <strong>{totalLeyes} {totalLeyes === 1 ? 'ley' : 'leyes'}</strong>{' '}
+                      {totalLeyes === 1 ? 'entró' : 'entraron'} en vigencia.
+                      {leyes[0] && (
+                        <> La más reciente: <em>{formatTitle(leyes[0].titulo)}</em>.</>
+                      )}
+                    </p>
+                    <Link href="/proyectos?estado=ley" className={styles.bandaCta}>
+                      Ver leyes vigentes →
+                    </Link>
+                  </>
+                )}
+              </article>
 
-          {/* Lo que está por vencer */}
-          <Banda
-            titulo="Lo que está por vencer"
-            loading={loading}
-            empty={urgentes.length === 0}
-            emptyText="No hay proyectos urgentes en la ventana consultada."
-            urgent
-          >
-            <p className={styles.bandaText}>
-              <strong>{urgentes.length} {urgentes.length === 1 ? 'proyecto' : 'proyectos'}</strong>{' '}
-              {urgentes.length === 1 ? 'está' : 'están'} por vencer su plazo cuatrienal.
-              Si no se aprueban a tiempo, se archivan sin trámite.
-            </p>
-            <Link href="/estadisticas#reloj" className={styles.bandaCta}>
-              Revisar vencimientos →
-            </Link>
-          </Banda>
+              {/* Lo que está por vencer */}
+              <article className={`${styles.editorialItem} ${styles.editorialItemUrgent}`}>
+                <h3 className={styles.editorialItemTitle}>Lo que está por vencer</h3>
+                {loading ? (
+                  <div className={styles.bandaSkeleton} aria-hidden />
+                ) : urgentes.length === 0 ? (
+                  <p className={styles.bandaEmpty}>No hay proyectos urgentes en la ventana consultada.</p>
+                ) : (
+                  <>
+                    <p className={styles.bandaText}>
+                      <strong>{urgentes.length} {urgentes.length === 1 ? 'proyecto' : 'proyectos'}</strong>{' '}
+                      {urgentes.length === 1 ? 'está' : 'están'} por vencer su plazo cuatrienal.
+                      Si no se aprueban a tiempo, se archivan sin trámite.
+                    </p>
+                    <Link href="/estadisticas#reloj" className={styles.bandaCta}>
+                      Revisar vencimientos →
+                    </Link>
+                  </>
+                )}
+              </article>
 
-          {/* Quién trabajó más */}
-          <Banda
-            titulo="Quién trabajó más"
-            loading={loading}
-            empty={!topDiputado}
-            emptyText="Sin actividad legislativa registrada en el período."
-          >
-            {topDiputado && (
-              <p className={styles.bandaText}>
-                <strong>{formatName(topDiputado.nombre_completo)}</strong> presentó{' '}
-                <strong>{topDiputado.total_proyectos}</strong>{' '}
-                {topDiputado.total_proyectos === 1 ? 'proyecto' : 'proyectos'} en el período —
-                el diputado más activo.
-              </p>
-            )}
-            <Link
-              href={topDiputado ? `/diputados/${encodeURIComponent(topDiputado.nombre_completo)}` : '/diputados'}
-              className={styles.bandaCta}
-            >
-              Ver perfil →
-            </Link>
-          </Banda>
+              {/* Quién trabajó más */}
+              <article className={styles.editorialItem}>
+                <h3 className={styles.editorialItemTitle}>Quién trabajó más</h3>
+                {loading ? (
+                  <div className={styles.bandaSkeleton} aria-hidden />
+                ) : !topDiputado ? (
+                  <p className={styles.bandaEmpty}>Sin actividad legislativa registrada en el período.</p>
+                ) : (
+                  <>
+                    <p className={styles.bandaText}>
+                      <strong>{formatName(topDiputado.nombre_completo)}</strong> presentó{' '}
+                      <strong>{topDiputado.total_proyectos}</strong>{' '}
+                      {topDiputado.total_proyectos === 1 ? 'proyecto' : 'proyectos'} en el período —
+                      el diputado más activo.
+                    </p>
+                    <Link
+                      href={topDiputado ? `/diputados/${encodeURIComponent(topDiputado.nombre_completo)}` : '/diputados'}
+                      className={styles.bandaCta}
+                    >
+                      Ver perfil →
+                    </Link>
+                  </>
+                )}
+              </article>
+
+            </div>
+          </div>
+          <footer className={styles.editorialFooter}>
+            <div className={styles.editorialSignature}>
+              Análisis generado por La Asamblea al Día
+            </div>
+          </footer>
         </div>
 
       </div>

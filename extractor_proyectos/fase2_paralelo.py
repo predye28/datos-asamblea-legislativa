@@ -44,8 +44,8 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 10   # Total de páginas a procesar en este run
-N_WORKERS             = 4      # Número de browsers en paralelo
+TOTAL_PAGINAS_POR_RUN = 20   # Total de páginas a procesar en este run
+N_WORKERS             = 2     # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
 # CONSTANTES  (no es necesario cambiar estas)
@@ -1118,14 +1118,14 @@ async def main():
     guardar_checkpoint_db(proxima)
 
     # ── Exportar JSON y Excel ─────────────────────────────────────
-    ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_file  = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.json"
-    excel_file = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.xlsx"
+    # ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # json_file  = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.json"
+    # excel_file = f"fase2_paralelo_{ts}_p{pagina_inicio}-{pagina_fin}.xlsx"
 
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(todos_proyectos, f, ensure_ascii=False, indent=2)
-    log(f"JSON guardado: {json_file}")
-    exportar_excel(todos_proyectos, excel_file)
+    # with open(json_file, "w", encoding="utf-8") as f:
+    #     json.dump(todos_proyectos, f, ensure_ascii=False, indent=2)
+    # log(f"JSON guardado: {json_file}")
+    # exportar_excel(todos_proyectos, excel_file)
 
     duracion = datetime.now() - inicio
 

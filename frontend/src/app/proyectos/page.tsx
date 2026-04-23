@@ -12,7 +12,6 @@ import FilterPill from '@/components/ui/FilterPill'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { EstadoChip } from '@/components/ui/EstadoChip'
-import { ESTADO_FILTROS, clasificarEstado } from '@/lib/estados'
 
 const POR_PAGINA = 10
 
@@ -158,7 +157,6 @@ function ProyectosContent() {
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
   const [tipo, setTipo]           = useState('')
-  const [estado, setEstado]       = useState(() => searchParams.get('estado') || '')
   const [orden, setOrden]         = useState('reciente')
   const [soloLeyes, setSoloLeyes] = useState(() => searchParams.get('estado') === 'ley')
   const [pagina, setPagina]       = useState(1)
@@ -234,16 +232,14 @@ function ProyectosContent() {
   }, [pagina])
 
   const clearFilters = () => {
-    setQuery(''); setCategoria(''); setPeriodo(''); setTipo(''); setEstado('')
+    setQuery(''); setCategoria(''); setPeriodo(''); setTipo('')
     setOrden('reciente'); setSoloLeyes(false); setPagina(1)
   }
 
-  const hasFilters = query || categoria || periodo || tipo || estado || soloLeyes || orden !== 'reciente'
+  const hasFilters = query || categoria || periodo || tipo || soloLeyes || orden !== 'reciente'
 
-  // Filtro client-side por estado (el backend solo expone texto libre)
-  const proyectosFiltrados = estado
-    ? proyectos.filter(p => clasificarEstado(p.estado_actual, p.es_ley) === estado)
-    : proyectos
+  // El backend solo expone texto libre
+  const proyectosFiltrados = proyectos
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
@@ -312,13 +308,6 @@ function ProyectosContent() {
             />
 
             <FilterPill
-              value={estado}
-              onChange={setEstado}
-              placeholder="Todos los estados"
-              active={estado !== ''}
-              options={ESTADO_FILTROS}
-            />
-            <FilterPill
               value={orden}
               onChange={setOrden}
               placeholder="Más recientes"
@@ -372,7 +361,7 @@ function ProyectosContent() {
           ) : proyectosFiltrados.length === 0 ? (
             <EmptyState
               title="Sin resultados"
-              description={estado ? `Ningún proyecto coincide con el estado seleccionado en esta página. Probá quitar el filtro de estado o cambiar de página.` : "Intentá con otros filtros o una búsqueda diferente."}
+              description="Intentá con otros filtros o una búsqueda diferente."
               actions={
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   Limpiar filtros
