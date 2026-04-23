@@ -64,6 +64,7 @@ MAX_PAGINA_TOTAL      = 99999  # backstop de emergencia; la detección real es p
 
 SLEEP_BETWEEN_BATCHES = 60    # segundos entre lotes en modo daemon
 SLEEP_AT_CYCLE_END    = 3600  # segundos de espera al completar un ciclo completo
+FASE1_LOCK            = "/tmp/scraper-sync/fase1.lock"  # pausar mientras fase1 corre
 
 # Tiempos de espera (ms)
 ESPERA_CARGA_GRILLA = 5_000
@@ -1076,6 +1077,15 @@ async def main():
         if _stop:
             log("Parada solicitada. Saliendo limpiamente.", nivel="WARN")
             break
+
+        # Pausar si fase1 está corriendo (lock compartido vía volumen Docker)
+        if os.path.exists(FASE1_LOCK):
+            log("Fase1 en ejecucion. Pausando fase2 hasta que termine...", nivel="WARN")
+            while os.path.exists(FASE1_LOCK) and not _stop:
+                await _interruptible_sleep(60)
+            if _stop:
+                break
+            log("Fase1 terminada. Reanudando fase2.", nivel="OK")
 
         inicio = datetime.now()
 
