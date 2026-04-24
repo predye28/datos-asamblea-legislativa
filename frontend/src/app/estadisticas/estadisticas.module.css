@@ -1614,6 +1614,7 @@
 
 @media (max-width: 720px) {
   .relojGrid {
+    position: relative;
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: 85%;
@@ -1626,6 +1627,9 @@
     margin: 0 calc(-1 * var(--container-pad));
     padding-left: var(--container-pad);
     padding-right: var(--container-pad);
+    /* Fade edges so the user sees there's more content to the side. */
+    mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
   }
   .relojGrid::-webkit-scrollbar { display: none; }
   .relojCard { scroll-snap-align: start; }
@@ -1644,6 +1648,10 @@
 
   .kpiCard { padding: 20px 18px 18px; }
   .kpiBig { font-size: clamp(28px, 9vw, 38px); }
+}
+
+@media (max-width: 720px) and (prefers-reduced-motion: reduce) {
+  .relojGrid { animation: none; }
 }
 
 @media (max-width: 520px) {

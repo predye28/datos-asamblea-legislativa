@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -13,6 +14,25 @@ function avatarHue(seed: string) {
 }
 
 interface Props { params: Promise<{ apellidos: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { apellidos } = await params
+  const nombre = formatName(decodeURIComponent(apellidos))
+  try {
+    const perfil = await api.metricas.perfilDiputado(decodeURIComponent(apellidos))
+    const title = `${nombre} · Diputación`
+    const desc = `${perfil.total_proyectos} proyectos presentados · ${perfil.total_leyes} aprobados como ley · ${perfil.tasa_aprobacion}% de eficacia legislativa.`
+    return {
+      title,
+      description: desc,
+      openGraph: { title, description: desc, type: 'profile' },
+      twitter: { title, description: desc },
+      alternates: { canonical: `/diputados/${encodeURIComponent(decodeURIComponent(apellidos))}` },
+    }
+  } catch {
+    return { title: nombre || 'Perfil de diputación' }
+  }
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 

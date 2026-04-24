@@ -299,13 +299,27 @@
     margin-bottom: 28px;
   }
 
-  .decTopLeft {
-    width: 280px;
-    height: 280px;
+  /* Hide heavy decorative circles on mobile — they cause jank on low-end Android. */
+  .decTopLeft,
+  .decTopRight,
+  .decBotLeft {
+    display: none;
   }
 
-  .decTopRight {
-    width: 340px;
-    height: 340px;
+  .centerGlow {
+    width: 360px;
+    height: 360px;
+    /* Disable infinite pulse to reduce battery/CPU use on mobile */
+    animation: none;
+  }
+
+  .ambientGlow {
+    animation: none;
+  }
+
+  .badge::before,
+  .badge::after {
+    animation: none;
+    opacity: 0.25;
   }
 }

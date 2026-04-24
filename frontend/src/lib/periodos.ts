@@ -1,9 +1,5 @@
 export const getPeriodos = () => {
   const d = new Date()
-  let startYear = d.getFullYear()
-  while ((startYear % 4) !== 2) startYear--
-  if (d.getFullYear() === startYear && d.getMonth() < 4) startYear -= 4
-  const endYear = startYear + 4
   return [
     { label: 'Este mes',  desde: () => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01` },
     { label: '6 meses',   desde: () => { const d6=new Date(); d6.setMonth(d6.getMonth()-6); return d6.toISOString().slice(0,10) } },

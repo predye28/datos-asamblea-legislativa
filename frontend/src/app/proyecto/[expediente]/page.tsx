@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -7,6 +8,29 @@ import styles from './detalle.module.css'
 export const revalidate = 300
 
 interface Props { params: Promise<{ expediente: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { expediente } = await params
+  const num = parseInt(expediente, 10)
+  if (isNaN(num)) return { title: 'Proyecto no encontrado' }
+  try {
+    const p = await api.proyectos.detalle(num)
+    const titulo = formatTitle(p.titulo)
+    const title = `Exp. ${p.numero_expediente} — ${titulo.slice(0, 80)}`
+    const desc = p.es_ley
+      ? `Ley N° ${p.numero_ley} · ${titulo}`
+      : `${p.estado_actual || 'Proyecto de ley'} · ${titulo}`
+    return {
+      title,
+      description: desc.slice(0, 180),
+      openGraph: { title, description: desc.slice(0, 180), type: 'article' },
+      twitter: { title, description: desc.slice(0, 180) },
+      alternates: { canonical: `/proyecto/${num}` },
+    }
+  } catch {
+    return { title: `Expediente ${expediente}` }
+  }
+}
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 function IconArrowLeft() {

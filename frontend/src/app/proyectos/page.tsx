@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -163,7 +163,6 @@ function ProyectosContent() {
   const [query, setQuery]         = useState(() => searchParams.get('q') || '')
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
-  const [tipo, setTipo]           = useState('')
   const [orden, setOrden]         = useState('reciente')
   const [soloLeyes, setSoloLeyes] = useState(() => searchParams.get('estado') === 'ley')
   const [pagina, setPagina]       = useState(1)
@@ -173,88 +172,87 @@ function ProyectosContent() {
   const [loading, setLoading]       = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Always-current ref used by the pagina effect to avoid stale closures
-  const stateRef = useRef({ query, categoria, periodo, tipo, orden, soloLeyes })
+  // Load categories once.
   useEffect(() => {
-    stateRef.current = { query, categoria, periodo, tipo, orden, soloLeyes }
-  })
-
-  useEffect(() => {
-    api.categorias.listar().then(r => setCategorias(r.datos)).catch(() => {})
+    let cancelled = false
+    queueMicrotask(async () => {
+      try {
+        const r = await api.categorias.listar()
+        if (!cancelled) setCategorias(r.datos)
+      } catch { /* noop */ }
+    })
+    return () => { cancelled = true }
   }, [])
 
-  // Stable reference — all filter values passed as explicit args to avoid
-  // the useCallback re-creating on every filter change (which caused double-fetches).
-  const fetchProyectos = useCallback(async (
-    q: string, pg: number,
-    cat: string, per: string, ti: string, ord: string, sl: boolean
-  ) => {
-    setLoading(true)
-    try {
-      const periodObj = getPeriodos().find(p => p.label === per)
-      const desde = periodObj?.desde()
-      const allPeriods = getAllLegislativePeriods()
-      const legPeriod = allPeriods.find(p => p.label === per)
+  // Combined fetch — debounce only for query changes, immediate for filters/pagination.
+  const prevFiltersRef = useRef({ query, categoria, periodo, orden, soloLeyes, pagina })
+  useEffect(() => {
+    const prev = prevFiltersRef.current
+    const onlyQueryChanged =
+      prev.query !== query &&
+      prev.categoria === categoria &&
+      prev.periodo === periodo &&
+      prev.orden === orden &&
+      prev.soloLeyes === soloLeyes &&
+      prev.pagina === pagina
+    prevFiltersRef.current = { query, categoria, periodo, orden, soloLeyes, pagina }
 
-      let result
-      if (q.trim()) {
-        result = await api.proyectos.buscar(q.trim(), pg, legPeriod?.desde || desde, legPeriod?.hasta)
-      } else {
-        result = await api.proyectos.list({
-          pagina: pg,
-          por_pagina: POR_PAGINA,
-          tipo: ti || undefined,
-          desde: legPeriod?.desde || desde,
-          hasta: legPeriod?.hasta,
-          solo_leyes: sl || undefined,
-          orden: ord,
-          categoria: cat || undefined,
-        })
+    const delay = onlyQueryChanged ? 350 : 0
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      if (cancelled) return
+      setLoading(true)
+      try {
+        const periodObj = getPeriodos().find(p => p.label === periodo)
+        const desde = periodObj?.desde()
+        const allPeriods = getAllLegislativePeriods()
+        const legPeriod = allPeriods.find(p => p.label === periodo)
+
+        let result
+        if (query.trim()) {
+          result = await api.proyectos.buscar(
+            query.trim(), pagina,
+            legPeriod?.desde || desde, legPeriod?.hasta,
+          )
+        } else {
+          result = await api.proyectos.list({
+            pagina,
+            por_pagina: POR_PAGINA,
+            desde: legPeriod?.desde || desde,
+            hasta: legPeriod?.hasta,
+            solo_leyes: soloLeyes || undefined,
+            orden,
+            categoria: categoria || undefined,
+          })
+        }
+        if (cancelled) return
+        setProyectos(result.datos)
+        setPaginacion(result.paginacion)
+      } catch {
+        if (!cancelled) {
+          setProyectos([])
+          setPaginacion(null)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setProyectos(result.datos)
-      setPaginacion(result.paginacion)
-    } catch {
-      setProyectos([])
-      setPaginacion(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    }, delay)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [query, categoria, periodo, orden, soloLeyes, pagina])
 
-  // Debounce query changes
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    const { categoria: cat, periodo: per, tipo: ti, orden: ord, soloLeyes: sl } = stateRef.current
-    debounceRef.current = setTimeout(() => {
-      setPagina(1)
-      fetchProyectos(query, 1, cat, per, ti, ord, sl)
-    }, 350)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, fetchProyectos])
-
-  // Immediate on filter changes
-  useEffect(() => {
-    setPagina(1)
-    fetchProyectos(query, 1, categoria, periodo, tipo, orden, soloLeyes)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoria, periodo, tipo, orden, soloLeyes, fetchProyectos])
-
-  // Pagination — uses ref so filter values are always current
-  useEffect(() => {
-    const { query: q, categoria: cat, periodo: per, tipo: ti, orden: ord, soloLeyes: sl } = stateRef.current
-    fetchProyectos(q, pagina, cat, per, ti, ord, sl)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagina, fetchProyectos])
+  // Filter change handlers reset pagination to page 1 up-front.
+  const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
+  const onCategoriaChange = (v: string) => { setPagina(1); setCategoria(v) }
+  const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v) }
+  const onOrdenChange = (v: string) => { setPagina(1); setOrden(v) }
+  const onSoloLeyesToggle = () => { setPagina(1); setSoloLeyes(v => !v) }
 
   const clearFilters = () => {
-    setQuery(''); setCategoria(''); setPeriodo(''); setTipo('')
+    setQuery(''); setCategoria(''); setPeriodo('')
     setOrden('reciente'); setSoloLeyes(false); setPagina(1)
   }
 
-  const hasFilters = !!(query || categoria || periodo || tipo || soloLeyes || orden !== 'reciente')
+  const hasFilters = !!(query || categoria || periodo || soloLeyes || orden !== 'reciente')
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
@@ -280,15 +278,18 @@ function ProyectosContent() {
             <span className={styles.searchIcon}><IconSearch /></span>
             <input
               className={styles.searchInput}
-              type="text"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              aria-label="Buscar proyectos de ley"
               placeholder="Buscá por título, número de expediente o tema…"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => onQueryChange(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
             {query && (
-              <button className={styles.searchClear} onClick={() => setQuery('')} aria-label="Limpiar búsqueda">
+              <button className={styles.searchClear} onClick={() => onQueryChange('')} aria-label="Limpiar búsqueda">
                 <IconX />
               </button>
             )}
@@ -304,7 +305,7 @@ function ProyectosContent() {
           <div className={styles.selects}>
             <FilterPill
               value={categoria}
-              onChange={setCategoria}
+              onChange={onCategoriaChange}
               placeholder="Todos los temas"
               options={[
                 { value: '', label: 'Todos los temas' },
@@ -313,7 +314,7 @@ function ProyectosContent() {
             />
             <FilterPill
               value={periodo}
-              onChange={setPeriodo}
+              onChange={onPeriodoChange}
               placeholder="Cualquier período"
               options={[
                 { value: '', label: 'Cualquier período' },
@@ -324,7 +325,7 @@ function ProyectosContent() {
 
             <FilterPill
               value={orden}
-              onChange={setOrden}
+              onChange={onOrdenChange}
               placeholder="Más recientes"
               active={orden !== 'reciente'}
               options={[
@@ -341,7 +342,7 @@ function ProyectosContent() {
 
           <button
             className={`${styles.toggleLey} ${soloLeyes ? styles.toggleActive : ''}`}
-            onClick={() => setSoloLeyes(!soloLeyes)}
+            onClick={onSoloLeyesToggle}
             aria-pressed={soloLeyes}
           >
             <IconScale /> Solo leyes
@@ -371,37 +372,31 @@ function ProyectosContent() {
                 {query && (
                   <span className={styles.chip}>
                     &ldquo;{query}&rdquo;
-                    <button onClick={() => setQuery('')} aria-label="Quitar búsqueda"><IconX /></button>
+                    <button onClick={() => onQueryChange('')} aria-label="Quitar búsqueda"><IconX /></button>
                   </span>
                 )}
                 {categoria && (
                   <span className={styles.chip}>
                     {categorias.find(c => c.slug === categoria)?.nombre ?? categoria}
-                    <button onClick={() => setCategoria('')} aria-label="Quitar tema"><IconX /></button>
+                    <button onClick={() => onCategoriaChange('')} aria-label="Quitar tema"><IconX /></button>
                   </span>
                 )}
                 {periodo && (
                   <span className={styles.chip}>
                     {periodo}
-                    <button onClick={() => setPeriodo('')} aria-label="Quitar período"><IconX /></button>
-                  </span>
-                )}
-                {tipo && (
-                  <span className={styles.chip}>
-                    {abbreviateTipo(tipo)}
-                    <button onClick={() => setTipo('')} aria-label="Quitar tipo"><IconX /></button>
+                    <button onClick={() => onPeriodoChange('')} aria-label="Quitar período"><IconX /></button>
                   </span>
                 )}
                 {orden !== 'reciente' && (
                   <span className={styles.chip}>
                     {ORDEN_LABELS[orden] ?? orden}
-                    <button onClick={() => setOrden('reciente')} aria-label="Quitar orden"><IconX /></button>
+                    <button onClick={() => onOrdenChange('reciente')} aria-label="Quitar orden"><IconX /></button>
                   </span>
                 )}
                 {soloLeyes && (
                   <span className={styles.chip}>
                     Solo leyes
-                    <button onClick={() => setSoloLeyes(false)} aria-label="Quitar filtro de leyes"><IconX /></button>
+                    <button onClick={() => onSoloLeyesToggle()} aria-label="Quitar filtro de leyes"><IconX /></button>
                   </span>
                 )}
               </div>

@@ -1,56 +1,10 @@
-'use client'
-
-import { useEffect, useState, useRef, CSSProperties, ReactNode } from 'react'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse } from '@/lib/api'
+import FeatureBlocksGrid, { type DataItem } from './FeatureBlocksGrid'
 import styles from './FeatureBlocks.module.css'
-
-type DataItem = { value: string; label: ReactNode }
 
 const fmt = (n: number | undefined | null): string =>
   n == null ? '—' : n.toLocaleString('es-CR')
-
-// ── Card ───────────────────────────────────────────────────────────────
-
-interface CardProps {
-  index: number
-  num: string
-  accent: string
-  title: string
-  promise: string
-  data: DataItem[]
-  href: string
-  cta: string
-}
-
-function Card({ index, num, accent, title, promise, data, href, cta }: CardProps) {
-  return (
-    <div
-      className={styles.card}
-      style={{ '--card-accent': accent, '--i': index } as CSSProperties}
-    >
-      <h3 className={styles.cardTitle}>{title}</h3>
-      <p className={styles.promise}>{promise}</p>
-
-      <div className={styles.dataList}>
-        {data.map((d, i) => (
-          <div key={i} className={styles.dataRow}>
-            <span className={styles.dataValue}>{d.value}</span>
-            <span className={styles.dataLabel}>{d.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <Link href={href} className={styles.cta}>
-        <span>{cta}</span>
-        <span className={styles.arrow}>→</span>
-      </Link>
-    </div>
-  )
-}
-
-// ── Data builders ──────────────────────────────────────────────────────
 
 function buildProyectos(data: MetricasResponse | null): DataItem[] {
   if (!data) {
@@ -112,7 +66,7 @@ function buildDiputados(data: MetricasResponse | null): DataItem[] {
   const g = data.general
   const top = data.top_diputados[0]
   const eficaz = data.top_diputados_eficacia?.[0]
-  
+
   const getName = (d?: { apellidos?: string; nombre_completo?: string }) => {
     if (!d) return ''
     const raw = d.apellidos?.trim() || d.nombre_completo?.trim() || ''
@@ -126,80 +80,48 @@ function buildDiputados(data: MetricasResponse | null): DataItem[] {
   ]
 }
 
-// ── Main export ────────────────────────────────────────────────────────
+export default async function FeatureBlocks() {
+  let data: MetricasResponse | null = null
+  try {
+    data = await api.metricas.general()
+  } catch {
+    data = null
+  }
 
-export default function FeatureBlocks() {
-  const [data, setData] = useState<MetricasResponse | null>(null)
-  const [inView, setInView] = useState(false)
-  const gridRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    api.metricas.general().then(setData).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const el = gridRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            setInView(true)
-            obs.disconnect()
-            break
-          }
-        }
-      },
-      { threshold: 0.15 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const cards = [
+    {
+      accent: '#0EA5E9',
+      title: 'Proyectos',
+      promise: 'Buscá, filtrá y leé cualquier iniciativa legislativa presentada en la Asamblea.',
+      data: buildProyectos(data),
+      href: '/proyectos',
+      cta: 'Explorar proyectos',
+    },
+    {
+      accent: '#F59E0B',
+      title: 'Estadísticas',
+      promise: 'Gráficos y tendencias que muestran cómo trabaja la Asamblea en el tiempo.',
+      data: buildEstadisticas(data),
+      href: '/estadisticas',
+      cta: 'Ver estadísticas',
+    },
+    {
+      accent: '#6366F1',
+      title: 'Diputados',
+      promise: 'Perfil completo, proyectos presentados y eficacia legislativa de cada diputado.',
+      data: buildDiputados(data),
+      href: '/diputados',
+      cta: 'Ver diputados',
+    },
+  ]
 
   return (
     <section className={styles.section}>
       <div className={styles.container}>
-
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionEyebrow}>Explorá la Asamblea</h2>
         </div>
-
-        <div
-          ref={gridRef}
-          className={`${styles.grid} ${inView ? styles.inView : ''}`}
-        >
-          <Card
-            index={0}
-            num="01"
-            accent="#0EA5E9"
-            title="Proyectos"
-            promise="Buscá, filtrá y leé cualquier iniciativa legislativa presentada en la Asamblea."
-            data={buildProyectos(data)}
-            href="/proyectos"
-            cta="Explorar proyectos"
-          />
-          <Card
-            index={1}
-            num="02"
-            accent="#F59E0B"
-            title="Estadísticas"
-            promise="Gráficos y tendencias que muestran cómo trabaja la Asamblea en el tiempo."
-            data={buildEstadisticas(data)}
-            href="/estadisticas"
-            cta="Ver estadísticas"
-          />
-          <Card
-            index={2}
-            num="03"
-            accent="#6366F1"
-            title="Diputados"
-            promise="Perfil completo, proyectos presentados y eficacia legislativa de cada diputado."
-            data={buildDiputados(data)}
-            href="/diputados"
-            cta="Ver diputados"
-          />
-        </div>
-
+        <FeatureBlocksGrid cards={cards} />
       </div>
     </section>
   )

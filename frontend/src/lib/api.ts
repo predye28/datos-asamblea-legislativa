@@ -141,15 +141,62 @@ export interface ProximoVencer {
   proponentes_resumen: string | null
 }
 
+export class ApiError extends Error {
+  status: number
+  path: string
+  constructor(status: number, path: string, message?: string) {
+    super(message || `API error ${status}: ${path}`)
+    this.name = 'ApiError'
+    this.status = status
+    this.path = path
+  }
+}
+
+const DEFAULT_TIMEOUT_MS = 12_000
+const MAX_RETRIES = 2 // total attempts = MAX_RETRIES + 1
+
+function wait(ms: number) {
+  return new Promise(res => setTimeout(res, ms))
+}
+
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   const isDev = process.env.NODE_ENV === 'development'
-  const res = await fetch(`${BASE}${path}`, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', ...opts?.headers },
-    next: { revalidate: isDev ? 0 : 300 },
-  })
-  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
-  return res.json()
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), DEFAULT_TIMEOUT_MS)
+
+    try {
+      const res = await fetch(`${BASE}${path}`, {
+        ...opts,
+        signal: opts?.signal ?? ctrl.signal,
+        headers: { 'Content-Type': 'application/json', ...opts?.headers },
+        next: { revalidate: isDev ? 0 : 300 },
+      })
+      clearTimeout(timer)
+
+      // Don't retry client errors (4xx) — they won't change.
+      if (!res.ok) {
+        if (res.status >= 400 && res.status < 500) {
+          throw new ApiError(res.status, path)
+        }
+        throw new ApiError(res.status, path)
+      }
+      return await res.json() as T
+    } catch (err) {
+      clearTimeout(timer)
+      lastError = err
+
+      const isClientErr = err instanceof ApiError && err.status >= 400 && err.status < 500
+      if (isClientErr || attempt === MAX_RETRIES) break
+
+      // Exponential backoff: 400ms, 1s
+      await wait(400 * Math.pow(2.5, attempt))
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(`API fetch failed: ${path}`)
 }
 
 export const api = {

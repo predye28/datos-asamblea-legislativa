@@ -104,17 +104,18 @@
 
 .searchClear {
   position: absolute;
-  right: 16px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--ink-faint);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   transition: color 0.15s, background 0.15s;
+  touch-action: manipulation;
 }
 
 .searchClear:hover {
@@ -152,7 +153,7 @@
   }
   .selects {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
     width: 100%;
   }
@@ -160,10 +161,12 @@
   .toggleLey {
     width: 100%;
     justify-content: center;
+    min-height: 40px;
   }
   .clearBtn {
     width: 100%;
     justify-content: center;
+    min-height: 40px;
   }
 }
 
@@ -293,8 +296,8 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 6px 4px 11px;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
   background: rgba(6, 182, 212, 0.08);
   border: 1px solid rgba(6, 182, 212, 0.28);
   border-radius: 999px;
@@ -303,19 +306,21 @@
   font-weight: 500;
   color: var(--accent);
   white-space: nowrap;
+  min-height: 30px;
 }
 
 .chip button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   color: var(--accent);
-  opacity: 0.65;
+  opacity: 0.75;
   transition: opacity 0.15s, background 0.15s;
   flex-shrink: 0;
+  touch-action: manipulation;
 }
 
 .chip button:hover {

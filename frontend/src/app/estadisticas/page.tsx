@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse, ProximoVencer } from '@/lib/api'
@@ -95,16 +95,6 @@ function IconX() {
   )
 }
 
-function IconUp() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M7 14l5-5 5 5" /></svg>
-}
-function IconDown() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
-}
-function IconFlat() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14" /></svg>
-}
-
 // ── Skeleton ─────────────────────────────────────────────────────────────────
 
 function SkeletonPage() {
@@ -154,28 +144,35 @@ export default function EstadisticasPage() {
     return { desde: legPeriod?.desde || relPeriod?.desde(), hasta: legPeriod?.hasta }
   }, [rangoRapido, customDesde, customHasta, periodo])
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [metricas, globalMetricas, tl, prox] = await Promise.all([
-        api.metricas.general({ desde, hasta }),
-        api.metricas.general({}),
-        api.metricas.lineaTiempo(),
-        api.metricas.proximosVencer(90).catch(() => ({ datos: [] as ProximoVencer[] })),
-      ])
-      setData(metricas)
-      setGlobalData(globalMetricas)
-      setTimeline(tl.datos)
-      setProxVencer(prox.datos || [])
-    } catch {
-      setData(null)
-      setGlobalData(null)
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    let cancelled = false
+    // Defer to a microtask so setState calls happen after the effect body, not within it.
+    queueMicrotask(async () => {
+      if (cancelled) return
+      setLoading(true)
+      try {
+        const [metricas, globalMetricas, tl, prox] = await Promise.all([
+          api.metricas.general({ desde, hasta }),
+          api.metricas.general({}),
+          api.metricas.lineaTiempo(),
+          api.metricas.proximosVencer(90).catch(() => ({ datos: [] as ProximoVencer[] })),
+        ])
+        if (cancelled) return
+        setData(metricas)
+        setGlobalData(globalMetricas)
+        setTimeline(tl.datos)
+        setProxVencer(prox.datos || [])
+      } catch {
+        if (!cancelled) {
+          setData(null)
+          setGlobalData(null)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [desde, hasta])
-
-  useEffect(() => { fetchData() }, [fetchData])
 
   const periodOptions = [
     { value: '', label: 'Todos los períodos' },
@@ -185,16 +182,15 @@ export default function EstadisticasPage() {
   ]
 
   const g = globalData?.general
-  const categorias = data?.por_categoria ?? []
-  const globalCategorias = globalData?.por_categoria ?? []
-  const topDip = data?.top_diputados ?? []
+  const categorias = useMemo(() => data?.por_categoria ?? [], [data])
+  const topDip = useMemo(() => data?.top_diputados ?? [], [data])
   const topEfic = useMemo(
     () => (data?.top_diputados_eficacia ?? []).filter(d => d.total_proyectos >= 3),
     [data]
   )
   const tipos = data?.por_tipo ?? []
   const organos = data?.organos_activos ?? []
-  const porMes = globalData?.por_mes ?? []
+  const porMes = useMemo(() => globalData?.por_mes ?? [], [globalData])
 
   const maxDip = topDip[0]?.total_proyectos ?? 1
   const maxOrg = organos[0]?.total_tramites ?? 1
@@ -237,7 +233,6 @@ export default function EstadisticasPage() {
   const top2Pct = (topTipo?.porcentaje ?? 0) + (topTipo2?.porcentaje ?? 0)
 
   const topTema = categorias[0]
-  const globalTopTema = globalCategorias[0]
   const temaMasEficaz = useMemo(() => {
     const conMin = categorias.filter(c => c.total >= 3)
     if (conMin.length === 0) return null
@@ -277,10 +272,6 @@ export default function EstadisticasPage() {
       ? periodo
       : 'Histórico (todo)'
 
-  const onChangeRapido = (v: RangoRapido) => {
-    setRangoRapido(v)
-    setPeriodo('')
-  }
   const onChangePeriodo = (v: string) => {
     setPeriodo(v)
     setRangoRapido('')
@@ -740,7 +731,7 @@ export default function EstadisticasPage() {
                     return (
                       <Link
                         key={p.numero_expediente}
-                        href={`/proyectos/${p.numero_expediente}`}
+                        href={`/proyecto/${p.numero_expediente}`}
                         className={`${styles.relojCard} ${styles[`reloj_${urg}`]}`}
                       >
                         <div className={styles.relojHead}>
@@ -850,25 +841,3 @@ function HeroKpi({ label, sub, value, color, spark }: {
   )
 }
 
-function Kpi({ roman, eyebrow, value, label, help, color }: {
-  roman: string
-  eyebrow: string
-  value: React.ReactNode
-  label: string
-  help: string
-  color: string
-}) {
-  return (
-    <div className={styles.kpiCard}>
-      <div className={styles.kpiCardAccent} style={{ background: `linear-gradient(to right, ${color}, transparent)` }} />
-      <div className={styles.kpiHead}>
-        <span className={styles.kpiRoman} style={{ color }}>{roman}</span>
-        <span className={styles.kpiEyebrow} style={{ color }}>{eyebrow}</span>
-      </div>
-      <p className={styles.kpiBig} style={{ color }}>{value}</p>
-      <div className={styles.kpiRule} />
-      <p className={styles.kpiLabel}>{label}</p>
-      <p className={styles.kpiSub}>{help}</p>
-    </div>
-  )
-}

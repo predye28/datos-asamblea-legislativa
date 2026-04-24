@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import styles from './Navbar.module.css'
 
 const NAV_LINKS = [
@@ -13,22 +13,31 @@ const NAV_LINKS = [
   { href: '/acerca',       label: 'Acerca de' },
 ]
 
+// Empty subscribe — date only needs to render once on the client after hydration.
+const noopSubscribe = () => () => {}
+
+function useClientDate(): string {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => {
+      const d = new Date()
+      const day = d.getDate()
+      const month = d.toLocaleString('es-CR', { month: 'long' })
+      const year = d.getFullYear()
+      return `${day} ${month} ${year}`
+    },
+    () => '',
+  )
+}
+
 export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [currentDate, setCurrentDate] = useState('')
+  const currentDate = useClientDate()
 
-  useEffect(() => {
-    const d = new Date()
-    const day = d.getDate()
-    const month = d.toLocaleString('es-CR', { month: 'long' })
-    const year = d.getFullYear()
-    setCurrentDate(`${day} ${month} ${year}`)
-  }, [])
-
-  useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
+  // Close menu when the URL changes — subscribing to external state (history).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
   useEffect(() => {
     if (!menuOpen) return

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { DiputadoRanking } from '@/lib/api'
@@ -140,53 +140,62 @@ export default function DiputadosPage() {
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(10)
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Combined debounced fetch — periodo changes fire immediately, query changes wait 350ms.
+  const prevPeriodoRef = useRef(periodo)
+  useEffect(() => {
+    const periodoChanged = prevPeriodoRef.current !== periodo
+    prevPeriodoRef.current = periodo
+    const delay = periodoChanged ? 0 : 350
 
-  const fetchData = useCallback(async (q: string) => {
-    setLoading(true)
-    try {
-      const allPeriods = getAllLegislativePeriods()
-      const relPeriods = getPeriodos()
-      const legPeriod = allPeriods.find(p => p.label === periodo)
-      const relPeriod = relPeriods.find(p => p.label === periodo)
-      const desde = legPeriod?.desde || relPeriod?.desde()
-      const hasta = legPeriod?.hasta
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      if (cancelled) return
+      setLoading(true)
+      try {
+        const allPeriods = getAllLegislativePeriods()
+        const relPeriods = getPeriodos()
+        const legPeriod = allPeriods.find(p => p.label === periodo)
+        const relPeriod = relPeriods.find(p => p.label === periodo)
+        const desde = legPeriod?.desde || relPeriod?.desde()
+        const hasta = legPeriod?.hasta
 
-      const result = await api.metricas.diputados({ desde, hasta, q: q.trim() || undefined })
-      setData(result.datos)
-    } catch {
-      setData([])
-    } finally {
-      setLoading(false)
+        const result = await api.metricas.diputados({
+          desde, hasta, q: query.trim() || undefined,
+        })
+        if (cancelled) return
+        setData(result.datos)
+        setVisible(10) // reset pagination when new data arrives
+      } catch {
+        if (!cancelled) setData([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, delay)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
     }
-  }, [periodo])
+  }, [query, periodo])
 
-  // Debounce search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => fetchData(query), 350)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [query, fetchData])
+  const onOrdenChange = (v: string) => { setOrden(v); setVisible(10) }
 
-  // Immediate on filter change
-  useEffect(() => {
-    fetchData(query)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodo])
-
-  const clearFilters = () => { setQuery(''); setPeriodo('6 meses'); setOrden('proyectos'); setVisible(10) }
+  const clearFilters = () => {
+    setQuery(''); setPeriodo('6 meses'); setOrden('proyectos'); setVisible(10)
+  }
   const hasFilters = query || periodo !== '6 meses' || orden !== 'proyectos'
-
-  // Reset visible count when filters/data change
-  useEffect(() => { setVisible(10) }, [data, orden])
 
   const max = data.length > 0 ? Math.max(...data.map(d => d.total_proyectos)) : 1
 
-  const sorted = [...data].sort((a, b) => {
-    if (orden === 'az') return (a.apellidos || a.nombre_completo || '').localeCompare(b.apellidos || b.nombre_completo || '')
-    if (orden === 'za') return (b.apellidos || b.nombre_completo || '').localeCompare(a.apellidos || a.nombre_completo || '')
-    return b.total_proyectos - a.total_proyectos
-  })
+  const sorted = useMemo(() => {
+    const arr = [...data]
+    arr.sort((a, b) => {
+      if (orden === 'az') return (a.apellidos || a.nombre_completo || '').localeCompare(b.apellidos || b.nombre_completo || '')
+      if (orden === 'za') return (b.apellidos || b.nombre_completo || '').localeCompare(a.apellidos || a.nombre_completo || '')
+      return b.total_proyectos - a.total_proyectos
+    })
+    return arr
+  }, [data, orden])
 
   const periodOptions = [
     { value: '', label: 'Cualquier período' },
@@ -214,7 +223,10 @@ export default function DiputadosPage() {
             <span className={styles.searchIcon}><IconSearch /></span>
             <input
               className={styles.searchInput}
-              type="text"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              aria-label="Buscar diputado por nombre o apellido"
               placeholder="Buscá por nombre o apellido…"
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -244,7 +256,7 @@ export default function DiputadosPage() {
 
           <FilterPill
             value={orden}
-            onChange={setOrden}
+            onChange={onOrdenChange}
             placeholder="Más proyectos"
             active={orden !== 'proyectos'}
             options={[
@@ -294,7 +306,7 @@ export default function DiputadosPage() {
               {orden !== 'proyectos' && (
                 <span className={styles.chip}>
                   {orden === 'az' ? 'A → Z' : 'Z → A'}
-                  <button onClick={() => setOrden('proyectos')} aria-label="Quitar orden"><IconX /></button>
+                  <button onClick={() => onOrdenChange('proyectos')} aria-label="Quitar orden"><IconX /></button>
                 </span>
               )}
             </div>
