@@ -164,6 +164,7 @@ export const api = {
       solo_leyes?: boolean
       orden?: string
       categoria?: string
+      diputado?: string
     }) => {
       const qs = new URLSearchParams()
       if (params.pagina)     qs.set('pagina',     String(params.pagina))
@@ -175,6 +176,7 @@ export const api = {
       if (params.solo_leyes) qs.set('solo_leyes', 'true')
       if (params.orden)      qs.set('orden',      params.orden)
       if (params.categoria)  qs.set('categoria',  params.categoria)
+      if (params.diputado)   qs.set('diputado',   params.diputado)
       return apiFetch<ProyectosResponse>(`/proyectos?${qs}`)
     },
     buscar: (q: string, pagina = 1, desde?: string, hasta?: string) => {

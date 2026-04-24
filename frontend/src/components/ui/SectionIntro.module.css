@@ -13,9 +13,9 @@
 }
 
 .kicker {
-  font-family: var(--mono);
+  font-family: var(--label);
   font-size: var(--fs-xs);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent);
   font-weight: var(--fw-semibold);

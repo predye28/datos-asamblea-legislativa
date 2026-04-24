@@ -15,6 +15,14 @@ import { EstadoChip } from '@/components/ui/EstadoChip'
 
 const POR_PAGINA = 10
 
+const ORDEN_LABELS: Record<string, string> = {
+  reciente:   'Más recientes',
+  antiguo:    'Más antiguos',
+  expediente: 'N° expediente',
+  titulo_az:  'Título A → Z',
+  titulo_za:  'Título Z → A',
+}
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 
 function IconSearch() {
@@ -152,7 +160,6 @@ function Skeleton() {
 function ProyectosContent() {
   const searchParams = useSearchParams()
 
-  // Filter state — pre-populated from URL params (?q=...&categoria=...)
   const [query, setQuery]         = useState(() => searchParams.get('q') || '')
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
@@ -161,28 +168,35 @@ function ProyectosContent() {
   const [soloLeyes, setSoloLeyes] = useState(() => searchParams.get('estado') === 'ley')
   const [pagina, setPagina]       = useState(1)
 
-  // Data state
   const [proyectos, setProyectos]   = useState<ProyectoResumen[]>([])
   const [paginacion, setPaginacion] = useState<Paginacion | null>(null)
   const [loading, setLoading]       = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [tipos, setTipos]           = useState<{ tipo_expediente: string; total: number }[]>([])
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Load filters metadata
+  // Always-current ref used by the pagina effect to avoid stale closures
+  const stateRef = useRef({ query, categoria, periodo, tipo, orden, soloLeyes })
+  useEffect(() => {
+    stateRef.current = { query, categoria, periodo, tipo, orden, soloLeyes }
+  })
+
   useEffect(() => {
     api.categorias.listar().then(r => setCategorias(r.datos)).catch(() => {})
-    api.proyectos.tipos().then(setTipos).catch(() => {})
   }, [])
 
-  const fetchProyectos = useCallback(async (q: string, pg: number) => {
+  // Stable reference — all filter values passed as explicit args to avoid
+  // the useCallback re-creating on every filter change (which caused double-fetches).
+  const fetchProyectos = useCallback(async (
+    q: string, pg: number,
+    cat: string, per: string, ti: string, ord: string, sl: boolean
+  ) => {
     setLoading(true)
     try {
-      const periodObj = getPeriodos().find(p => p.label === periodo)
+      const periodObj = getPeriodos().find(p => p.label === per)
       const desde = periodObj?.desde()
       const allPeriods = getAllLegislativePeriods()
-      const legPeriod = allPeriods.find(p => p.label === periodo)
+      const legPeriod = allPeriods.find(p => p.label === per)
 
       let result
       if (q.trim()) {
@@ -191,12 +205,12 @@ function ProyectosContent() {
         result = await api.proyectos.list({
           pagina: pg,
           por_pagina: POR_PAGINA,
-          tipo: tipo || undefined,
+          tipo: ti || undefined,
           desde: legPeriod?.desde || desde,
           hasta: legPeriod?.hasta,
-          solo_leyes: soloLeyes || undefined,
-          orden,
-          categoria: categoria || undefined,
+          solo_leyes: sl || undefined,
+          orden: ord,
+          categoria: cat || undefined,
         })
       }
       setProyectos(result.datos)
@@ -207,39 +221,40 @@ function ProyectosContent() {
     } finally {
       setLoading(false)
     }
-  }, [categoria, periodo, tipo, orden, soloLeyes])
+  }, [])
 
   // Debounce query changes
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
+    const { categoria: cat, periodo: per, tipo: ti, orden: ord, soloLeyes: sl } = stateRef.current
     debounceRef.current = setTimeout(() => {
       setPagina(1)
-      fetchProyectos(query, 1)
+      fetchProyectos(query, 1, cat, per, ti, ord, sl)
     }, 350)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, fetchProyectos])
 
   // Immediate on filter changes
   useEffect(() => {
     setPagina(1)
-    fetchProyectos(query, 1)
+    fetchProyectos(query, 1, categoria, periodo, tipo, orden, soloLeyes)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoria, periodo, tipo, orden, soloLeyes])
+  }, [categoria, periodo, tipo, orden, soloLeyes, fetchProyectos])
 
+  // Pagination — uses ref so filter values are always current
   useEffect(() => {
-    fetchProyectos(query, pagina)
+    const { query: q, categoria: cat, periodo: per, tipo: ti, orden: ord, soloLeyes: sl } = stateRef.current
+    fetchProyectos(q, pagina, cat, per, ti, ord, sl)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagina])
+  }, [pagina, fetchProyectos])
 
   const clearFilters = () => {
     setQuery(''); setCategoria(''); setPeriodo(''); setTipo('')
     setOrden('reciente'); setSoloLeyes(false); setPagina(1)
   }
 
-  const hasFilters = query || categoria || periodo || tipo || soloLeyes || orden !== 'reciente'
-
-  // El backend solo expone texto libre
-  const proyectosFiltrados = proyectos
+  const hasFilters = !!(query || categoria || periodo || tipo || soloLeyes || orden !== 'reciente')
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
@@ -313,9 +328,11 @@ function ProyectosContent() {
               placeholder="Más recientes"
               active={orden !== 'reciente'}
               options={[
-                { value: 'reciente', label: 'Más recientes' },
-                { value: 'antiguo',  label: 'Más antiguos' },
+                { value: 'reciente',   label: 'Más recientes' },
+                { value: 'antiguo',    label: 'Más antiguos' },
                 { value: 'expediente', label: 'N° expediente' },
+                { value: 'titulo_az',  label: 'Título A → Z' },
+                { value: 'titulo_za',  label: 'Título Z → A' },
               ]}
             />
           </div>
@@ -346,11 +363,49 @@ function ProyectosContent() {
           <div className={styles.resultsRow}>
             <p className={styles.resultsCount}>
               {loading ? 'Buscando…' : totalStr}
-              {!loading && categoria && categorias.find(c => c.slug === categoria) && (
-                <span className={styles.activeFilter}> — {categorias.find(c => c.slug === categoria)?.nombre}</span>
-              )}
-              {!loading && soloLeyes && <span className={styles.activeFilter}> — solo leyes</span>}
             </p>
+
+            {/* Active filter chips — one per active filter */}
+            {hasFilters && (
+              <div className={styles.activeChips}>
+                {query && (
+                  <span className={styles.chip}>
+                    &ldquo;{query}&rdquo;
+                    <button onClick={() => setQuery('')} aria-label="Quitar búsqueda"><IconX /></button>
+                  </span>
+                )}
+                {categoria && (
+                  <span className={styles.chip}>
+                    {categorias.find(c => c.slug === categoria)?.nombre ?? categoria}
+                    <button onClick={() => setCategoria('')} aria-label="Quitar tema"><IconX /></button>
+                  </span>
+                )}
+                {periodo && (
+                  <span className={styles.chip}>
+                    {periodo}
+                    <button onClick={() => setPeriodo('')} aria-label="Quitar período"><IconX /></button>
+                  </span>
+                )}
+                {tipo && (
+                  <span className={styles.chip}>
+                    {abbreviateTipo(tipo)}
+                    <button onClick={() => setTipo('')} aria-label="Quitar tipo"><IconX /></button>
+                  </span>
+                )}
+                {orden !== 'reciente' && (
+                  <span className={styles.chip}>
+                    {ORDEN_LABELS[orden] ?? orden}
+                    <button onClick={() => setOrden('reciente')} aria-label="Quitar orden"><IconX /></button>
+                  </span>
+                )}
+                {soloLeyes && (
+                  <span className={styles.chip}>
+                    Solo leyes
+                    <button onClick={() => setSoloLeyes(false)} aria-label="Quitar filtro de leyes"><IconX /></button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Cards */}
@@ -358,7 +413,7 @@ function ProyectosContent() {
             <div className={styles.list}>
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)}
             </div>
-          ) : proyectosFiltrados.length === 0 ? (
+          ) : proyectos.length === 0 ? (
             <EmptyState
               title="Sin resultados"
               description="Intentá con otros filtros o una búsqueda diferente."
@@ -370,7 +425,7 @@ function ProyectosContent() {
             />
           ) : (
             <div className={styles.list}>
-              {proyectosFiltrados.map(p => <ProyectoCard key={p.id} p={p} />)}
+              {proyectos.map(p => <ProyectoCard key={p.id} p={p} />)}
             </div>
           )}
 

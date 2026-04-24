@@ -19,6 +19,21 @@ import { Sparkline as SparkSvg } from '@/components/charts/Sparkline'
 function fmt(n: number) { return n.toLocaleString('es-CR') }
 function fmtPct(n: number) { return `${n.toFixed(1)}%` }
 function toISO(d: Date) { return d.toISOString().slice(0, 10) }
+
+function formatTiempo(dias: number): string {
+  if (dias < 30) {
+    const d = Math.round(dias)
+    return d === 1 ? '1 día' : `${d} días`
+  }
+  if (dias < 365) {
+    const m = Math.round(dias / 30.44)
+    return m === 1 ? '1 mes' : `${m} meses`
+  }
+  const años = dias / 365
+  if (años >= 2) return `${Math.round(años)} años`
+  const f = años.toFixed(1)
+  return f === '1.0' ? '1 año' : `${f} años`
+}
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
 const PALETTE = [
@@ -320,13 +335,9 @@ export default function EstadisticasPage() {
                 color="#F59E0B"
               />
               <HeroKpi
-                label="Años para aprobar"
-                sub="tiempo medio hasta la ley"
-                value={
-                  g.promedio_dias_aprobacion
-                    ? <CountUp end={g.promedio_dias_aprobacion / 365} decimals={1} />
-                    : '—'
-                }
+                label="Tiempo para aprobar"
+                sub="promedio hasta convertirse en ley"
+                value={g.promedio_dias_aprobacion ? formatTiempo(g.promedio_dias_aprobacion) : '—'}
                 color="#818CF8"
               />
             </div>

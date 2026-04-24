@@ -140,7 +140,7 @@
 
 .dropdownSep {
   padding: 8px 14px 4px;
-  font-family: var(--mono);
+  font-family: var(--label);
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.1em;

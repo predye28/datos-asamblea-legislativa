@@ -180,13 +180,13 @@ export default function DiputadosPage() {
   // Reset visible count when filters/data change
   useEffect(() => { setVisible(10) }, [data, orden])
 
+  const max = data.length > 0 ? Math.max(...data.map(d => d.total_proyectos)) : 1
+
   const sorted = [...data].sort((a, b) => {
-    if (orden === 'az') return a.apellidos.localeCompare(b.apellidos)
-    if (orden === 'za') return b.apellidos.localeCompare(a.apellidos)
+    if (orden === 'az') return (a.apellidos || a.nombre_completo || '').localeCompare(b.apellidos || b.nombre_completo || '')
+    if (orden === 'za') return (b.apellidos || b.nombre_completo || '').localeCompare(a.apellidos || a.nombre_completo || '')
     return b.total_proyectos - a.total_proyectos
   })
-
-  const max = sorted[0]?.total_proyectos ?? 1
 
   const periodOptions = [
     { value: '', label: 'Cualquier período' },
@@ -274,10 +274,30 @@ export default function DiputadosPage() {
               {loading
                 ? 'Cargando…'
                 : `${sorted.length.toLocaleString('es-CR')} diputado${sorted.length !== 1 ? 's' : ''}`}
-              {!loading && periodo && (
-                <span className={styles.activeFilter}> — {periodo}</span>
-              )}
             </p>
+
+            <div className={styles.activeChips}>
+              {/* Período: siempre visible, muestra el período activo */}
+              <span className={styles.chip}>
+                {periodo || 'Cualquier período'}
+                {periodo !== '6 meses' && (
+                  <button onClick={() => setPeriodo('6 meses')} aria-label="Volver a 6 meses"><IconX /></button>
+                )}
+              </span>
+
+              {query && (
+                <span className={styles.chip}>
+                  &ldquo;{query}&rdquo;
+                  <button onClick={() => setQuery('')} aria-label="Quitar búsqueda"><IconX /></button>
+                </span>
+              )}
+              {orden !== 'proyectos' && (
+                <span className={styles.chip}>
+                  {orden === 'az' ? 'A → Z' : 'Z → A'}
+                  <button onClick={() => setOrden('proyectos')} aria-label="Quitar orden"><IconX /></button>
+                </span>
+              )}
+            </div>
           </div>
 
           {loading ? (

@@ -44,8 +44,8 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 10   # Total de páginas a procesar en este run
-N_WORKERS             = 3    # Número de browsers en paralelo
+TOTAL_PAGINAS_POR_RUN = 30   # Total de páginas a procesar en este run
+N_WORKERS             = 3   # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
 # CONSTANTES  (no es necesario cambiar estas)
@@ -473,7 +473,7 @@ async def extraer_tab_general(frame, page: Page) -> dict:
     return {k: limpiar(v) for k, v in datos.items()}
 
 
-async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int, row_index: int, worker_id: int = -1):
+async def asegurar_50_registros(frame, page: Page, tab_name: str, row_index: int, worker_id: int = -1):
     try:
         selector_dropdown = (
             '.marco-subcontenedor.alto-completo '
@@ -488,7 +488,6 @@ async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int
         if "50" in texto_actual:
             return
 
-        log(f"  > Ampliando '{tab_name}' ({rowscount} registros)...", worker_id)
         await drp.click()
         await page.wait_for_timeout(1000)
 
@@ -503,7 +502,6 @@ async def asegurar_50_registros(frame, page: Page, tab_name: str, rowscount: int
         if found:
             await page.wait_for_timeout(1500)
 
-        log(f"  > Restaurando foco en expediente (fila {row_index})...", worker_id)
         await clicar_fila(frame, page, row_index)
         await clic_tab(frame, page, tab_name)
         await page.wait_for_timeout(600)
@@ -517,7 +515,7 @@ async def extraer_grilla_paginada(frame, page, tab_name, row_index, extractor_js
     rc = await obtener_rowscount(frame)
 
     if rc > 10:
-        await asegurar_50_registros(frame, page, tab_name, rc, row_index, worker_id)
+        await asegurar_50_registros(frame, page, tab_name, row_index, worker_id)
         rc = await obtener_rowscount(frame)
 
     intentos = 0
@@ -529,7 +527,6 @@ async def extraer_grilla_paginada(frame, page, tab_name, row_index, extractor_js
             break
 
         total_datos.extend(datos_pagina)
-        log(f"    > {tab_name}: pág {intentos + 1} extraída ({len(total_datos)}/{rc if rc < 1000000 else '?'})", worker_id)
 
         if (0 < rc < 1000000 and len(total_datos) >= rc) or len(datos_pagina) < 50:
             break
@@ -544,7 +541,6 @@ async def extraer_grilla_paginada(frame, page, tab_name, row_index, extractor_js
         if not btn_sig:
             break
 
-        log(f"    > Cargando siguiente página...", worker_id)
         await btn_sig.click()
         await page.wait_for_timeout(2500)
         intentos += 1

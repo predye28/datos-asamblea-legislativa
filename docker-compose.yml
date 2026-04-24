@@ -41,6 +41,9 @@ services:
       - CI=true          # Chromium headless obligatorio en Docker
     volumes:
       - scraper-sync:/tmp/scraper-sync
+    extra_hosts:
+      - "www.asamblea.go.cr:196.40.23.181"
+      - "asamblea.go.cr:196.40.23.181"
     restart: unless-stopped
     healthcheck:
       # Falla si el heartbeat tiene más de 10 minutos sin actualizarse
@@ -50,16 +53,23 @@ services:
       retries: 3
       start_period: 2m
 
-  # ── Scraper Fase 1 (cron diario) ──────────────────────────────
+  # ── Scraper Fase 1 (cron diario, 7:00 UTC = 1am CR) ──────────
   scraper-fase1:
     build: ./extractor_proyectos
-    # Corre crond; fase1 a las 7:00 UTC (1am CR). Crea lock mientras corre para pausar fase2.
-    command: sh -c "echo '0 7 * * * touch /tmp/scraper-sync/fase1.lock && cd /app && python fase1_scraper.py >> /var/log/fase1.log 2>&1; rm -f /tmp/scraper-sync/fase1.lock' | crontab - && crond -f -l 2"
+    # Al arrancar: limpia lock zombie. Luego inicia crond con cron diario a las 7:00 UTC.
+    # El cron crea el lock antes de correr y lo borra al terminar (pausa fase2 mientras corre).
+    command: >-
+      sh -c "rm -f /tmp/scraper-sync/fase1.lock &&
+      echo '0 7 * * * touch /tmp/scraper-sync/fase1.lock && cd /app && python fase1_scraper.py >> /var/log/fase1.log 2>&1; rm -f /tmp/scraper-sync/fase1.lock' | crontab - &&
+      cron -f"
     env_file: .env
     environment:
       - CI=true
     volumes:
       - scraper-sync:/tmp/scraper-sync
+    extra_hosts:
+      - "www.asamblea.go.cr:196.40.23.181"
+      - "asamblea.go.cr:196.40.23.181"
     restart: unless-stopped
 
 volumes:

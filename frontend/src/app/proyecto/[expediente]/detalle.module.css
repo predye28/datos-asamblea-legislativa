@@ -65,7 +65,7 @@
 }
 
 .expNum {
-  font-family: var(--mono);
+  font-family: var(--label);
   font-size: 12px;
   font-weight: 700;
   color: var(--ink-faint);
@@ -201,7 +201,7 @@
 }
 
 .metaSub {
-  font-family: var(--mono);
+  font-family: var(--label);
   font-size: 11px;
   color: var(--gold);
 }

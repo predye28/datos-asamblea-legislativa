@@ -110,8 +110,9 @@ def listar_proyectos(
     desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
     hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
     solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
-    orden:      str           = Query("reciente", description="reciente | antiguo | expediente"),
+    orden:      str           = Query("reciente", description="reciente | antiguo | expediente | titulo_az | titulo_za"),
     categoria:  Optional[str] = Query(None, description="Filtrar por slug de categoría"),
+    diputado:   Optional[str] = Query(None, description="Filtrar por nombre o apellidos del proponente"),
 ):
     """
     Devuelve proyectos paginados.
@@ -160,6 +161,21 @@ def listar_proyectos(
         )
         params.append(categoria)
 
+    if diputado:
+        condiciones.append(
+            """
+            EXISTS (
+                SELECT 1 FROM proponentes pr
+                WHERE pr.proyecto_id = p.id
+                  AND (pr.apellidos ILIKE %s OR pr.nombre ILIKE %s
+                       OR CONCAT(pr.nombre, ' ', pr.apellidos) ILIKE %s
+                       OR CONCAT(pr.apellidos, ' ', pr.nombre) ILIKE %s)
+            )
+            """
+        )
+        termino_dip = f"%{diputado}%"
+        params.extend([termino_dip, termino_dip, termino_dip, termino_dip])
+
     where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
 
     # Orden
@@ -167,6 +183,8 @@ def listar_proyectos(
         "reciente":   "p.fecha_inicio DESC NULLS LAST",
         "antiguo":    "p.fecha_inicio ASC NULLS LAST",
         "expediente": "p.numero_expediente DESC",
+        "titulo_az":  "p.titulo ASC NULLS LAST",
+        "titulo_za":  "p.titulo DESC NULLS LAST",
     }.get(orden, "p.fecha_inicio DESC NULLS LAST")
 
     # Total de registros (para paginación)

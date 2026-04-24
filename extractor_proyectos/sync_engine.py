@@ -277,7 +277,7 @@ def sync_proyectos(proyectos: list) -> dict:
     stats = {"actualizados": 0, "errores": 0}
     total = len(proyectos)
 
-    print(f"Sincronizando {total} proyecto(s)...\n")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] Iniciando — {total} proyecto(s)")
 
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -401,25 +401,23 @@ def sync_proyectos(proyectos: list) -> dict:
                     )
 
                     print(
-                        f"  [{idx:>4}/{total}] Exp. {num_exp} "
-                        f"| +{prop_nuevos} prop. | +{tram_nuevos} trám. | {cats_asignadas} cat."
+                        f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] [{idx}/{total}] "
+                        f"Exp. {num_exp} | +{prop_nuevos} prop  +{tram_nuevos} trám  {cats_asignadas} cat"
                     )
                     stats["actualizados"] += 1
 
                 except Exception as exc:
                     conn.rollback()
-                    print(f"  [{idx:>4}/{total}] Error en exp. {num_exp}: {exc}")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] [{idx}/{total}] Exp. {num_exp} ERROR: {exc}")
                     stats["errores"] += 1
                     continue
 
         conn.commit()
 
-    print("-" * 50)
-    print("Sincronización completa:")
-    print(f"  Procesados: {stats.get('actualizados', 0)}")
-    print(f"  Errores:    {stats.get('errores', 0)}")
-    print(f"  Total:      {total}")
-    print("-" * 50)
+    print(
+        f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] Completo — "
+        f"{stats.get('actualizados', 0)} ok  {stats.get('errores', 0)} errores"
+    )
     return stats
 
 
