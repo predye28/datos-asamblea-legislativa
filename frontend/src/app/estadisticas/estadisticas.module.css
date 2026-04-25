@@ -316,34 +316,30 @@
 .filtroHint {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 14px;
-  padding: 6px 14px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--paper-card);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-muted);
+  font-family: var(--label);
+  font-size: 11.5px;
+  color: var(--ink-faint);
 }
 .filtroHintDot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
+  box-shadow: 0 0 5px var(--accent);
+  flex-shrink: 0;
 }
 .filtroHintLabel {
   color: var(--ink-faint);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 10px;
 }
 .filtroHint strong {
-  color: var(--ink);
-  font-weight: 700;
+  color: var(--ink-muted);
+  font-weight: 600;
   font-family: var(--body);
-  font-size: 12.5px;
+  font-size: 11.5px;
   letter-spacing: 0;
-  text-transform: none;
 }
 
 /* ── Temas (ranking lista simple) ─────────────────────────── */
@@ -362,12 +358,21 @@
   border-bottom: 1px dashed var(--rule);
   text-decoration: none;
   color: inherit;
-  transition: background .15s ease, transform .15s ease;
+  cursor: pointer;
+  transition: background .2s ease, transform .22s var(--ease-out), box-shadow .2s ease;
 }
 .temaRow:last-child { border-bottom: none; }
 .temaRow:hover {
-  background: rgba(6,182,212,0.04);
-  transform: translateX(3px);
+  background: rgba(6,182,212,0.09);
+  transform: translateX(6px);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.temaRow:hover .temaName {
+  color: var(--accent);
+  transition: color .2s ease;
+}
+.temaRow:hover .temaFill {
+  filter: brightness(1.25);
 }
 .temaRank {
   font-family: var(--serif);

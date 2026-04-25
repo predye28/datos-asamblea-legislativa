@@ -32,15 +32,13 @@ services:
       - "3000"
     restart: unless-stopped
 
-  # ── Scraper Fase 2 (bucle infinito) ───────────────────────────
-  scraper-fase2:
+  # ── Scraper (Fase 2 continua + Fase 1 diaria 1am-2am CR) ─────
+  scraper:
     build: ./extractor_proyectos
     command: python fase2_paralelo.py --daemon --workers 2
     env_file: .env
     environment:
       - CI=true          # Chromium headless obligatorio en Docker
-    volumes:
-      - scraper-sync:/tmp/scraper-sync
     extra_hosts:
       - "www.asamblea.go.cr:196.40.23.181"
       - "asamblea.go.cr:196.40.23.181"
@@ -52,25 +50,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 2m
-
-  # ── Scraper Fase 1 (cron diario, 7:00 UTC = 1am CR) ──────────
-  scraper-fase1:
-    build: ./extractor_proyectos
-    # Al arrancar: limpia lock zombie. Luego inicia crond con cron diario a las 7:00 UTC.
-    # El cron crea el lock antes de correr y lo borra al terminar (pausa fase2 mientras corre).
-    command: >-
-      sh -c "rm -f /tmp/scraper-sync/fase1.lock &&
-      echo '0 7 * * * touch /tmp/scraper-sync/fase1.lock && cd /app && python fase1_scraper.py >> /var/log/fase1.log 2>&1; rm -f /tmp/scraper-sync/fase1.lock' | crontab - &&
-      cron -f"
-    env_file: .env
-    environment:
-      - CI=true
-    volumes:
-      - scraper-sync:/tmp/scraper-sync
-    extra_hosts:
-      - "www.asamblea.go.cr:196.40.23.181"
-      - "asamblea.go.cr:196.40.23.181"
-    restart: unless-stopped
-
-volumes:
-  scraper-sync:

@@ -1,5 +1,6 @@
 import { api } from '@/lib/api'
 import type { MetricasResponse } from '@/lib/api'
+import { formatDiputadoName } from '@/lib/utils'
 import FeatureBlocksGrid, { type DataItem } from './FeatureBlocksGrid'
 import styles from './FeatureBlocks.module.css'
 
@@ -25,37 +26,36 @@ function buildProyectos(data: MetricasResponse | null): DataItem[] {
 function buildEstadisticas(data: MetricasResponse | null): DataItem[] {
   if (!data) {
     return [
-      { value: '—', label: 'de proyectos se vuelven ley' },
-      { value: '—', label: 'total de leyes aprobadas' },
-      { value: '—', label: 'para aprobar una ley (promedio)' },
+      { value: '—', label: 'de los proyectos nunca llegan a convertirse en ley' },
+      { value: '—', label: 'trámites recorre en promedio un proyecto antes de aprobarse' },
+      { value: '—', label: 'el tema más exitoso de la agenda' },
     ]
   }
   const g = data.general
-  const dias = g.promedio_dias_aprobacion
-  let tiempo = ''
-  if (dias < 30) {
-    const d = Math.round(dias)
-    tiempo = d === 1 ? '1 día' : `${d} días`
-  } else if (dias < 365) {
-    const m = Math.round(dias / 30.44)
-    tiempo = m === 1 ? '1 mes' : `${m} meses`
-  } else {
-    const años = dias / 365
-    if (años >= 2) {
-      tiempo = `${Math.round(años)} años`
-    } else {
-      const formatted = años.toFixed(1)
-      tiempo = formatted === '1.0' ? '1 año' : `${formatted} años`
-    }
-  }
+  const nuncaLey = Math.round(100 - g.tasa_aprobacion_pct)
+  const tramites = Math.round(g.promedio_tramites)
+  const topCat = data.por_categoria
+    ?.filter(c => c.leyes_aprobadas > 0)
+    .sort((a, b) => b.tasa_aprobacion - a.tasa_aprobacion)[0]
   return [
-    { value: `${Math.round(g.tasa_aprobacion_pct)}%`, label: 'de proyectos se vuelven ley' },
-    { value: fmt(g.total_leyes_aprobadas), label: 'total de leyes aprobadas' },
-    { value: tiempo, label: 'para aprobar una ley (promedio)' },
+    {
+      value: `${nuncaLey}%`,
+      label: 'de los proyectos nunca llegan a convertirse en ley',
+    },
+    {
+      value: String(tramites),
+      label: 'trámites recorre en promedio un proyecto antes de aprobarse',
+    },
+    {
+      value: topCat ? `${Math.round(topCat.tasa_aprobacion)}%` : '—',
+      label: topCat
+        ? <span>de efectividad en <strong>{topCat.categoria}</strong> — el tema más exitoso de la agenda</span>
+        : 'el tema más exitoso de la agenda',
+    },
   ]
 }
 
-function buildDiputados(data: MetricasResponse | null): DataItem[] {
+function buildDiputados(data: MetricasResponse | null, data10: MetricasResponse | null): DataItem[] {
   if (!data) {
     return [
       { value: '—', label: 'diputados registrados históricamente' },
@@ -65,27 +65,29 @@ function buildDiputados(data: MetricasResponse | null): DataItem[] {
   }
   const g = data.general
   const top = data.top_diputados[0]
-  const eficaz = data.top_diputados_eficacia?.[0]
-
-  const getName = (d?: { apellidos?: string; nombre_completo?: string }) => {
-    if (!d) return ''
-    const raw = d.apellidos?.trim() || d.nombre_completo?.trim() || ''
-    return raw.toLowerCase().replace(/(?:^|\s)\S/g, (a) => a.toUpperCase())
-  }
+  const eficaz = data10?.top_diputados_eficacia?.[0]
 
   return [
     { value: String(g.total_diputados_activos), label: 'diputados registrados históricamente' },
-    { value: top ? `${top.total_proyectos}` : '—', label: top ? <span>proyectos liderados por el más activo (<strong>{getName(top)}</strong>)</span> : 'diputado más activo' },
-    { value: eficaz ? `${Math.round(eficaz.tasa_aprobacion)}%` : '—', label: eficaz ? <span>de efectividad del diputado más eficaz (<strong>{getName(eficaz)}</strong>)</span> : 'mejor eficacia' },
+    { value: top ? `${top.total_proyectos}` : '—', label: top ? <span>proyectos liderados por el más activo (<strong>{formatDiputadoName(top.nombre_completo)}</strong>)</span> : 'diputado más activo' },
+    { value: eficaz ? `${Math.round(eficaz.tasa_aprobacion)}%` : '—', label: eficaz ? <span>de efectividad en 10 años del diputado más eficaz (<strong>{formatDiputadoName(eficaz.nombre_completo)}</strong>)</span> : 'mejor eficacia' },
   ]
 }
 
 export default async function FeatureBlocks() {
   let data: MetricasResponse | null = null
+  let data10: MetricasResponse | null = null
   try {
-    data = await api.metricas.general()
+    const hace10 = new Date()
+    hace10.setFullYear(hace10.getFullYear() - 10)
+    const desde10 = hace10.toISOString().slice(0, 10)
+    ;[data, data10] = await Promise.all([
+      api.metricas.general(),
+      api.metricas.general({ desde: desde10 }),
+    ])
   } catch {
     data = null
+    data10 = null
   }
 
   const cards = [
@@ -98,20 +100,20 @@ export default async function FeatureBlocks() {
       cta: 'Explorar proyectos',
     },
     {
+      accent: '#6366F1',
+      title: 'Diputados',
+      promise: 'Perfil completo, proyectos presentados y eficacia legislativa de cada diputado.',
+      data: buildDiputados(data, data10),
+      href: '/diputados',
+      cta: 'Ver diputados',
+    },
+    {
       accent: '#F59E0B',
       title: 'Estadísticas',
       promise: 'Gráficos y tendencias que muestran cómo trabaja la Asamblea en el tiempo.',
       data: buildEstadisticas(data),
       href: '/estadisticas',
       cta: 'Ver estadísticas',
-    },
-    {
-      accent: '#6366F1',
-      title: 'Diputados',
-      promise: 'Perfil completo, proyectos presentados y eficacia legislativa de cada diputado.',
-      data: buildDiputados(data),
-      href: '/diputados',
-      cta: 'Ver diputados',
     },
   ]
 

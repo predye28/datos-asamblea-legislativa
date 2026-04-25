@@ -86,9 +86,17 @@ export default function AboutSection() {
 
       <div className={styles.principlesSection}>
         <div className={styles.container}>
+          <header className={styles.principlesHeader}>
+            <span className={styles.principlesEyebrow}>Nuestros compromisos</span>
+            <h2 className={styles.principlesTitle}>Datos en los que podés confiar</h2>
+          </header>
           <div className={styles.principlesGrid}>
-            {PRINCIPLES.map((pr) => (
-              <div key={pr.label} className={styles.principle}>
+            {PRINCIPLES.map((pr, i) => (
+              <div
+                key={pr.label}
+                className={styles.principle}
+                style={{ animationDelay: `${i * 110}ms` }}
+              >
                 <div className={styles.principleTop}>
                   <span className={styles.quoteChar}>&ldquo;</span>
                   <span className={styles.principleTitle}>{pr.label}</span>

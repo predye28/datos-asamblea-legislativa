@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { api } from '@/lib/api'
-import { formatTitle, formatName, formatDate, cleanText } from '@/lib/utils'
+import { formatTitle, formatDiputadoName, formatDate, cleanText } from '@/lib/utils'
 import styles from './detalle.module.css'
 
 export const revalidate = 300
@@ -247,7 +247,7 @@ export default async function DetallePage({ params }: Props) {
                             href={`/diputados/${encodeURIComponent(nombreCompleto)}`}
                             className={styles.proponenteLink}
                           >
-                            {formatName(nombreCompleto)}
+                            {formatDiputadoName(nombreCompleto)}
                           </Link>
                         </li>
                       )

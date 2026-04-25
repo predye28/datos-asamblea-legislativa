@@ -10,31 +10,54 @@
   padding: 0 var(--container-pad);
 }
 
+@keyframes headerIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .sectionHeader {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 32px;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 40px;
+  animation: headerIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sectionEyebrow {
+  display: inline-block;
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
 }
 
 .sectionTitle {
   font-family: var(--serif);
-  font-size: clamp(24px, 4vw, 32px);
-  font-weight: 800;
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 900;
   color: var(--ink);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   line-height: 1.1;
   margin: 0;
+  display: inline-block;
+  position: relative;
+  padding-bottom: 18px;
 }
 
-.sectionSubtitle {
-  font-family: var(--label);
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin: 0;
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 3px;
+  background: var(--gold);
+  border-radius: 2px;
 }
 
 .card {
@@ -44,6 +67,7 @@
   border-radius: 20px;
   padding: 40px;
   max-width: 900px;
+  margin: 0 auto;
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   box-shadow: var(--shadow-md);
 }

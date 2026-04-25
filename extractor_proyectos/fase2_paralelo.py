@@ -35,7 +35,7 @@ import re
 import sys
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from playwright.async_api import async_playwright, Page
 
 from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guardar_checkpoint_db
@@ -64,7 +64,13 @@ MAX_PAGINA_TOTAL      = 99999  # backstop de emergencia; la detección real es p
 
 SLEEP_BETWEEN_BATCHES = 60    # segundos entre lotes en modo daemon
 SLEEP_AT_CYCLE_END    = 3600  # segundos de espera al completar un ciclo completo
-FASE1_LOCK            = "/tmp/scraper-sync/fase1.lock"  # pausar mientras fase1 corre
+
+# Costa Rica = UTC-6, sin horario de verano
+CR_TZ                 = timezone(timedelta(hours=-6))
+FASE1_HORA_INICIO     = 1   # 1am hora CR
+FASE1_HORA_FIN        = 2   # 2am hora CR
+
+_fase1_ejecutada_fecha: date | None = None
 
 # Tiempos de espera (ms)
 ESPERA_CARGA_GRILLA = 5_000
@@ -1058,6 +1064,51 @@ async def _interruptible_sleep(seconds: int):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# FASE 1 INTEGRADA — se ejecuta una vez por día entre 1am y 2am CR
+# ══════════════════════════════════════════════════════════════════════
+
+async def ejecutar_fase1_si_corresponde():
+    """
+    Corre fase1_scraper.py una vez por día si el reloj CR está entre
+    FASE1_HORA_INICIO y FASE1_HORA_FIN. Se llama después de cada sleep
+    del daemon para no interrumpir un batch en curso.
+    """
+    global _fase1_ejecutada_fecha
+
+    ahora = datetime.now(CR_TZ)
+    hoy   = ahora.date()
+
+    if not (FASE1_HORA_INICIO <= ahora.hour < FASE1_HORA_FIN):
+        return
+    if _fase1_ejecutada_fecha == hoy:
+        return
+
+    log("=" * 60, nivel="INFO")
+    log(f"INICIANDO FASE 1 — {ahora.strftime('%H:%M')} hora CR ({hoy})", nivel="OK")
+    log("=" * 60, nivel="INFO")
+
+    # Marca antes de correr para no volver a intentar si falla
+    _fase1_ejecutada_fecha = hoy
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "python", "fase1_scraper.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        stdout, _ = await proc.communicate()
+        if stdout:
+            for linea in stdout.decode(errors="replace").splitlines():
+                log(f"[FASE1] {linea}", nivel="INFO")
+        if proc.returncode == 0:
+            log("Fase 1 completada exitosamente. Reanudando Fase 2.", nivel="OK")
+        else:
+            log(f"Fase 1 terminó con código {proc.returncode}. Continuando Fase 2.", nivel="WARN")
+    except Exception as e:
+        log(f"Error ejecutando Fase 1: {e}", nivel="ERROR")
+
+
+# ══════════════════════════════════════════════════════════════════════
 # MAIN PARALELO
 # ══════════════════════════════════════════════════════════════════════
 
@@ -1074,14 +1125,8 @@ async def main():
             log("Parada solicitada. Saliendo limpiamente.", nivel="WARN")
             break
 
-        # Pausar si fase1 está corriendo (lock compartido vía volumen Docker)
-        if os.path.exists(FASE1_LOCK):
-            log("Fase1 en ejecucion. Pausando fase2 hasta que termine...", nivel="WARN")
-            while os.path.exists(FASE1_LOCK) and not _stop:
-                await _interruptible_sleep(60)
-            if _stop:
-                break
-            log("Fase1 terminada. Reanudando fase2.", nivel="OK")
+        # Verificar si corresponde ejecutar Fase 1 (1am-2am CR, una vez por día)
+        await ejecutar_fase1_si_corresponde()
 
         inicio = datetime.now()
 
@@ -1227,6 +1272,9 @@ async def main():
         else:
             log(f"Esperando {SLEEP_BETWEEN_BATCHES}s antes del siguiente lote...", nivel="INFO")
             await _interruptible_sleep(SLEEP_BETWEEN_BATCHES)
+
+        # Verificar si corresponde ejecutar Fase 1 después del sleep
+        await ejecutar_fase1_si_corresponde()
 
 
 if __name__ == "__main__":

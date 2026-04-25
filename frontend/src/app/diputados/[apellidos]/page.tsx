@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { PerfilDiputado } from '@/lib/api'
-import { formatTitle, formatDate, formatQuantity, formatName, cleanText } from '@/lib/utils'
+import { formatTitle, formatDate, formatQuantity, formatDiputadoName, cleanText } from '@/lib/utils'
 import { EstadoChip } from '@/components/ui/EstadoChip'
 import styles from './perfil.module.css'
 
@@ -17,7 +17,7 @@ interface Props { params: Promise<{ apellidos: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { apellidos } = await params
-  const nombre = formatName(decodeURIComponent(apellidos))
+  const nombre = formatDiputadoName(decodeURIComponent(apellidos))
   try {
     const perfil = await api.metricas.perfilDiputado(decodeURIComponent(apellidos))
     const title = `${nombre} · Diputación`
@@ -63,7 +63,7 @@ function getInitials(name: string) {
 export default async function PerfilDiputadoPage({ params }: Props) {
   const { apellidos } = await params
   const apellidosRaw = decodeURIComponent(apellidos)
-  const nombreDisplay = formatName(apellidosRaw)
+  const nombreDisplay = formatDiputadoName(apellidosRaw)
 
   let perfil: PerfilDiputado
   try {

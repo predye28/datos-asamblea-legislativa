@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { DiputadoRanking } from '@/lib/api'
 import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
-import { formatName } from '@/lib/utils'
+import { formatDiputadoName, cleanText } from '@/lib/utils'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import { Button } from '@/components/ui/Button'
@@ -55,10 +55,16 @@ function rankClass(i: number) {
 
 // ── Diputado card ─────────────────────────────────────────────────────────────
 
-function getInitials(nombre: string, apellidos: string) {
-  const n = (nombre || '').trim().split(/\s+/)[0]?.[0] || ''
-  const a = (apellidos || '').trim().split(/\s+/)[0]?.[0] || ''
-  return (n + a).toUpperCase() || '·'
+function getInitials(nombreCompleto: string) {
+  const words = cleanText(nombreCompleto).toLowerCase().split(/\s+/).filter(w => w.length > 0)
+  if (words.length === 0) return '·'
+  // reordenamos igual que formatDiputadoName para tomar iniciales del nombre real
+  const reordered = words.length === 3
+    ? [words[2], words[0]]
+    : words.length === 4
+    ? [words[2], words[0]]
+    : [words[0], words[1]]
+  return reordered.filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '·'
 }
 
 function avatarHue(seed: string) {
@@ -70,7 +76,7 @@ function avatarHue(seed: string) {
 function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; max: number }) {
   const pct = max > 0 ? (d.total_proyectos / max) * 100 : 0
   const slug = encodeURIComponent(d.nombre_completo)
-  const initials = getInitials(d.nombre, d.apellidos)
+  const initials = getInitials(d.nombre_completo)
   const hue = avatarHue(d.nombre_completo)
   const isTop3 = index < 3
 
@@ -93,8 +99,7 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
       {/* Body */}
       <div className={styles.cardBody}>
         <p className={styles.cardName}>
-          <span className={styles.cardSurname}>{formatName(d.apellidos)}</span>
-          <span className={styles.cardGiven}>{formatName(d.nombre)}</span>
+          <span className={styles.cardSurname}>{formatDiputadoName(d.nombre_completo)}</span>
         </p>
         <div className={styles.barRow}>
           <div className={styles.bar}>
@@ -190,8 +195,8 @@ export default function DiputadosPage() {
   const sorted = useMemo(() => {
     const arr = [...data]
     arr.sort((a, b) => {
-      if (orden === 'az') return (a.apellidos || a.nombre_completo || '').localeCompare(b.apellidos || b.nombre_completo || '')
-      if (orden === 'za') return (b.apellidos || b.nombre_completo || '').localeCompare(a.apellidos || a.nombre_completo || '')
+      if (orden === 'az') return (a.nombre_completo || '').localeCompare(b.nombre_completo || '')
+      if (orden === 'za') return (b.nombre_completo || '').localeCompare(a.nombre_completo || '')
       return b.total_proyectos - a.total_proyectos
     })
     return arr

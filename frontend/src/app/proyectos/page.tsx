@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import type { ProyectoResumen, Categoria, Paginacion } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
 import { getPeriodos, getAllLegislativePeriods } from '@/lib/periodos'
+import { ESTADO_FILTROS } from '@/lib/estados'
 import styles from './proyectos.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import { Button } from '@/components/ui/Button'
@@ -53,16 +54,6 @@ function IconX() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M18 6 6 18M6 6l12 12"/>
-    </svg>
-  )
-}
-
-function IconScale() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-      <path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
     </svg>
   )
 }
@@ -164,7 +155,7 @@ function ProyectosContent() {
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
   const [periodo, setPeriodo]     = useState('')
   const [orden, setOrden]         = useState('reciente')
-  const [soloLeyes, setSoloLeyes] = useState(() => searchParams.get('estado') === 'ley')
+  const [estado, setEstado]       = useState(() => searchParams.get('estado') || '')
   const [pagina, setPagina]       = useState(1)
 
   const [proyectos, setProyectos]   = useState<ProyectoResumen[]>([])
@@ -185,7 +176,7 @@ function ProyectosContent() {
   }, [])
 
   // Combined fetch — debounce only for query changes, immediate for filters/pagination.
-  const prevFiltersRef = useRef({ query, categoria, periodo, orden, soloLeyes, pagina })
+  const prevFiltersRef = useRef({ query, categoria, periodo, orden, estado, pagina })
   useEffect(() => {
     const prev = prevFiltersRef.current
     const onlyQueryChanged =
@@ -193,9 +184,9 @@ function ProyectosContent() {
       prev.categoria === categoria &&
       prev.periodo === periodo &&
       prev.orden === orden &&
-      prev.soloLeyes === soloLeyes &&
+      prev.estado === estado &&
       prev.pagina === pagina
-    prevFiltersRef.current = { query, categoria, periodo, orden, soloLeyes, pagina }
+    prevFiltersRef.current = { query, categoria, periodo, orden, estado, pagina }
 
     const delay = onlyQueryChanged ? 350 : 0
     let cancelled = false
@@ -220,7 +211,7 @@ function ProyectosContent() {
             por_pagina: POR_PAGINA,
             desde: legPeriod?.desde || desde,
             hasta: legPeriod?.hasta,
-            solo_leyes: soloLeyes || undefined,
+            estado: estado || undefined,
             orden,
             categoria: categoria || undefined,
           })
@@ -238,21 +229,21 @@ function ProyectosContent() {
       }
     }, delay)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [query, categoria, periodo, orden, soloLeyes, pagina])
+  }, [query, categoria, periodo, orden, estado, pagina])
 
   // Filter change handlers reset pagination to page 1 up-front.
   const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
   const onCategoriaChange = (v: string) => { setPagina(1); setCategoria(v) }
   const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v) }
   const onOrdenChange = (v: string) => { setPagina(1); setOrden(v) }
-  const onSoloLeyesToggle = () => { setPagina(1); setSoloLeyes(v => !v) }
+  const onEstadoChange = (v: string) => { setPagina(1); setEstado(v) }
 
   const clearFilters = () => {
     setQuery(''); setCategoria(''); setPeriodo('')
-    setOrden('reciente'); setSoloLeyes(false); setPagina(1)
+    setOrden('reciente'); setEstado(''); setPagina(1)
   }
 
-  const hasFilters = !!(query || categoria || periodo || soloLeyes || orden !== 'reciente')
+  const hasFilters = !!(query || categoria || periodo || estado || orden !== 'reciente')
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
@@ -322,7 +313,13 @@ function ProyectosContent() {
                 ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
               ]}
             />
-
+            <FilterPill
+              value={estado}
+              onChange={onEstadoChange}
+              placeholder="Todos los estados"
+              active={!!estado}
+              options={ESTADO_FILTROS}
+            />
             <FilterPill
               value={orden}
               onChange={onOrdenChange}
@@ -337,16 +334,6 @@ function ProyectosContent() {
               ]}
             />
           </div>
-
-          <div className={styles.filtersSep} aria-hidden />
-
-          <button
-            className={`${styles.toggleLey} ${soloLeyes ? styles.toggleActive : ''}`}
-            onClick={onSoloLeyesToggle}
-            aria-pressed={soloLeyes}
-          >
-            <IconScale /> Solo leyes
-          </button>
 
           {hasFilters && (
             <button className={styles.clearBtn} onClick={clearFilters}>
@@ -387,16 +374,16 @@ function ProyectosContent() {
                     <button onClick={() => onPeriodoChange('')} aria-label="Quitar período"><IconX /></button>
                   </span>
                 )}
+                {estado && (
+                  <span className={styles.chip}>
+                    {ESTADO_FILTROS.find(e => e.value === estado)?.label ?? estado}
+                    <button onClick={() => onEstadoChange('')} aria-label="Quitar filtro de estado"><IconX /></button>
+                  </span>
+                )}
                 {orden !== 'reciente' && (
                   <span className={styles.chip}>
                     {ORDEN_LABELS[orden] ?? orden}
                     <button onClick={() => onOrdenChange('reciente')} aria-label="Quitar orden"><IconX /></button>
-                  </span>
-                )}
-                {soloLeyes && (
-                  <span className={styles.chip}>
-                    Solo leyes
-                    <button onClick={() => onSoloLeyesToggle()} aria-label="Quitar filtro de leyes"><IconX /></button>
                   </span>
                 )}
               </div>

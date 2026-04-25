@@ -3,7 +3,6 @@ FROM python:3.11-slim
 # Dependencias del sistema que necesita Playwright/Chromium
 RUN apt-get update && apt-get install -y \
     curl \
-    cron \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -110,6 +110,7 @@ def listar_proyectos(
     desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
     hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
     solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
+    estado:     Optional[str] = Query(None, description="Filtrar por grupo de estado: ley | discusion | archivado"),
     orden:      str           = Query("reciente", description="reciente | antiguo | expediente | titulo_az | titulo_za"),
     categoria:  Optional[str] = Query(None, description="Filtrar por slug de categoría"),
     diputado:   Optional[str] = Query(None, description="Filtrar por nombre o apellidos del proponente"),
@@ -148,6 +149,22 @@ def listar_proyectos(
 
     if solo_leyes:
         condiciones.append("p.numero_ley IS NOT NULL")
+
+    if estado == 'ley':
+        condiciones.append("p.numero_ley IS NOT NULL")
+    elif estado == 'archivado':
+        condiciones.append("""
+            (SELECT t2.organo FROM tramitacion t2
+             WHERE t2.proyecto_id = p.id
+             ORDER BY t2.fecha_inicio DESC NULLS LAST LIMIT 1) ~* 'archiv|desech'
+        """)
+    elif estado == 'discusion':
+        condiciones.append("""
+            (SELECT t2.organo FROM tramitacion t2
+             WHERE t2.proyecto_id = p.id
+             ORDER BY t2.fecha_inicio DESC NULLS LAST LIMIT 1)
+            ~* 'comisi.n|plenario|estudio|tr.mite|primer debate|segundo debate|dictamen'
+        """)
 
     if categoria:
         condiciones.append(

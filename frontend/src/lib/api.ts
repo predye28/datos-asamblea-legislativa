@@ -209,6 +209,7 @@ export const api = {
       desde?: string
       hasta?: string
       solo_leyes?: boolean
+      estado?: string
       orden?: string
       categoria?: string
       diputado?: string
@@ -221,6 +222,7 @@ export const api = {
       if (params.desde)      qs.set('desde',      params.desde)
       if (params.hasta)      qs.set('hasta',      params.hasta)
       if (params.solo_leyes) qs.set('solo_leyes', 'true')
+      if (params.estado)     qs.set('estado',     params.estado)
       if (params.orden)      qs.set('orden',      params.orden)
       if (params.categoria)  qs.set('categoria',  params.categoria)
       if (params.diputado)   qs.set('diputado',   params.diputado)

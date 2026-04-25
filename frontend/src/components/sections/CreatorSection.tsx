@@ -31,10 +31,10 @@ export default function CreatorSection() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
-        <div className={styles.sectionHeader}>
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionEyebrow}>Quién está detrás del proyecto</span>
           <h2 className={styles.sectionTitle}>Sobre el Creador</h2>
-          <p className={styles.sectionSubtitle}>Quién está detrás del proyecto</p>
-        </div>
+        </header>
         <div className={styles.card}>
           <div className={styles.content}>
             <div className={styles.header}>

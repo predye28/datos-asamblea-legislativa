@@ -28,6 +28,17 @@ export function formatName(name: string | null | undefined): string {
   return t.split(' ').filter(w => w.length > 0).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+// Reordena nombres de diputados almacenados como "AP1 AP2 NOM1 [NOM2]"
+// 3 palabras → "Nom Ap1 Ap2"; 4 palabras → "Nom1 Nom2 Ap1 Ap2"; resto → title case
+export function formatDiputadoName(name: string | null | undefined): string {
+  const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1)
+  const words = cleanText(name).toLowerCase().split(/\s+/).filter(w => w.length > 0)
+  if (words.length === 0) return ''
+  if (words.length === 3) return [words[2], words[0], words[1]].map(cap).join(' ')
+  if (words.length === 4) return [words[2], words[3], words[0], words[1]].map(cap).join(' ')
+  return words.map(cap).join(' ')
+}
+
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   try {

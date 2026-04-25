@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse, ProximoVencer } from '@/lib/api'
 import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
-import { formatTitle, formatName } from '@/lib/utils'
+import { formatTitle, formatDiputadoName } from '@/lib/utils'
 import styles from './estadisticas.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import CountUp from '@/components/shared/CountUp'
@@ -52,13 +52,14 @@ const TIPO_HELP: Record<string, string> = {
   'Reforma a la Ley': 'Modificación parcial a una ley existente.',
 }
 
-type RangoRapido = '' | 'este_mes' | 'seis_meses' | 'este_anio' | 'personalizado'
+type RangoRapido = '' | 'este_mes' | 'seis_meses' | 'este_anio' | 'diez_anios' | 'personalizado'
 
 const RANGO_LABEL: Record<RangoRapido, string> = {
   '': 'Histórico (todo)',
   'este_mes': 'Este mes',
   'seis_meses': 'Últimos 6 meses',
   'este_anio': 'Este año',
+  'diez_anios': 'Últimos 10 años',
   'personalizado': 'Personalizado',
 }
 
@@ -75,6 +76,11 @@ function rangoACifras(rango: RangoRapido): { desde?: string; hasta?: string } {
   }
   if (rango === 'este_anio') {
     return { desde: `${hoy.getFullYear()}-01-01`, hasta: toISO(hoy) }
+  }
+  if (rango === 'diez_anios') {
+    const desde = new Date(hoy)
+    desde.setFullYear(desde.getFullYear() - 10)
+    return { desde: toISO(desde), hasta: toISO(hoy) }
   }
   return {}
 }
@@ -473,7 +479,7 @@ export default function EstadisticasPage() {
                           >
                             <span className={`${styles.dipRank} ${medal}`}>{i + 1}</span>
                             <div className={styles.dipBody}>
-                              <div className={styles.dipName}>{formatName(d.nombre_completo)}</div>
+                              <div className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</div>
                               <div className={styles.dipBar}>
                                 <div className={styles.dipFill} style={{ width: `${width}%` }} />
                               </div>
@@ -504,7 +510,7 @@ export default function EstadisticasPage() {
                           >
                             <span className={`${styles.dipRank} ${styles.medalGreen}`}>{i + 1}</span>
                             <div className={styles.dipBody}>
-                              <div className={styles.dipName}>{formatName(d.nombre_completo)}</div>
+                              <div className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</div>
                               <div className={styles.dipBar}>
                                 <div className={styles.dipFillGreen} style={{ width: `${d.tasa_aprobacion}%` }} />
                               </div>
@@ -522,8 +528,8 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 03 · Anatomía (tipos) ── */}
-            {tipos.length > 0 && (
+            {/* ── 03 · Anatomía (tipos) — deshabilitado temporalmente ── */}
+            {/* {tipos.length > 0 && (
               <>
                 <SectionIntro
                   num="03"
@@ -584,10 +590,10 @@ export default function EstadisticasPage() {
                   </div>
                 </div>
               </>
-            )}
+            )} */}
 
-            {/* ── 04 · Órganos ── */}
-            {organos.length > 0 && (
+            {/* ── 04 · Órganos — deshabilitado temporalmente ── */}
+            {/* {organos.length > 0 && (
               <>
                 <SectionIntro
                   num="04"
@@ -628,7 +634,7 @@ export default function EstadisticasPage() {
                   })}
                 </div>
               </>
-            )}
+            )} */}
 
             {/* ── 05 · Ritmo mensual ── */}
             {mensualStats && porMes.length >= 3 && (
@@ -710,8 +716,8 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 07 · Lo que está por vencer (urgente) ── */}
-            {proxVencer.length > 0 && (
+            {/* ── 07 · Lo que está por vencer (urgente) — deshabilitado temporalmente ── */}
+            {/* {proxVencer.length > 0 && (
               <>
                 <SectionIntro
                   num="07"
@@ -757,7 +763,7 @@ export default function EstadisticasPage() {
                   })}
                 </div>
               </>
-            )}
+            )} */}
 
             {/* ── Colofón ── */}
             <div className={styles.colofon}>
