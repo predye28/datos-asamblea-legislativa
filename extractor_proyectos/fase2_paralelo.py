@@ -45,7 +45,7 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ══════════════════════════════════════════════════════════════════════
 
 TOTAL_PAGINAS_POR_RUN = 20   # Total de páginas a procesar en este run
-N_WORKERS             = 2   # Número de browsers en paralelo
+N_WORKERS             = 2  # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
 # CONSTANTES  (no es necesario cambiar estas)
@@ -393,7 +393,9 @@ async def obtener_info_filas(frame) -> list:
                     continue
                 num    = (await celdas[0].inner_text()).strip()
                 titulo = (await celdas[1].inner_text()).strip()
-                if num and re.match(r'^\d{4,6}$', num.replace(" ", "")):
+                # Acepta expedientes de 1 a 7 dígitos: los viejos (1918-1960s)
+                # tienen 3 dígitos y el más antiguo de todos es el número 3.
+                if num and re.match(r'^\d{1,7}$', num.replace(" ", "")):
                     info.append({"expediente": num, "titulo": titulo, "row_index": idx})
             except Exception:
                 continue
@@ -432,10 +434,20 @@ async def clic_tab(frame, page: Page, texto: str) -> bool:
     ]:
         try:
             for el in await frame.query_selector_all(sel):
-                if await el.is_visible():
-                    await el.click()
-                    await page.wait_for_timeout(ESPERA_CLIC_TAB)
-                    return True
+                if not await el.is_visible():
+                    continue
+                # Ignorar elementos dentro de la grilla del listado: si un
+                # título de expediente contiene la palabra buscada (p.ej.
+                # "Ley General de..."), clickearlo abriría el detalle y
+                # destruiría la grilla. Solo nos interesan pestañas reales.
+                dentro_grilla = await el.evaluate(
+                    "n => !!n.closest(\"div[role='grid'], [role='gridcell'], [role='row']\")"
+                )
+                if dentro_grilla:
+                    continue
+                await el.click()
+                await page.wait_for_timeout(ESPERA_CLIC_TAB)
+                return True
         except Exception:
             continue
     return False
@@ -657,15 +669,59 @@ async def ir_a_pagina_directa(frame, page: Page, numero: int, worker_id: int = -
         await inp.press("Enter")
         await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
 
-        for _ in range(12):
+        # Timeout escalado: páginas lejanas (OFFSET grande en SQL) tardan
+        # mucho más en cargar. Base 15s + 10ms por página, tope 45s.
+        max_espera_ms = min(45_000, 15_000 + numero * 10)
+        intervalo_ms  = 700
+        max_intentos  = max(12, max_espera_ms // intervalo_ms)
+        reintento_enter_hecho = False
+
+        for intento in range(max_intentos):
+            # Si aparece un modal de error en mitad de la espera, lo cerramos.
+            if await cerrar_modal_error(frame, page):
+                log(f"Modal de error cerrado durante salto a página {numero}.", worker_id, "WARN")
+
+            # Fuente de verdad: el input de paginación de jqxGrid.
+            pag_actual = await leer_pagina_actual(frame)
             filas = await obtener_info_filas(frame)
             exp = filas[0]["expediente"] if filas else None
-            if exp and exp != exp_antes:
-                log(f"Página {numero} cargada.", worker_id)
-                return True
-            await page.wait_for_timeout(700)
 
-        log(f"La grilla no cambió al saltar a página {numero}.", worker_id)
+            # Éxito principal: el input confirma la página pedida y hay filas.
+            if pag_actual == numero and filas:
+                log(f"Página {numero} cargada ({len(filas)} filas).", worker_id)
+                return True
+
+            # Wrap: el sitio respondió con una página menor (la pedida no
+            # existe → el SIL te tira a la 1). Es éxito de navegación,
+            # retornamos True para que el worker lo detecte como ciclo
+            # completo y resetee el checkpoint.
+            if pag_actual is not None and pag_actual < numero and filas:
+                log(f"Wrap durante salto: pedida {numero}, sitio respondió pag {pag_actual}.", worker_id, "WARN")
+                return True
+
+            # Respaldo: cambió el primer expediente respecto al estado previo.
+            if exp and exp != exp_antes:
+                log(f"Página {numero} cargada (detectado por cambio de exp).", worker_id)
+                return True
+
+            # Log diagnóstico cada 5 intentos para ver qué reporta el scraper
+            # mientras vos visualmente ya ves la página cargada.
+            if intento % 5 == 0:
+                log(f"  Polling pag_input={pag_actual} filas={len(filas)} exp={exp}", worker_id)
+
+            # A mitad del timeout reintentamos el Enter una vez por si el
+            # input quedó con el valor escrito pero la grilla no respondió.
+            if not reintento_enter_hecho and intento >= max_intentos // 2:
+                try:
+                    await inp.press("Enter")
+                    log(f"Reintento de Enter en página {numero}.", worker_id, "WARN")
+                except Exception:
+                    pass
+                reintento_enter_hecho = True
+
+            await page.wait_for_timeout(intervalo_ms)
+
+        log(f"La grilla no cambió al saltar a página {numero} (esperó {max_espera_ms/1000:.0f}s).", worker_id)
         return False
     except Exception as e:
         log(f"Error saltando a página {numero}: {e}", worker_id)
@@ -810,9 +866,21 @@ async def procesar_pagina(page: Page, frame, num_pagina: int, acumulado: list, w
     await clic_tab(frame, page, "General")
     await page.wait_for_timeout(400)
 
-    filas = await obtener_info_filas(frame)
+    # Mini retry: a veces la grilla queda en transición (postback de SharePoint
+    # tras el clic de tab) y tarda en repintarse. Reintentamos varias veces
+    # antes de declarar error de portal.
+    filas = []
+    for intento in range(8):
+        filas = await obtener_info_filas(frame)
+        if filas:
+            break
+        if intento == 0:
+            log(f"Página {num_pagina}: grilla vacía, esperando que reaparezca...", worker_id, "WARN")
+        await cerrar_modal_error(frame, page)
+        await page.wait_for_timeout(1_000)
+
     if not filas:
-        log(f"Página {num_pagina}: sin filas. Posible error de portal.", worker_id)
+        log(f"Página {num_pagina}: sin filas tras 8 intentos. Posible error de portal.", worker_id)
         return "error_portal"
 
     total = len(filas)

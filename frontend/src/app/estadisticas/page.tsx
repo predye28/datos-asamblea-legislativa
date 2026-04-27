@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse, ProximoVencer } from '@/lib/api'
-import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
+import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatTitle, formatDiputadoName } from '@/lib/utils'
 import styles from './estadisticas.module.css'
 import FilterPill from '@/components/ui/FilterPill'
@@ -12,7 +12,6 @@ import CountUp from '@/components/shared/CountUp'
 import { Button } from '@/components/ui/Button'
 import { TimelineAreaChart } from '@/components/charts/TimelineAreaChart'
 import { MonthlyBarsChart } from '@/components/charts/MonthlyBarsChart'
-import { Sparkline as SparkSvg } from '@/components/charts/Sparkline'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,20 +19,6 @@ function fmt(n: number) { return n.toLocaleString('es-CR') }
 function fmtPct(n: number) { return `${n.toFixed(1)}%` }
 function toISO(d: Date) { return d.toISOString().slice(0, 10) }
 
-function formatTiempo(dias: number): string {
-  if (dias < 30) {
-    const d = Math.round(dias)
-    return d === 1 ? '1 día' : `${d} días`
-  }
-  if (dias < 365) {
-    const m = Math.round(dias / 30.44)
-    return m === 1 ? '1 mes' : `${m} meses`
-  }
-  const años = dias / 365
-  if (años >= 2) return `${Math.round(años)} años`
-  const f = años.toFixed(1)
-  return f === '1.0' ? '1 año' : `${f} años`
-}
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
 const PALETTE = [
@@ -138,45 +123,52 @@ export default function EstadisticasPage() {
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
   const [proxVencer, setProxVencer] = useState<ProximoVencer[]>([])
   const [loading, setLoading] = useState(true)
+  const legislativePeriods = useLegislativePeriods()
 
   // Rango efectivo (prioridad: custom > rápido > legislativo > histórico)
   const { desde, hasta } = useMemo(() => {
     if (rangoRapido === 'personalizado') return { desde: customDesde || undefined, hasta: customHasta || undefined }
     if (rangoRapido) return rangoACifras(rangoRapido)
-    const allPeriods = getAllLegislativePeriods()
     const relPeriods = getPeriodos()
-    const legPeriod = allPeriods.find(p => p.label === periodo)
+    const legPeriod = legislativePeriods.find(p => p.label === periodo)
     const relPeriod = relPeriods.find(p => p.label === periodo)
     return { desde: legPeriod?.desde || relPeriod?.desde(), hasta: legPeriod?.hasta }
-  }, [rangoRapido, customDesde, customHasta, periodo])
+  }, [rangoRapido, customDesde, customHasta, periodo, legislativePeriods])
 
+  // Datos globales (KPIs del hero) y timeline / próximos a vencer:
+  // se cargan UNA SOLA VEZ y de forma independiente para que los 4 bloques
+  // de arriba aparezcan apenas estén listos, sin esperar al resto.
   useEffect(() => {
     let cancelled = false
-    // Defer to a microtask so setState calls happen after the effect body, not within it.
-    queueMicrotask(async () => {
-      if (cancelled) return
-      setLoading(true)
-      try {
-        const [metricas, globalMetricas, tl, prox] = await Promise.all([
-          api.metricas.general({ desde, hasta }),
-          api.metricas.general({}),
-          api.metricas.lineaTiempo(),
-          api.metricas.proximosVencer(90).catch(() => ({ datos: [] as ProximoVencer[] })),
-        ])
-        if (cancelled) return
-        setData(metricas)
-        setGlobalData(globalMetricas)
-        setTimeline(tl.datos)
-        setProxVencer(prox.datos || [])
-      } catch {
+    api.metricas.general({})
+      .then(g => { if (!cancelled) setGlobalData(g) })
+      .catch(() => { if (!cancelled) setGlobalData(null) })
+    api.metricas.lineaTiempo()
+      .then(tl => { if (!cancelled) setTimeline(tl.datos) })
+      .catch(() => {})
+    api.metricas.proximosVencer(90)
+      .then(p => { if (!cancelled) setProxVencer(p.datos || []) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  // Datos filtrados por el período seleccionado (recarga al cambiar filtros).
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    api.metricas.general({ desde, hasta })
+      .then(metricas => {
+        if (!cancelled) {
+          setData(metricas)
+          setLoading(false)
+        }
+      })
+      .catch(() => {
         if (!cancelled) {
           setData(null)
-          setGlobalData(null)
+          setLoading(false)
         }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })
+      })
     return () => { cancelled = true }
   }, [desde, hasta])
 
@@ -184,7 +176,7 @@ export default function EstadisticasPage() {
     { value: '', label: 'Todos los períodos' },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
     { value: '__sep__', label: '── Períodos legislativos ──', disabled: true },
-    ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
+    ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
   ]
 
   const g = globalData?.general
@@ -258,7 +250,7 @@ export default function EstadisticasPage() {
   const hasRapido = rangoRapido !== ''
   const hasLegislative = periodo !== ''
   const hasFilter = hasRapido || hasLegislative
-  const isLegislativePeriod = getAllLegislativePeriods().some(p => p.label === periodo)
+  const isLegislativePeriod = legislativePeriods.some(p => p.label === periodo)
   const hoy = new Date()
   const fechaHoy = hoy.toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -281,6 +273,23 @@ export default function EstadisticasPage() {
   const onChangePeriodo = (v: string) => {
     setPeriodo(v)
     setRangoRapido('')
+  }
+
+  // Mapea el período activo (legislativo o rango rápido) al label que
+  // entiende el filtro de /proyectos, para preservarlo al navegar a un tema.
+  const RAPIDO_A_PROYECTOS: Partial<Record<RangoRapido, string>> = {
+    'este_mes': 'Este mes',
+    'seis_meses': '6 meses',
+    'este_anio': 'Este año',
+  }
+  const periodoParaProyectos = hasLegislative
+    ? periodo
+    : (RAPIDO_A_PROYECTOS[rangoRapido] ?? '')
+
+  const hrefProyectosPorTema = (slug: string) => {
+    const qs = new URLSearchParams({ categoria: slug })
+    if (periodoParaProyectos) qs.set('periodo', periodoParaProyectos)
+    return `/proyectos?${qs.toString()}`
   }
   const limpiarTodo = () => {
     setRangoRapido('')
@@ -306,39 +315,10 @@ export default function EstadisticasPage() {
               La Asamblea, <span className={styles.heroDataTitleAccent}>en cifras.</span>
             </h1>
             <p className={styles.heroDataDeck}>
-              Cuatro números para entender cómo trabaja el Congreso costarricense. Abajo, el detalle.
+              Una mirada visual a cómo trabaja el Congreso costarricense — los temas, los protagonistas y el ritmo del trabajo legislativo.
             </p>
           </div>
 
-          {g && (
-            <div className={styles.heroKpiGrid}>
-              <HeroKpi
-                label="Proyectos presentados"
-                sub="desde 1949"
-                value={<CountUp end={g.total_proyectos} />}
-                color="var(--accent)"
-              />
-              <HeroKpi
-                label="Leyes vigentes"
-                sub="completaron el trámite"
-                value={<CountUp end={g.total_leyes_aprobadas} />}
-                color="var(--positive)"
-                spark={timeline.length > 2 ? <SparkSvg data={timeline} width={160} height={32} color="var(--positive)" /> : null}
-              />
-              <HeroKpi
-                label="Tasa de aprobación"
-                sub="proyectos que llegan a ley"
-                value={<CountUp end={g.tasa_aprobacion_pct} decimals={1} suffix="%" />}
-                color="#F59E0B"
-              />
-              <HeroKpi
-                label="Tiempo para aprobar"
-                sub="promedio hasta convertirse en ley"
-                value={g.promedio_dias_aprobacion ? formatTiempo(g.promedio_dias_aprobacion) : '—'}
-                color="#818CF8"
-              />
-            </div>
-          )}
         </div>
       </section>
 
@@ -416,7 +396,7 @@ export default function EstadisticasPage() {
                     return (
                       <Link
                         key={c.slug}
-                        href={`/proyectos?categoria=${c.slug}`}
+                        href={hrefProyectosPorTema(c.slug)}
                         className={styles.temaRow}
                       >
                         <span className={styles.temaRank}>{i + 1}</span>
@@ -829,21 +809,4 @@ function SectionIntro({ num, kicker, title, deck, filtro }: {
   )
 }
 
-function HeroKpi({ label, sub, value, color, spark }: {
-  label: string
-  sub: string
-  value: React.ReactNode
-  color: string
-  spark?: React.ReactNode
-}) {
-  return (
-    <div className={styles.heroKpi} style={{ '--kpi-color': color } as React.CSSProperties}>
-      <div className={styles.heroKpiAccent} />
-      <div className={styles.heroKpiValue}>{value}</div>
-      <div className={styles.heroKpiLabel}>{label}</div>
-      <div className={styles.heroKpiSub}>{sub}</div>
-      {spark && <div className={styles.heroKpiSpark}>{spark}</div>}
-    </div>
-  )
-}
 

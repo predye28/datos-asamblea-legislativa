@@ -28,15 +28,15 @@ function buildEstadisticas(data: MetricasResponse | null): DataItem[] {
     return [
       { value: '—', label: 'de los proyectos nunca llegan a convertirse en ley' },
       { value: '—', label: 'trámites recorre en promedio un proyecto antes de aprobarse' },
-      { value: '—', label: 'el tema más exitoso de la agenda' },
+      { value: '—', label: 'proyectos presentados este mes' },
     ]
   }
   const g = data.general
   const nuncaLey = Math.round(100 - g.tasa_aprobacion_pct)
   const tramites = Math.round(g.promedio_tramites)
-  const topCat = data.por_categoria
-    ?.filter(c => c.leyes_aprobadas > 0)
-    .sort((a, b) => b.tasa_aprobacion - a.tasa_aprobacion)[0]
+  // Último mes con datos en por_mes — más confiable que proyectos_este_mes
+  // si el mes actual aún no tiene registros.
+  const ultimoMes = data.por_mes?.[data.por_mes.length - 1]
   return [
     {
       value: `${nuncaLey}%`,
@@ -47,10 +47,10 @@ function buildEstadisticas(data: MetricasResponse | null): DataItem[] {
       label: 'trámites recorre en promedio un proyecto antes de aprobarse',
     },
     {
-      value: topCat ? `${Math.round(topCat.tasa_aprobacion)}%` : '—',
-      label: topCat
-        ? <span>de efectividad en <strong>{topCat.categoria}</strong> — el tema más exitoso de la agenda</span>
-        : 'el tema más exitoso de la agenda',
+      value: ultimoMes ? String(ultimoMes.total) : '—',
+      label: ultimoMes
+        ? <span>proyectos presentados en <strong>{ultimoMes.mes_nombre} {ultimoMes.anio}</strong></span>
+        : 'proyectos presentados este mes',
     },
   ]
 }

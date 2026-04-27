@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { DiputadoRanking } from '@/lib/api'
-import { getAllLegislativePeriods, getPeriodos } from '@/lib/periodos'
+import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatDiputadoName, cleanText } from '@/lib/utils'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
@@ -144,6 +144,7 @@ export default function DiputadosPage() {
   const [data, setData]       = useState<DiputadoRanking[]>([])
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(10)
+  const legislativePeriods = useLegislativePeriods()
 
   // Combined debounced fetch — periodo changes fire immediately, query changes wait 350ms.
   const prevPeriodoRef = useRef(periodo)
@@ -157,9 +158,8 @@ export default function DiputadosPage() {
       if (cancelled) return
       setLoading(true)
       try {
-        const allPeriods = getAllLegislativePeriods()
         const relPeriods = getPeriodos()
-        const legPeriod = allPeriods.find(p => p.label === periodo)
+        const legPeriod = legislativePeriods.find(p => p.label === periodo)
         const relPeriod = relPeriods.find(p => p.label === periodo)
         const desde = legPeriod?.desde || relPeriod?.desde()
         const hasta = legPeriod?.hasta
@@ -181,7 +181,7 @@ export default function DiputadosPage() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [query, periodo])
+  }, [query, periodo, legislativePeriods])
 
   const onOrdenChange = (v: string) => { setOrden(v); setVisible(10) }
 
@@ -205,7 +205,7 @@ export default function DiputadosPage() {
   const periodOptions = [
     { value: '', label: 'Cualquier período' },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
-    ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
+    ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
   ]
 
   return (

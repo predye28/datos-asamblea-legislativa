@@ -28,8 +28,15 @@ services:
         # Lee NEXT_PUBLIC_API_URL del .env para inyectarlo en el build
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
     env_file: .env
+    environment:
+      # URL para fetches server-side dentro del Docker network. NO usa
+      # localhost porque eso apunta al propio container del frontend.
+      # Debe incluir /v1 igual que NEXT_PUBLIC_API_URL del .env.
+      - INTERNAL_API_URL=http://nginx/api/v1
     expose:
       - "3000"
+    depends_on:
+      - api
     restart: unless-stopped
 
   # ── Scraper (Fase 2 continua + Fase 1 diaria 1am-2am CR) ─────
@@ -39,6 +46,7 @@ services:
     env_file: .env
     environment:
       - CI=true          # Chromium headless obligatorio en Docker
+      - TZ=America/Costa_Rica
     extra_hosts:
       - "www.asamblea.go.cr:196.40.23.181"
       - "asamblea.go.cr:196.40.23.181"

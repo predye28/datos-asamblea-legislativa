@@ -1,3 +1,8 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { api, type PeriodoLegislativo } from './api'
+
 export const getPeriodos = () => {
   const d = new Date()
   return [
@@ -7,16 +12,27 @@ export const getPeriodos = () => {
   ]
 }
 
-export const getAllLegislativePeriods = () => {
-  const periods = []
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  let startYear = 1994
-  while (startYear <= currentYear) {
-    if (startYear === currentYear && now.getMonth() < 4) break
-    const endYear = startYear + 4
-    periods.push({ label: `${startYear}-${endYear}`, desde: `${startYear}-05-01`, hasta: `${endYear}-04-30` })
-    startYear = endYear
+// Cache a nivel de módulo: los períodos casi no cambian, así evitamos
+// refetch al navegar entre páginas dentro de la misma sesión.
+let _cache: PeriodoLegislativo[] | null = null
+let _inflight: Promise<PeriodoLegislativo[]> | null = null
+
+async function fetchPeriodos(): Promise<PeriodoLegislativo[]> {
+  if (_cache) return _cache
+  if (!_inflight) {
+    _inflight = api.periodos.listar()
+      .then(r => { _cache = r.datos; return r.datos })
+      .catch(() => { _inflight = null; return [] })
   }
-  return periods.reverse()
+  return _inflight
+}
+
+export function useLegislativePeriods(): PeriodoLegislativo[] {
+  const [periods, setPeriods] = useState<PeriodoLegislativo[]>(_cache ?? [])
+  useEffect(() => {
+    let cancelled = false
+    fetchPeriodos().then(p => { if (!cancelled) setPeriods(p) })
+    return () => { cancelled = true }
+  }, [])
+  return periods
 }

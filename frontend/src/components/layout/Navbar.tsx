@@ -64,7 +64,17 @@ export default function Navbar() {
     <>
       <header className={`${styles.header} ${menuOpen ? styles.headerFixed : ''}`}>
         <div className={styles.container}>
-          <Link href="/" className={styles.logo}>
+          <Link
+            href="/"
+            className={styles.logo}
+            onClick={(e) => {
+              // Si ya estamos en el inicio, no recargamos: solo subimos al tope.
+              if (pathname === '/') {
+                e.preventDefault()
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+            }}
+          >
             La <span className={styles.accent}>Asamblea</span> al Día
           </Link>
 
@@ -75,6 +85,14 @@ export default function Navbar() {
                 href={l.href}
                 className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
                 aria-current={pathname === l.href ? 'page' : undefined}
+                onClick={(e) => {
+                  // Si ya estamos en esa ruta, en vez de no hacer nada
+                  // subimos al tope para que se sienta como un "ir al inicio".
+                  if (pathname === l.href) {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
               >
                 {l.label}
               </Link>
@@ -118,7 +136,13 @@ export default function Navbar() {
               key={l.href}
               href={l.href}
               className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileLinkActive : ''}`}
-              onClick={() => setMenuOpen(false)}
+              onClick={(e) => {
+                if (pathname === l.href) {
+                  e.preventDefault()
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }
+                setMenuOpen(false)
+              }}
               aria-current={pathname === l.href ? 'page' : undefined}
               tabIndex={menuOpen ? 0 : -1}
             >

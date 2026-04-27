@@ -70,8 +70,14 @@ def crear_tablas():
         fecha_publicacion      DATE,
         numero_gaceta          TEXT,
         numero_ley             TEXT,
+        estado_actual          TEXT,
+        estado_grupo           TEXT,
         creado_en              TIMESTAMP DEFAULT NOW()
     );
+
+    ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS estado_actual TEXT;
+    ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS estado_grupo  TEXT;
+    CREATE INDEX IF NOT EXISTS idx_proy_estado_grupo ON proyectos(estado_grupo);
 
     CREATE TABLE IF NOT EXISTS proponentes (
         id           SERIAL PRIMARY KEY,
@@ -251,8 +257,176 @@ def parsear_fecha(texto: str) -> date | None:
 
 
 # ══════════════════════════════════════════════════════════════════════
+# CLASIFICACIÓN DE ESTADO
+# ══════════════════════════════════════════════════════════════════════
+
+def clasificar_estado_grupo(organo: str | None, es_ley: bool) -> str:
+    """
+    Devuelve uno de: 'ley' | 'archivado' | 'discusion' | 'otro'.
+    Misma lógica que el frontend (lib/estados.ts) — fuente única de verdad.
+    """
+    if es_ley:
+        return "ley"
+    if not organo:
+        return "otro"
+    s = _normalizar(organo)
+    if "archiv" in s or "desech" in s:
+        return "archivado"
+    if any(k in s for k in (
+        "comision", "plenario", "estudio", "tramite",
+        "primer debate", "segundo debate", "dictamen"
+    )):
+        return "discusion"
+    return "otro"
+
+
+def calcular_estado_actual(tramitacion: list, num_ley: str | None) -> tuple[str | None, str]:
+    """
+    Dado el historial de tramitación scrapeado, devuelve:
+      (organo_del_ultimo_tramite, grupo_estado)
+    """
+    es_ley = bool(num_ley)
+    ultimo_organo: str | None = None
+    ultima_fecha: date | None = None
+
+    for t in tramitacion or []:
+        fecha = parsear_fecha(t.get("Fecha Inicio", ""))
+        organo = t.get("Órgano")
+        if not organo:
+            continue
+        if ultima_fecha is None or (fecha and fecha > ultima_fecha):
+            ultima_fecha = fecha
+            ultimo_organo = organo
+
+    return ultimo_organo, clasificar_estado_grupo(ultimo_organo, es_ley)
+
+
+# ══════════════════════════════════════════════════════════════════════
 # SYNC PRINCIPAL
 # ══════════════════════════════════════════════════════════════════════
+
+def _norm_str(s) -> str:
+    """Normaliza texto para comparar (ignora None y espacios extremos)."""
+    return (s or "").strip()
+
+
+def _sync_proponentes(
+    cur, proyecto_id: int, scrap: list, cambios: list[str],
+) -> tuple[int, bool]:
+    """
+    Compara los proponentes scrapeados con los de la BD.
+    - Vacío   → no toca nada y devuelve count=BD actual, changed=False.
+    - Igual   → no-op.
+    - Distinto → DELETE + executemany INSERT, registra el diff en `cambios`.
+
+    Retorna (count_final, changed).
+    """
+    if not scrap:
+        cur.execute(
+            "SELECT COUNT(*) FROM proponentes WHERE proyecto_id = %s",
+            (proyecto_id,),
+        )
+        return cur.fetchone()[0], False
+
+    nuevos = [
+        (
+            int(p.get("Firma") or p.get("Secuencia", 0) or 0),
+            _norm_str(p.get("Apellidos")),
+            _norm_str(p.get("Nombre")),
+        )
+        for p in scrap
+    ]
+    nuevos_set = set(nuevos)
+
+    cur.execute(
+        "SELECT secuencia, apellidos, nombre FROM proponentes WHERE proyecto_id = %s",
+        (proyecto_id,),
+    )
+    actuales_set = {
+        (r[0] or 0, _norm_str(r[1]), _norm_str(r[2])) for r in cur.fetchall()
+    }
+
+    if nuevos_set == actuales_set:
+        return len(nuevos), False
+
+    agregados = nuevos_set - actuales_set
+    eliminados = actuales_set - nuevos_set
+    if agregados or eliminados:
+        cambios.append(
+            f"proponentes: +{len(agregados)} / -{len(eliminados)}"
+        )
+
+    cur.execute("DELETE FROM proponentes WHERE proyecto_id = %s", (proyecto_id,))
+    cur.executemany(
+        """
+        INSERT INTO proponentes (proyecto_id, secuencia, apellidos, nombre)
+        VALUES (%s, %s, %s, %s)
+        """,
+        [(proyecto_id, sec, ape or None, nom or None) for sec, ape, nom in nuevos],
+    )
+    return len(nuevos), True
+
+
+def _sync_tramitacion(
+    cur, proyecto_id: int, scrap: list, cambios: list[str],
+) -> tuple[int, bool]:
+    """Igual a _sync_proponentes pero para tramitación."""
+    if not scrap:
+        cur.execute(
+            "SELECT COUNT(*) FROM tramitacion WHERE proyecto_id = %s",
+            (proyecto_id,),
+        )
+        return cur.fetchone()[0], False
+
+    nuevos = [
+        (
+            _norm_str(t.get("Órgano")),
+            parsear_fecha(t.get("Fecha Inicio", "")),
+            parsear_fecha(t.get("Fecha Término", "")),
+            _norm_str(t.get("Descripción") or t.get("Tipo de Trámite")),
+        )
+        for t in scrap
+    ]
+    nuevos_set = set(nuevos)
+
+    cur.execute(
+        """
+        SELECT organo, fecha_inicio, fecha_termino, tipo_tramite
+        FROM tramitacion WHERE proyecto_id = %s
+        """,
+        (proyecto_id,),
+    )
+    actuales_set = {
+        (_norm_str(r[0]), r[1], r[2], _norm_str(r[3])) for r in cur.fetchall()
+    }
+
+    if nuevos_set == actuales_set:
+        return len(nuevos), False
+
+    agregados = nuevos_set - actuales_set
+    eliminados = actuales_set - nuevos_set
+    if agregados or eliminados:
+        cambios.append(
+            f"trámites: +{len(agregados)} / -{len(eliminados)}"
+        )
+        # Si hay agregados nuevos, mostramos hasta 2 ejemplos para el log
+        for org, fi, _ft, _tt in list(agregados)[:2]:
+            cambios.append(f"  + trámite {fi or '?'} {org[:40]}")
+
+    cur.execute("DELETE FROM tramitacion WHERE proyecto_id = %s", (proyecto_id,))
+    cur.executemany(
+        """
+        INSERT INTO tramitacion
+            (proyecto_id, organo, fecha_inicio, fecha_termino, tipo_tramite)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        [
+            (proyecto_id, org or None, fi, ft, tt or None)
+            for org, fi, ft, tt in nuevos
+        ],
+    )
+    return len(nuevos), True
+
 
 def sync_proyectos(proyectos: list) -> dict:
     """
@@ -297,6 +471,15 @@ def sync_proyectos(proyectos: list) -> dict:
                     num_ley    = det.get("Número de ley que generó") or det.get("Número de Ley")
                     num_gaceta = None if num_gaceta == "NO" else num_gaceta
                     num_ley    = None if num_ley    == "NO" else num_ley
+                    new_titulo = proy.get("titulo")
+
+                    # Snapshot del título previo para detectar correcciones.
+                    cur.execute(
+                        "SELECT titulo FROM proyectos WHERE numero_expediente = %s",
+                        (int(num_exp),),
+                    )
+                    row_prev = cur.fetchone()
+                    old_titulo = row_prev[0] if row_prev else None
 
                     # ── Upsert del proyecto ──────────────────────────
                     cur.execute(
@@ -318,7 +501,7 @@ def sync_proyectos(proyectos: list) -> dict:
                         """,
                         (
                             int(num_exp),
-                            proy.get("titulo"),
+                            new_titulo,
                             det.get("Tipo de expediente") or det.get("Tipo de Expediente"),
                             parsear_fecha(det.get("Fecha de iniciación") or det.get("Fecha de Inicio", "")),
                             parsear_fecha(det.get("Fecha de vencimiento cuatrienal") or det.get("Vencimiento Cuatrienal", "")),
@@ -329,68 +512,35 @@ def sync_proyectos(proyectos: list) -> dict:
                     )
                     proyecto_id = cur.fetchone()[0]
 
-                    # ── Proponentes (solo nuevos) ────────────────────
-                    prop_nuevos = 0
-                    for prop in proy.get("proponentes", []):
-                        cur.execute(
-                            """
-                            INSERT INTO proponentes (proyecto_id, secuencia, apellidos, nombre)
-                            SELECT %s, %s, %s, %s
-                            WHERE NOT EXISTS (
-                                SELECT 1 FROM proponentes
-                                WHERE proyecto_id = %s
-                                  AND secuencia = %s
-                                  AND (nombre = %s OR apellidos = %s)
-                            )
-                            """,
-                            (
-                                proyecto_id,
-                                int(prop.get("Firma") or prop.get("Secuencia", 0) or 0),
-                                prop.get("Apellidos"),
-                                prop.get("Nombre"),
-                                proyecto_id,
-                                int(prop.get("Firma") or prop.get("Secuencia", 0) or 0),
-                                prop.get("Nombre"),
-                                prop.get("Apellidos"),
-                            ),
+                    cambios: list[str] = []
+                    if old_titulo and new_titulo and old_titulo.strip() != (new_titulo or "").strip():
+                        cambios.append(
+                            f"título: '{(old_titulo or '')[:60]}…' → '{(new_titulo or '')[:60]}…'"
                         )
-                        if cur.rowcount > 0:
-                            prop_nuevos += 1
 
-                    # ── Tramitación (solo nuevos) ────────────────────
-                    tram_nuevos = 0
-                    for tram in proy.get("tramitacion", []):
-                        cur.execute(
-                            """
-                            INSERT INTO tramitacion
-                                (proyecto_id, organo, fecha_inicio, fecha_termino, tipo_tramite)
-                            SELECT %s, %s, %s, %s, %s
-                            WHERE NOT EXISTS (
-                                SELECT 1 FROM tramitacion
-                                WHERE proyecto_id = %s
-                                  AND organo = %s
-                                  AND (fecha_inicio IS NOT DISTINCT FROM %s)
-                                  AND tipo_tramite = %s
-                            )
-                            """,
-                            (
-                                proyecto_id,
-                                tram.get("Órgano"),
-                                parsear_fecha(tram.get("Fecha Inicio", "")),
-                                parsear_fecha(tram.get("Fecha Término", "")),
-                                tram.get("Descripción") or tram.get("Tipo de Trámite"),
-                                proyecto_id,
-                                tram.get("Órgano"),
-                                parsear_fecha(tram.get("Fecha Inicio", "")),
-                                tram.get("Descripción") or tram.get("Tipo de Trámite"),
-                            ),
-                        )
-                        if cur.rowcount > 0:
-                            tram_nuevos += 1
+                    # ── Proponentes ────────────────────────────────────
+                    # Comparamos el set scrapeado vs el de la BD.
+                    # - Si vinieron vacíos → no tocamos (probable fallo del portal).
+                    # - Si son idénticos    → no-op (skip DELETE+INSERT).
+                    # - Si difieren         → REPLACE en bulk con executemany.
+                    proponentes_scrap = proy.get("proponentes", []) or []
+                    prop_count, prop_changed = _sync_proponentes(
+                        cur, proyecto_id, proponentes_scrap, cambios
+                    )
 
-                    # ── Documento (si existe) ────────────────────────
+                    # ── Tramitación ────────────────────────────────────
+                    tramitacion_scrap = proy.get("tramitacion", []) or []
+                    tram_count, tram_changed = _sync_tramitacion(
+                        cur, proyecto_id, tramitacion_scrap, cambios
+                    )
+
+                    # ── Documento (replace, evita duplicados por re-scrape) ─
                     doc = proy.get("documento", {})
                     if doc.get("archivo"):
+                        cur.execute(
+                            "DELETE FROM documentos WHERE proyecto_id = %s",
+                            (proyecto_id,),
+                        )
                         cur.execute(
                             "INSERT INTO documentos (proyecto_id, tipo, ruta_archivo) VALUES (%s, %s, %s)",
                             (proyecto_id, doc.get("tipo"), doc.get("archivo")),
@@ -400,10 +550,29 @@ def sync_proyectos(proyectos: list) -> dict:
                         proyecto_id, proy.get("titulo", ""), cur
                     )
 
+                    # ── Estado actual (denormalizado) ────────────────
+                    estado_org, estado_grp = calcular_estado_actual(
+                        proy.get("tramitacion", []), num_ley
+                    )
+                    cur.execute(
+                        """
+                        UPDATE proyectos
+                        SET estado_actual = %s,
+                            estado_grupo  = %s
+                        WHERE id = %s
+                        """,
+                        (estado_org, estado_grp, proyecto_id),
+                    )
+
+                    flags = ""
+                    if prop_changed: flags += " ✎prop"
+                    if tram_changed: flags += " ✎trám"
                     print(
                         f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] [{idx}/{total}] "
-                        f"Exp. {num_exp} | +{prop_nuevos} prop  +{tram_nuevos} trám  {cats_asignadas} cat"
+                        f"Exp. {num_exp} | {prop_count} prop  {tram_count} trám  {cats_asignadas} cat{flags}"
                     )
+                    for c in cambios:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}][DIFF]   Exp. {num_exp}: {c}")
                     stats["actualizados"] += 1
 
                 except Exception as exc:

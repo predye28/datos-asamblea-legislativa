@@ -323,3 +323,17 @@
     opacity: 0.25;
   }
 }
+
+/* Si el dispositivo prefiere reducir movimiento (común en algunos celulares
+   con la opción activada) las animaciones se desactivaban por completo y
+   "Asamblea" aparecía instantáneamente. Forzamos que la animación del
+   título y descripción siempre corra para que la entrada se vea igual
+   en mobile. */
+@media (prefers-reduced-motion: reduce) {
+  .title,
+  .description,
+  .badgeWrapper {
+    animation-duration: inherit;
+    animation-play-state: running;
+  }
+}

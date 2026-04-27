@@ -5,11 +5,12 @@ interface Props {
   estadoActual: string | null
   esLey: boolean
   numeroLey?: string | null
+  estadoGrupo?: string | null
   size?: 'sm' | 'md'
 }
 
-export function EstadoChip({ estadoActual, esLey, numeroLey, size = 'md' }: Props) {
-  const info = etiquetaEstado(estadoActual, esLey, numeroLey)
+export function EstadoChip({ estadoActual, esLey, numeroLey, estadoGrupo, size = 'md' }: Props) {
+  const info = etiquetaEstado(estadoActual, esLey, numeroLey, estadoGrupo)
   return (
     <span
       className={`${styles.chip} ${styles[`chip_${info.grupo}`]} ${size === 'sm' ? styles.sm : ''}`}

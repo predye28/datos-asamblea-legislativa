@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { ProyectoResumen, Categoria, Paginacion } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
-import { getPeriodos, getAllLegislativePeriods } from '@/lib/periodos'
+import { getPeriodos, useLegislativePeriods } from '@/lib/periodos'
 import { ESTADO_FILTROS } from '@/lib/estados'
 import styles from './proyectos.module.css'
 import FilterPill from '@/components/ui/FilterPill'
@@ -90,6 +90,7 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
           <span className={styles.expediente}>Exp. {p.numero_expediente}</span>
           <EstadoChip
             estadoActual={p.estado_actual}
+            estadoGrupo={p.estado_grupo}
             esLey={isLey}
             numeroLey={p.numero_ley}
             size="sm"
@@ -150,18 +151,24 @@ function Skeleton() {
 
 function ProyectosContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const [query, setQuery]         = useState(() => searchParams.get('q') || '')
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
-  const [periodo, setPeriodo]     = useState('')
-  const [orden, setOrden]         = useState('reciente')
+  const [periodo, setPeriodo]     = useState(() => searchParams.get('periodo') || '')
+  const [orden, setOrden]         = useState(() => searchParams.get('orden') || 'reciente')
   const [estado, setEstado]       = useState(() => searchParams.get('estado') || '')
-  const [pagina, setPagina]       = useState(1)
+  const [pagina, setPagina]       = useState(() => {
+    const p = parseInt(searchParams.get('pagina') || '1', 10)
+    return Number.isFinite(p) && p >= 1 ? p : 1
+  })
 
   const [proyectos, setProyectos]   = useState<ProyectoResumen[]>([])
   const [paginacion, setPaginacion] = useState<Paginacion | null>(null)
   const [loading, setLoading]       = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const legislativePeriods = useLegislativePeriods()
 
   // Load categories once.
   useEffect(() => {
@@ -174,6 +181,22 @@ function ProyectosContent() {
     })
     return () => { cancelled = true }
   }, [])
+
+  // Sync filters → URL (back/forward y URLs compartibles).
+  useEffect(() => {
+    const qs = new URLSearchParams()
+    if (query)              qs.set('q', query)
+    if (categoria)          qs.set('categoria', categoria)
+    if (periodo)            qs.set('periodo', periodo)
+    if (estado)             qs.set('estado', estado)
+    if (orden !== 'reciente') qs.set('orden', orden)
+    if (pagina > 1)         qs.set('pagina', String(pagina))
+    const next = qs.toString()
+    const current = searchParams.toString()
+    if (next !== current) {
+      router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
+    }
+  }, [query, categoria, periodo, orden, estado, pagina, pathname, router, searchParams])
 
   // Combined fetch — debounce only for query changes, immediate for filters/pagination.
   const prevFiltersRef = useRef({ query, categoria, periodo, orden, estado, pagina })
@@ -196,13 +219,14 @@ function ProyectosContent() {
       try {
         const periodObj = getPeriodos().find(p => p.label === periodo)
         const desde = periodObj?.desde()
-        const allPeriods = getAllLegislativePeriods()
-        const legPeriod = allPeriods.find(p => p.label === periodo)
+        const legPeriod = legislativePeriods.find(p => p.label === periodo)
 
+        const trimmedQuery = query.trim()
         let result
-        if (query.trim()) {
+        // Backend exige q.length >= 2 — evitar disparar 1-char y caer en 422.
+        if (trimmedQuery.length >= 2) {
           result = await api.proyectos.buscar(
-            query.trim(), pagina,
+            trimmedQuery, pagina,
             legPeriod?.desde || desde, legPeriod?.hasta,
           )
         } else {
@@ -229,7 +253,7 @@ function ProyectosContent() {
       }
     }, delay)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [query, categoria, periodo, orden, estado, pagina])
+  }, [query, categoria, periodo, orden, estado, pagina, legislativePeriods])
 
   // Filter change handlers reset pagination to page 1 up-front.
   const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
@@ -310,7 +334,7 @@ function ProyectosContent() {
               options={[
                 { value: '', label: 'Cualquier período' },
                 ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
-                ...getAllLegislativePeriods().map(p => ({ value: p.label, label: p.label })),
+                ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
               ]}
             />
             <FilterPill

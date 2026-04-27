@@ -2,17 +2,12 @@
 routers/proyectos.py
 ──────────────────────────────────────────────────────────────────────
 Endpoints para listar, buscar y obtener detalle de proyectos de ley.
-
-Endpoints
-─────────
-  GET /api/v1/proyectos                    → listado paginado con filtros
-  GET /api/v1/proyectos/{numero_expediente} → detalle completo
-  GET /api/v1/proyectos/buscar             → búsqueda por texto o diputado
 """
 
 import math
+from datetime import date
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
+from typing import Optional, Literal
 
 from database import fetchall, fetchone, fetchval
 from models import (
@@ -30,11 +25,24 @@ router = APIRouter()
 
 
 # ══════════════════════════════════════════════════════════════════════
-# HELPERS INTERNOS
+# HELPERS
 # ══════════════════════════════════════════════════════════════════════
 
+def _like_escape(s: str) -> str:
+    """Escapa los wildcards LIKE/ILIKE (\\, %, _) para que un usuario
+    no pueda colar comodines vía filtros de texto."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _validar_rango_fechas(desde: date | None, hasta: date | None) -> None:
+    if desde and hasta and desde > hasta:
+        raise HTTPException(
+            status_code=422,
+            detail="El parámetro 'desde' debe ser anterior o igual a 'hasta'.",
+        )
+
+
 def _cats_de_proyecto(proyecto_id: int) -> list[CategoriaResumen]:
-    """Devuelve las categorías de un proyecto (uso en detalle individual)."""
     rows = fetchall(
         """
         SELECT c.slug, c.nombre
@@ -49,10 +57,6 @@ def _cats_de_proyecto(proyecto_id: int) -> list[CategoriaResumen]:
 
 
 def _cats_batch(ids: list[int]) -> dict[int, list[CategoriaResumen]]:
-    """
-    Trae las categorías de múltiples proyectos en UNA sola query.
-    Retorna un dict  proyecto_id -> [CategoriaResumen, ...]
-    """
     if not ids:
         return {}
     rows = fetchall(
@@ -67,23 +71,20 @@ def _cats_batch(ids: list[int]) -> dict[int, list[CategoriaResumen]]:
     )
     result: dict[int, list[CategoriaResumen]] = {i: [] for i in ids}
     for r in rows:
-        result[r["proyecto_id"]].append(CategoriaResumen(slug=r["slug"], nombre=r["nombre"]))
+        result[r["proyecto_id"]].append(
+            CategoriaResumen(slug=r["slug"], nombre=r["nombre"])
+        )
     return result
 
 
 def _enriquecer(row: dict) -> ProyectoResumen:
-    """Para uso en detalle individual (ya trae cats por separado)."""
     data = dict(row)
-    data["es_ley"]     = bool(data.get("numero_ley"))
+    data["es_ley"] = bool(data.get("numero_ley"))
     data["categorias"] = _cats_de_proyecto(data["id"])
     return ProyectoResumen(**data)
 
 
 def _enriquecer_batch(rows: list[dict]) -> list[ProyectoResumen]:
-    """
-    Convierte una lista de filas crudas en ProyectoResumen,
-    trayendo TODAS las categorías en una sola query (sin N+1).
-    """
     if not rows:
         return []
     ids = [r["id"] for r in rows]
@@ -91,7 +92,7 @@ def _enriquecer_batch(rows: list[dict]) -> list[ProyectoResumen]:
     result = []
     for row in rows:
         data = dict(row)
-        data["es_ley"]     = bool(data.get("numero_ley"))
+        data["es_ley"] = bool(data.get("numero_ley"))
         data["categorias"] = cats_map.get(data["id"], [])
         result.append(ProyectoResumen(**data))
     return result
@@ -101,39 +102,32 @@ def _enriquecer_batch(rows: list[dict]) -> list[ProyectoResumen]:
 # LISTADO CON FILTROS Y PAGINACIÓN
 # ══════════════════════════════════════════════════════════════════════
 
+EstadoFiltro = Literal["ley", "discusion", "archivado", "otro"]
+OrdenFiltro = Literal["reciente", "antiguo", "expediente", "titulo_az", "titulo_za"]
+
+
 @router.get("/proyectos", response_model=ProyectosResponse, summary="Listar proyectos")
 def listar_proyectos(
-    pagina:     int = Query(1,    ge=1,   description="Número de página"),
-    por_pagina: int = Query(20,   ge=1, le=100, description="Resultados por página"),
-    tipo:       Optional[str] = Query(None, description="Filtrar por tipo de expediente"),
-    anio:       Optional[int] = Query(None, description="Filtrar por año de inicio"),
-    desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
-    hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
-    solo_leyes: bool          = Query(False, description="Solo proyectos que se convirtieron en ley"),
-    estado:     Optional[str] = Query(None, description="Filtrar por grupo de estado: ley | discusion | archivado"),
-    orden:      str           = Query("reciente", description="reciente | antiguo | expediente | titulo_az | titulo_za"),
-    categoria:  Optional[str] = Query(None, description="Filtrar por slug de categoría"),
-    diputado:   Optional[str] = Query(None, description="Filtrar por nombre o apellidos del proponente"),
+    pagina:     int = Query(1, ge=1, le=10_000),
+    por_pagina: int = Query(20, ge=1, le=100),
+    tipo:       Optional[str]  = Query(None, max_length=120),
+    anio:       Optional[int]  = Query(None, ge=1900, le=2100),
+    desde:      Optional[date] = Query(None),
+    hasta:      Optional[date] = Query(None),
+    solo_leyes: bool = Query(False),
+    estado:     Optional[EstadoFiltro] = Query(None),
+    orden:      OrdenFiltro = Query("reciente"),
+    categoria:  Optional[str] = Query(None, max_length=60),
+    diputado:   Optional[str] = Query(None, max_length=120),
 ):
-    """
-    Devuelve proyectos paginados.
+    _validar_rango_fechas(desde, hasta)
 
-    - **pagina**: página actual (empieza en 1)
-    - **por_pagina**: cuántos resultados por página (máximo 100)
-    - **tipo**: filtra por tipo de expediente (ej: "Proyecto de Ley")
-    - **anio**: filtra proyectos iniciados en ese año
-    - **desde**: filtra proyectos iniciados desde esta fecha
-    - **hasta**: filtra proyectos iniciados hasta esta fecha
-    - **solo_leyes**: si `true`, muestra solo los que tienen número de ley
-    - **orden**: `reciente` (más nuevo primero), `antiguo`, `expediente`
-    """
-    # Construir cláusulas WHERE dinámicamente
-    condiciones = []
+    condiciones: list[str] = []
     params: list = []
 
     if tipo:
-        condiciones.append("p.tipo_expediente ILIKE %s")
-        params.append(f"%{tipo}%")
+        condiciones.append("p.tipo_expediente ILIKE %s ESCAPE '\\'")
+        params.append(f"%{_like_escape(tipo)}%")
 
     if anio:
         condiciones.append("EXTRACT(YEAR FROM p.fecha_inicio) = %s")
@@ -150,21 +144,9 @@ def listar_proyectos(
     if solo_leyes:
         condiciones.append("p.numero_ley IS NOT NULL")
 
-    if estado == 'ley':
-        condiciones.append("p.numero_ley IS NOT NULL")
-    elif estado == 'archivado':
-        condiciones.append("""
-            (SELECT t2.organo FROM tramitacion t2
-             WHERE t2.proyecto_id = p.id
-             ORDER BY t2.fecha_inicio DESC NULLS LAST LIMIT 1) ~* 'archiv|desech'
-        """)
-    elif estado == 'discusion':
-        condiciones.append("""
-            (SELECT t2.organo FROM tramitacion t2
-             WHERE t2.proyecto_id = p.id
-             ORDER BY t2.fecha_inicio DESC NULLS LAST LIMIT 1)
-            ~* 'comisi.n|plenario|estudio|tr.mite|primer debate|segundo debate|dictamen'
-        """)
+    if estado:
+        condiciones.append("p.estado_grupo = %s")
+        params.append(estado)
 
     if categoria:
         condiciones.append(
@@ -179,35 +161,43 @@ def listar_proyectos(
         params.append(categoria)
 
     if diputado:
+        termino_dip = f"%{_like_escape(diputado)}%"
         condiciones.append(
             """
             EXISTS (
                 SELECT 1 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
-                  AND (pr.apellidos ILIKE %s OR pr.nombre ILIKE %s
-                       OR CONCAT(pr.nombre, ' ', pr.apellidos) ILIKE %s
-                       OR CONCAT(pr.apellidos, ' ', pr.nombre) ILIKE %s)
+                  AND (pr.apellidos ILIKE %s ESCAPE '\\'
+                       OR pr.nombre    ILIKE %s ESCAPE '\\'
+                       OR CONCAT(pr.nombre, ' ', pr.apellidos) ILIKE %s ESCAPE '\\'
+                       OR CONCAT(pr.apellidos, ' ', pr.nombre) ILIKE %s ESCAPE '\\')
             )
             """
         )
-        termino_dip = f"%{diputado}%"
         params.extend([termino_dip, termino_dip, termino_dip, termino_dip])
 
     where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
 
-    # Orden
     orden_sql = {
         "reciente":   "p.fecha_inicio DESC NULLS LAST",
         "antiguo":    "p.fecha_inicio ASC NULLS LAST",
         "expediente": "p.numero_expediente DESC",
         "titulo_az":  "p.titulo ASC NULLS LAST",
         "titulo_za":  "p.titulo DESC NULLS LAST",
-    }.get(orden, "p.fecha_inicio DESC NULLS LAST")
+    }[orden]
 
-    # Total de registros (para paginación)
-    total = fetchval(f"SELECT COUNT(*) FROM proyectos p {where}", tuple(params))
+    total = fetchval(f"SELECT COUNT(*) FROM proyectos p {where}", tuple(params)) or 0
+    total_paginas = max(1, math.ceil(total / por_pagina))
 
-    # Query principal con conteos y último órgano
+    if total > 0 and pagina > total_paginas:
+        return ProyectosResponse(
+            datos=[],
+            paginacion=Paginacion(
+                total=total, pagina=pagina, por_pagina=por_pagina,
+                total_paginas=total_paginas,
+            ),
+        )
+
     offset = (pagina - 1) * por_pagina
     params_paginado = params + [por_pagina, offset]
 
@@ -222,17 +212,12 @@ def listar_proyectos(
             p.fecha_publicacion,
             p.numero_gaceta,
             p.numero_ley,
+            p.estado_actual,
+            p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr.id)   AS total_proponentes,
             COUNT(DISTINCT tr.id)   AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
-            (
-                SELECT t2.organo
-                FROM tramitacion t2
-                WHERE t2.proyecto_id = p.id
-                ORDER BY t2.fecha_inicio DESC NULLS LAST
-                LIMIT 1
-            ) AS estado_actual
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
         FROM proyectos p
         LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
         LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
@@ -246,14 +231,10 @@ def listar_proyectos(
     rows = fetchall(sql, tuple(params_paginado))
     datos = _enriquecer_batch(rows)
 
-    total_paginas = math.ceil(total / por_pagina) if total else 1
-
     return ProyectosResponse(
         datos=datos,
         paginacion=Paginacion(
-            total=total,
-            pagina=pagina,
-            por_pagina=por_pagina,
+            total=total, pagina=pagina, por_pagina=por_pagina,
             total_paginas=total_paginas,
         ),
     )
@@ -265,35 +246,29 @@ def listar_proyectos(
 
 @router.get("/proyectos/buscar", response_model=ProyectosResponse, summary="Buscar proyectos")
 def buscar_proyectos(
-    q:          str = Query(..., min_length=2, description="Texto libre: título, diputado, órgano"),
-    desde:      Optional[str] = Query(None, description="Fecha de inicio mínima (YYYY-MM-DD)"),
-    hasta:      Optional[str] = Query(None, description="Fecha de inicio máxima (YYYY-MM-DD)"),
-    pagina:     int = Query(1,  ge=1),
+    q:          str = Query(..., min_length=2, max_length=200),
+    desde:      Optional[date] = Query(None),
+    hasta:      Optional[date] = Query(None),
+    pagina:     int = Query(1, ge=1, le=10_000),
     por_pagina: int = Query(20, ge=1, le=100),
 ):
-    """
-    Búsqueda de texto completo sobre:
-    - Título del proyecto
-    - Nombre o apellidos de proponentes
-    - Órgano de tramitación
+    _validar_rango_fechas(desde, hasta)
 
-    Retorna los proyectos que coincidan con **cualquiera** de esos campos.
-    """
-    termino = f"%{q}%"
-    
+    termino = f"%{_like_escape(q.strip())}%"
+
     condiciones = [
         """
         (
-            p.titulo ILIKE %s
+            p.titulo ILIKE %s ESCAPE '\\'
             OR EXISTS (
                 SELECT 1 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
-                  AND (pr.apellidos ILIKE %s OR pr.nombre ILIKE %s)
+                  AND (pr.apellidos ILIKE %s ESCAPE '\\' OR pr.nombre ILIKE %s ESCAPE '\\')
             )
             OR EXISTS (
                 SELECT 1 FROM tramitacion tr
                 WHERE tr.proyecto_id = p.id
-                  AND tr.organo ILIKE %s
+                  AND tr.organo ILIKE %s ESCAPE '\\'
             )
         )
         """
@@ -308,7 +283,6 @@ def buscar_proyectos(
         params.append(hasta)
 
     where_sql = "WHERE " + " AND ".join(condiciones)
-    
     from_sql = "FROM proyectos p"
     join_sql = """
         LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
@@ -316,7 +290,20 @@ def buscar_proyectos(
         LEFT JOIN documentos  doc  ON doc.proyecto_id = p.id
     """
 
-    total = fetchval(f"SELECT COUNT(DISTINCT p.id) {from_sql} {where_sql}", tuple(params))
+    total = fetchval(
+        f"SELECT COUNT(DISTINCT p.id) {from_sql} {where_sql}",
+        tuple(params),
+    ) or 0
+    total_paginas = max(1, math.ceil(total / por_pagina))
+
+    if total > 0 and pagina > total_paginas:
+        return ProyectosResponse(
+            datos=[],
+            paginacion=Paginacion(
+                total=total, pagina=pagina, por_pagina=por_pagina,
+                total_paginas=total_paginas,
+            ),
+        )
 
     offset = (pagina - 1) * por_pagina
     params_query = params + [por_pagina, offset]
@@ -332,17 +319,12 @@ def buscar_proyectos(
             p.fecha_publicacion,
             p.numero_gaceta,
             p.numero_ley,
+            p.estado_actual,
+            p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr2.id)   AS total_proponentes,
             COUNT(DISTINCT tr2.id)   AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
-            (
-                SELECT t2.organo
-                FROM tramitacion t2
-                WHERE t2.proyecto_id = p.id
-                ORDER BY t2.fecha_inicio DESC NULLS LAST
-                LIMIT 1
-            ) AS estado_actual
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
         {from_sql}
         {join_sql}
         {where_sql}
@@ -354,21 +336,17 @@ def buscar_proyectos(
     rows = fetchall(sql, tuple(params_query))
     datos = _enriquecer_batch(rows)
 
-    total_paginas = math.ceil(total / por_pagina) if total else 1
-
     return ProyectosResponse(
         datos=datos,
         paginacion=Paginacion(
-            total=total,
-            pagina=pagina,
-            por_pagina=por_pagina,
+            total=total, pagina=pagina, por_pagina=por_pagina,
             total_paginas=total_paginas,
         ),
     )
 
 
 # ══════════════════════════════════════════════════════════════════════
-# DETALLE DE UN PROYECTO
+# DETALLE
 # ══════════════════════════════════════════════════════════════════════
 
 @router.get(
@@ -377,14 +355,9 @@ def buscar_proyectos(
     summary="Detalle de un proyecto",
 )
 def detalle_proyecto(numero_expediente: int):
-    """
-    Devuelve el detalle completo de un proyecto:
-    - Datos maestros
-    - Lista de proponentes (diputados firmantes)
-    - Historial de tramitación (órganos y fechas)
-    - Documentos adjuntos (PDF / DOCX)
-    """
-    # Datos maestros
+    if numero_expediente < 1:
+        raise HTTPException(422, "numero_expediente debe ser positivo.")
+
     row = fetchone(
         """
         SELECT
@@ -397,17 +370,12 @@ def detalle_proyecto(numero_expediente: int):
             p.fecha_publicacion,
             p.numero_gaceta,
             p.numero_ley,
+            p.estado_actual,
+            p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr.id)  AS total_proponentes,
             COUNT(DISTINCT tr.id)  AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento,
-            (
-                SELECT t2.organo
-                FROM tramitacion t2
-                WHERE t2.proyecto_id = p.id
-                ORDER BY t2.fecha_inicio DESC NULLS LAST
-                LIMIT 1
-            ) AS estado_actual
+            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
         FROM proyectos p
         LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
         LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
@@ -424,14 +392,12 @@ def detalle_proyecto(numero_expediente: int):
             detail=f"Proyecto con expediente {numero_expediente} no encontrado.",
         )
 
-    # Proponentes
     prop_rows = fetchall(
         "SELECT secuencia, apellidos, nombre FROM proponentes WHERE proyecto_id = %s ORDER BY secuencia",
         (row["id"],),
     )
     proponentes = [Proponente(**p) for p in prop_rows]
 
-    # Tramitación
     tram_rows = fetchall(
         """
         SELECT organo, fecha_inicio, fecha_termino, tipo_tramite
@@ -443,37 +409,30 @@ def detalle_proyecto(numero_expediente: int):
     )
     tramitacion = [TramiteItem(**t) for t in tram_rows]
 
-    # Documentos
     doc_rows = fetchall(
         "SELECT tipo, ruta_archivo FROM documentos WHERE proyecto_id = %s",
         (row["id"],),
     )
     documentos = [DocumentoItem(**d) for d in doc_rows]
 
-    # Categorías
     categorias = _cats_de_proyecto(row["id"])
 
-    # Construir el objeto de detalle
     data = dict(row)
-    data["es_ley"]      = bool(data.get("numero_ley"))
+    data["es_ley"] = bool(data.get("numero_ley"))
     data["proponentes"] = proponentes
     data["tramitacion"] = tramitacion
-    data["documentos"]  = documentos
-    data["categorias"]  = categorias
+    data["documentos"] = documentos
+    data["categorias"] = categorias
 
     return ProyectoDetalle(**data)
 
 
 # ══════════════════════════════════════════════════════════════════════
-# TIPOS DE EXPEDIENTE (para filtros del front)
+# TIPOS DE EXPEDIENTE
 # ══════════════════════════════════════════════════════════════════════
 
 @router.get("/proyectos-tipos", summary="Tipos de expediente disponibles")
 def tipos_expediente():
-    """
-    Devuelve la lista de tipos de expediente únicos en la base de datos.
-    Útil para poblar los filtros del front.
-    """
     rows = fetchall(
         """
         SELECT tipo_expediente, COUNT(*) AS total

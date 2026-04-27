@@ -5,7 +5,7 @@ main.py — API principal del portal ciudadano de la Asamblea Legislativa CR
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import proyectos, metricas, categorias
+from routers import proyectos, metricas, categorias, periodos
 
 app = FastAPI(
     title="Asamblea Legislativa CR — API Ciudadana",
@@ -22,10 +22,15 @@ app = FastAPI(
 _raw_origins = os.getenv("CORS_ORIGINS", "*")
 _origins = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
 
+# Si se permite cualquier origen, no se pueden enviar credenciales (los
+# navegadores rechazan la combinación). En prod, fija un dominio específico
+# para habilitar credentials de manera segura.
+_allow_credentials = "*" not in _origins
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
-    allow_credentials=True,
+    allow_credentials=_allow_credentials,
     allow_methods=["GET"],
     allow_headers=["*"],
 )
@@ -33,6 +38,7 @@ app.add_middleware(
 app.include_router(proyectos.router,  prefix="/api/v1", tags=["Proyectos"])
 app.include_router(metricas.router,   prefix="/api/v1", tags=["Métricas"])
 app.include_router(categorias.router, prefix="/api/v1", tags=["Categorías"])
+app.include_router(periodos.router,   prefix="/api/v1", tags=["Períodos"])
 
 
 @app.get("/", tags=["Health"])

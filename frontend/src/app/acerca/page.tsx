@@ -140,35 +140,6 @@ export default function AcercaPage() {
 
 
 
-            {/* Buenas prácticas */}
-            <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Buenas Prácticas</h2>
-                <p className={styles.sectionSubtitle}>Recomendaciones al usar el portal</p>
-              </div>
-              <div className={styles.sectionContent}>
-                <div className={styles.limitaciones}>
-                  <div className={styles.limitacion}>
-                    <div className={styles.limitacionTitle}>Fuente oficial: el SIL</div>
-                    <div className={styles.limitacionText}>
-                      Nuestro portal refleja fielmente lo que la Asamblea publica. Si un dato aún no aparece en el sistema oficial, estará disponible acá en cuanto se registre.
-                    </div>
-                  </div>
-                  <div className={styles.limitacion}>
-                    <div className={styles.limitacionTitle}>Actualización periódica</div>
-                    <div className={styles.limitacionText}>
-                      Sincronizamos los datos regularmente. Puede haber un breve desfase con el sitio oficial, que se resuelve en la siguiente actualización.
-                    </div>
-                  </div>
-                  <div className={styles.limitacion}>
-                    <div className={styles.limitacionTitle}>Portal informativo</div>
-                    <div className={styles.limitacionText}>
-                      Esta herramienta facilita la consulta de información legislativa. Para asesoría legal o jurídica, recomendamos acudir a una fuente calificada.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
           </div>
         </div>
 

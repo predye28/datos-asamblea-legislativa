@@ -6,7 +6,9 @@ export interface EstadoInfo {
   textoCompleto: string
 }
 
-export function clasificarEstado(estadoActual: string | null, esLey: boolean): EstadoGrupo {
+// Fallback para datos viejos sin estado_grupo poblado.
+// La lógica autoritativa vive en el backend (sync_engine.clasificar_estado_grupo).
+function clasificarFallback(estadoActual: string | null, esLey: boolean): EstadoGrupo {
   if (esLey) return 'ley'
   const s = (estadoActual || '').toLowerCase()
   if (!s) return 'otro'
@@ -22,8 +24,30 @@ export function clasificarEstado(estadoActual: string | null, esLey: boolean): E
   return 'otro'
 }
 
-export function etiquetaEstado(estadoActual: string | null, esLey: boolean, numeroLey?: string | null): EstadoInfo {
-  const grupo = clasificarEstado(estadoActual, esLey)
+/**
+ * Resuelve el grupo de estado.
+ * Prioriza el campo `estadoGrupo` que llega del backend (fuente de verdad).
+ * Si no viene poblado, cae al fallback local.
+ */
+export function resolverGrupo(
+  estadoGrupo: string | null | undefined,
+  estadoActual: string | null,
+  esLey: boolean,
+): EstadoGrupo {
+  if (estadoGrupo === 'ley' || estadoGrupo === 'discusion'
+      || estadoGrupo === 'archivado' || estadoGrupo === 'otro') {
+    return estadoGrupo
+  }
+  return clasificarFallback(estadoActual, esLey)
+}
+
+export function etiquetaEstado(
+  estadoActual: string | null,
+  esLey: boolean,
+  numeroLey?: string | null,
+  estadoGrupo?: string | null,
+): EstadoInfo {
+  const grupo = resolverGrupo(estadoGrupo, estadoActual, esLey)
   const textoCompleto = esLey
     ? `Ley vigente${numeroLey ? ` N.º ${numeroLey}` : ''}`
     : (estadoActual || 'Sin estado registrado')

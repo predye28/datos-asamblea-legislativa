@@ -9,8 +9,12 @@ Endpoint
   GET /api/v1/metricas   → resumen completo con 5 bloques de datos
 """
 
+import json
 import time
-from fastapi import APIRouter
+from datetime import date
+from collections import OrderedDict
+from fastapi import APIRouter, HTTPException, Query
+from typing import Optional
 from database import fetchall, fetchone, fetchval
 from constants import MESES_ES
 from models import (
@@ -26,24 +30,49 @@ from models import (
 
 router = APIRouter()
 
-_cache_metricas = {}
-CACHE_TTL = 300 # 5 minutes
+# Caché LRU con tope de tamaño y TTL por entrada — clave inequívoca (JSON).
+_cache_metricas: "OrderedDict[str, dict]" = OrderedDict()
+CACHE_TTL = 300       # 5 min
+CACHE_MAX_SIZE = 64   # máximo de entradas distintas
+
+
+def _cache_get(key: str):
+    entry = _cache_metricas.get(key)
+    if entry and (time.time() - entry["time"] < CACHE_TTL):
+        _cache_metricas.move_to_end(key)
+        return entry["data"]
+    if entry:
+        _cache_metricas.pop(key, None)
+    return None
+
+
+def _cache_set(key: str, data) -> None:
+    _cache_metricas[key] = {"time": time.time(), "data": data}
+    _cache_metricas.move_to_end(key)
+    while len(_cache_metricas) > CACHE_MAX_SIZE:
+        _cache_metricas.popitem(last=False)
+
+
+def _validar_rango_fechas(desde: date | None, hasta: date | None) -> None:
+    if desde and hasta and desde > hasta:
+        raise HTTPException(422, "El parámetro 'desde' debe ser anterior o igual a 'hasta'.")
+
 
 @router.get("/metricas", response_model=MetricasResponse, summary="Métricas ciudadanas")
 def metricas(
-    desde: str = None, # formato YYYY-MM-DD
-    hasta: str = None,
+    desde: Optional[date] = Query(None),
+    hasta: Optional[date] = Query(None),
 ):
-    """
-    Devuelve un conjunto de métricas diseñadas para que cualquier
-    ciudadano entienda qué está pasando en la Asamblea Legislativa.
-    
-    Permite filtrar por un rango de fechas de inicio del proyecto.
-    """
-    cache_key = f"{desde}-{hasta}"
-    now = time.time()
-    if cache_key in _cache_metricas and (now - _cache_metricas[cache_key]['time'] < CACHE_TTL):
-        return _cache_metricas[cache_key]['data']
+    _validar_rango_fechas(desde, hasta)
+
+    cache_key = json.dumps(
+        {"d": desde.isoformat() if desde else None,
+         "h": hasta.isoformat() if hasta else None},
+        sort_keys=True,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
 
     
     # Construir WHERE para el rango de fechas
@@ -279,7 +308,7 @@ def metricas(
         organos_activos=organos_activos,
         por_categoria=por_categoria,
     )
-    _cache_metricas[cache_key] = {'time': now, 'data': res}
+    _cache_set(cache_key, res)
     return res
 
 
@@ -310,7 +339,7 @@ def actividad_semanal():
 
 
 @router.get("/metricas/proximos-vencer", summary="Proyectos próximos a vencer")
-def proximos_vencer(dias: int = 90):
+def proximos_vencer(dias: int = Query(90, ge=1, le=1825)):
     """
     Proyectos cuyo vencimiento cuatrienal ocurre en los próximos N días (default: 90).
     Si un proyecto vence sin convertirse en ley, muere en la Asamblea.
@@ -365,7 +394,10 @@ def linea_tiempo():
 
 
 @router.get("/metricas/detalle-mes", summary="Detalle de proyectos de un mes específico")
-def detalle_mes(anio: int, mes: int):
+def detalle_mes(
+    anio: int = Query(..., ge=1900, le=2100),
+    mes:  int = Query(..., ge=1, le=12),
+):
     """
     Estadísticas y lista de proyectos presentados en un mes y año específico.
     Incluye: totales, cuántos se convirtieron en ley, top proponentes del mes,
@@ -430,26 +462,37 @@ def detalle_mes(anio: int, mes: int):
     }
 
 
+def _like_escape(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 @router.get("/metricas/diputados", summary="Ranking y búsqueda completa de diputados")
-def diputados_ranking(desde: str = None, hasta: str = None, q: str = None):
+def diputados_ranking(
+    desde: Optional[date] = Query(None),
+    hasta: Optional[date] = Query(None),
+    q:     Optional[str]  = Query(None, max_length=120),
+):
     """
-    Retorna la lista completa de diputados (proponentes) ordenada por cantidad de proyectos.
-    Si se proporciona `q` (búsqueda), ignora el rango de fechas para buscar en todo el histórico de la BD.
+    Lista de diputados ordenada por cantidad de proyectos.
+    Si se proporciona `q`, ignora el rango de fechas.
     """
+    _validar_rango_fechas(desde, hasta)
+
     condiciones = [
         "(pr.apellidos IS NOT NULL OR pr.nombre IS NOT NULL)",
         "UPPER(COALESCE(pr.nombre, '')) != 'PODER EJECUTIVO'",
-        "UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'"
+        "UPPER(COALESCE(pr.apellidos, '')) != 'PODER EJECUTIVO'",
     ]
-    params = []
+    params: list = []
 
-    if q:
-        # Si hay búsqueda, busca en todos los tiempos sin restricción de desde/hasta
-        q_val = f"%{q.strip().lower()}%"
-        condiciones.append("LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)) LIKE %s")
+    q_norm = (q or "").strip()
+    if q_norm:
+        q_val = f"%{_like_escape(q_norm.lower())}%"
+        condiciones.append(
+            "LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)) LIKE %s ESCAPE '\\'"
+        )
         params.append(q_val)
     else:
-        # Solo aplicar filtro de periodo si no se está buscando
         if desde:
             condiciones.append("p.fecha_inicio >= %s")
             params.append(desde)
@@ -492,26 +535,30 @@ def perfil_diputado(nombre_completo: str):
     Retorna el perfil completo de un diputado: métricas generales, proyectos por período,
     tasa de aprobación, temas más frecuentes y últimos proyectos.
     """
-    # Estrategia robusta: buscar por cada palara del nombre individualmente en UPPER
-    # Esto maneja tildes, mayusculas, y variaciones de formato
+    # Validación: filtra palabras vacías y rechaza nombres demasiado cortos.
     nombre_norm = nombre_completo.strip()
-    palabras = nombre_norm.split()
+    palabras = [p for p in nombre_norm.split() if len(p) >= 2]
+
+    if not palabras or len(nombre_norm) < 3:
+        raise HTTPException(
+            status_code=422,
+            detail="El nombre debe tener al menos 3 caracteres y una palabra significativa.",
+        )
 
     if len(palabras) >= 2:
-        # El scraper a veces guarda todo en "nombre" y deja "apellidos" NULL,
-        # así que concatenamos con CONCAT_WS que maneja los NULLs de forma segura.
-        # Buscamos que las primeras 2 palabras estén presentes en el nombre completo
         search_condition = """
-            UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)
-            AND UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)
+            UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'
+            AND UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'
         """
         search_params_general = (
-            f"%{palabras[0]}%",
-            f"%{palabras[1]}%",
+            f"%{_like_escape(palabras[0])}%",
+            f"%{_like_escape(palabras[1])}%",
         )
     else:
-        search_condition = "UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s)"
-        search_params_general = (f"%{nombre_norm}%",)
+        search_condition = (
+            "UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'"
+        )
+        search_params_general = (f"%{_like_escape(palabras[0])}%",)
 
     # ── 1. Métricas generales del diputado ────────────────────────────
     general = fetchone(f"""
@@ -567,7 +614,9 @@ def perfil_diputado(nombre_completo: str):
             p.numero_expediente,
             p.titulo,
             p.fecha_inicio,
-            p.numero_ley
+            p.numero_ley,
+            p.estado_actual,
+            p.estado_grupo
         FROM proponentes pr
         JOIN proyectos p ON p.id = pr.proyecto_id
         WHERE {search_condition}

@@ -34,8 +34,17 @@
 
 .section {
   position: relative;
-  animation: sectionSlideDown 1.8s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
   z-index: 1;
+  /* Estado inicial: fuera de pantalla hacia arriba. La animación se dispara
+     al entrar al viewport (clase .sectionIn agregada por IntersectionObserver),
+     así es visible tanto en desktop como en celular. */
+  transform: translateY(-720px);
+}
+
+.sectionIn {
+  /* Pausa breve al entrar al viewport para que el usuario alcance a ver
+     la sección antes de que baje. */
+  animation: sectionSlideDown 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
 /* Wave SVGs — subtle premium dividers */
@@ -304,5 +313,11 @@
   .pillarsSection,
   .principlesSection {
     padding: 60px 0;
+  }
+
+  /* En celular damos más tiempo y un poco más de pausa para apreciar la
+     bajada de la sección. */
+  .sectionIn {
+    animation: sectionSlideDown 2.1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
   }
 }

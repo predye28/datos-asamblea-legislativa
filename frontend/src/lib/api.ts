@@ -1,4 +1,10 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+// En SSR (dentro del container Docker) `localhost` apunta al propio container
+// del frontend, no a nginx. Por eso usamos INTERNAL_API_URL para fetches
+// server-side, que resuelve por DNS interno de Docker.
+const isServer = typeof window === 'undefined'
+const BASE = isServer
+  ? (process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1')
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1')
 
 export interface Categoria {
   id: number
@@ -40,6 +46,7 @@ export interface ProyectoResumen {
   total_tramites: number
   tiene_documento: boolean
   estado_actual: string | null
+  estado_grupo: 'ley' | 'discusion' | 'archivado' | 'otro' | null
   es_ley: boolean
   categorias: CategoriaResumen[]
 }
@@ -104,6 +111,7 @@ export interface PerfilDiputado {
     fecha_inicio: string | null
     numero_ley: string | null
     estado_actual: string | null
+    estado_grupo: 'ley' | 'discusion' | 'archivado' | 'otro' | null
   }[]
 }
 
@@ -265,4 +273,14 @@ export const api = {
   categorias: {
     listar: () => apiFetch<{ datos: Categoria[] }>('/categorias'),
   },
+
+  periodos: {
+    listar: () => apiFetch<{ datos: PeriodoLegislativo[] }>('/periodos'),
+  },
+}
+
+export interface PeriodoLegislativo {
+  label: string
+  desde: string
+  hasta: string
 }

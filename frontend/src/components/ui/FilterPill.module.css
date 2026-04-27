@@ -33,6 +33,14 @@
     text-overflow: ellipsis;
     border-radius: 10px;
   }
+  /* En mobile el dropdown se ancla al pill pero puede ser más ancho que él
+     (los pills pueden estar en grid 2×2 y quedar muy angostos). */
+  .dropdown {
+    min-width: 220px;
+    max-width: calc(100vw - 24px);
+    left: 0;
+    border-radius: 10px;
+  }
 }
 
 .pillBtn:hover {

@@ -235,6 +235,7 @@ export default async function PerfilDiputadoPage({ params }: Props) {
                         <span className={styles.pcExp}>Exp. {p.numero_expediente}</span>
                         <EstadoChip
                           estadoActual={p.estado_actual}
+                          estadoGrupo={p.estado_grupo}
                           esLey={isLey}
                           numeroLey={p.numero_ley}
                           size="sm"

@@ -61,6 +61,7 @@ class ProyectoResumen(BaseModel):
     total_tramites:         int = 0
     tiene_documento:        bool = False
     estado_actual:          Optional[str] = None   # último órgano en tramitación
+    estado_grupo:           Optional[str] = None   # 'ley' | 'discusion' | 'archivado' | 'otro'
     es_ley:                 bool = False            # tiene numero_ley
     categorias:             list[CategoriaResumen] = []
 
@@ -157,3 +158,15 @@ class MetricasResponse(BaseModel):
 
 class CategoriasResponse(BaseModel):
     datos: list[Categoria]
+
+
+# ── Períodos legislativos ────────────────────────────────────────────────
+
+class PeriodoLegislativo(BaseModel):
+    label: str
+    desde: date
+    hasta: date
+
+
+class PeriodosResponse(BaseModel):
+    datos: list[PeriodoLegislativo]
