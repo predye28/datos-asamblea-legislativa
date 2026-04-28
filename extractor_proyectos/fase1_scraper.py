@@ -16,16 +16,12 @@ Flujo:
      a. Leer filas
      b. Para cada fila → extraer General, Tramitación, Proponentes
   3. Sync contra PostgreSQL via sync_engine.py
-  4. Guardar reporte JSON + Excel de lo extraído
 """
 
 import asyncio
-import json
 import os
 import re
 import sys
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
 from datetime import datetime
 from playwright.async_api import async_playwright, Page
 
@@ -626,90 +622,6 @@ async def procesar_pagina(
 
 
 # ──────────────────────────────────────────────────────────────────────
-# EXPORTAR EXCEL
-# ──────────────────────────────────────────────────────────────────────
-
-def exportar_excel(proyectos: list, nombre: str):
-    """Exporta los proyectos extraídos a un Excel con 4 hojas."""
-    h_fill = PatternFill("solid", fgColor="1F4E79")
-    h_font = Font(bold=True, color="FFFFFF")
-    centro = Alignment(horizontal="center")
-
-    def enc(ws, cols):
-        for c, txt in enumerate(cols, 1):
-            cell = ws.cell(row=1, column=c, value=txt)
-            cell.font = h_font
-            cell.fill = h_fill
-            cell.alignment = centro
-
-    def s(v):
-        return limpiar(v) if isinstance(v, str) else v
-
-    wb = openpyxl.Workbook()
-
-    # Hoja Resumen
-    ws = wb.active
-    ws.title = "Resumen"
-    enc(ws, ["Página", "Expediente", "Título", "Tipo expediente",
-             "Fecha inicio", "Vencimiento cuatrienal", "Ley"])
-    for r, p in enumerate(proyectos, 2):
-        g = p.get("general", {})
-        ws.cell(r, 1, p.get("pagina"))
-        ws.cell(r, 2, s(p.get("numero_expediente", "")))
-        ws.cell(r, 3, s(p.get("titulo", "")))
-        ws.cell(r, 4, s(g.get("Tipo expediente", "")))
-        ws.cell(r, 5, s(g.get("Fecha inicio", "")))
-        ws.cell(r, 6, s(g.get("Vencimiento cuatrienal", "")))
-        ws.cell(r, 7, s(g.get("Ley", "")))
-    ws.column_dimensions["B"].width = 14
-    ws.column_dimensions["C"].width = 70
-    ws.column_dimensions["D"].width = 40
-
-    # Hoja General
-    ws_g = wb.create_sheet("General")
-    enc(ws_g, ["Expediente", "Campo", "Valor"])
-    r = 2
-    for p in proyectos:
-        for campo, val in p.get("general", {}).items():
-            ws_g.cell(r, 1, s(p.get("numero_expediente", "")))
-            ws_g.cell(r, 2, s(campo))
-            ws_g.cell(r, 3, s(val))
-            r += 1
-    ws_g.column_dimensions["B"].width = 35
-    ws_g.column_dimensions["C"].width = 55
-
-    # Hoja Tramitación
-    ws_t = wb.create_sheet("Tramitación")
-    enc(ws_t, ["Expediente", "Órgano", "Descripción", "Fecha Inicio", "Fecha Término"])
-    r = 2
-    for p in proyectos:
-        for t in p.get("tramitacion", []):
-            ws_t.cell(r, 1, s(p.get("numero_expediente", "")))
-            ws_t.cell(r, 2, s(t.get("Órgano", "")))
-            ws_t.cell(r, 3, s(t.get("Descripción", "")))
-            ws_t.cell(r, 4, s(t.get("Fecha Inicio", "")))
-            ws_t.cell(r, 5, s(t.get("Fecha Término", "")))
-            r += 1
-    ws_t.column_dimensions["C"].width = 50
-
-    # Hoja Proponentes
-    ws_p = wb.create_sheet("Proponentes")
-    enc(ws_p, ["Expediente", "Firma", "Nombre", "Administración"])
-    r = 2
-    for p in proyectos:
-        for prop in p.get("proponentes", []):
-            ws_p.cell(r, 1, s(p.get("numero_expediente", "")))
-            ws_p.cell(r, 2, s(prop.get("Firma", "")))
-            ws_p.cell(r, 3, s(prop.get("Nombre", "")))
-            ws_p.cell(r, 4, s(prop.get("Administración", "")))
-            r += 1
-    ws_p.column_dimensions["C"].width = 40
-
-    wb.save(nombre)
-    log(f"Excel guardado: {nombre}")
-
-
-# ──────────────────────────────────────────────────────────────────────
 # MAIN
 # ──────────────────────────────────────────────────────────────────────
 
@@ -811,16 +723,6 @@ async def main():
     log("─" * 55)
     crear_tablas()
     stats = sync_proyectos(proyectos)
-
-    ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    json_file  = f"fase1_{ts}.json"
-    excel_file = f"fase1_{ts}.xlsx"
-
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(proyectos, f, ensure_ascii=False, indent=2)
-    log(f"JSON guardado: {json_file}")
-
-    exportar_excel(proyectos, excel_file)
 
     duracion = datetime.now() - inicio
 

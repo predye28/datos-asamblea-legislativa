@@ -33,8 +33,6 @@ import logging
 import os
 import re
 import sys
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
 from datetime import date, datetime, timedelta, timezone
 from playwright.async_api import async_playwright, Page
 
@@ -802,60 +800,6 @@ async def leer_pagina_actual(frame) -> int | None:
         return int(val) if val and val.strip().isdigit() else None
     except Exception:
         return None
-
-
-# ══════════════════════════════════════════════════════════════════════
-# EXPORTAR EXCEL
-# ══════════════════════════════════════════════════════════════════════
-
-def exportar_excel(proyectos: list, nombre: str):
-    h_fill = PatternFill("solid", fgColor="1F4E79")
-    h_font = Font(bold=True, color="FFFFFF")
-    centro = Alignment(horizontal="center")
-
-    def enc(ws, cols):
-        for c, txt in enumerate(cols, 1):
-            cell = ws.cell(row=1, column=c, value=txt)
-            cell.font = h_font; cell.fill = h_fill; cell.alignment = centro
-
-    def s(v):
-        return limpiar(v) if isinstance(v, str) else v
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Resumen"
-    enc(ws, ["Página", "Expediente", "Título", "Tipo expediente",
-             "Fecha inicio", "Vencimiento cuatrienal", "Ley"])
-    for r, p in enumerate(proyectos, 2):
-        g = p.get("general", {})
-        ws.cell(r, 1, p.get("pagina"))
-        ws.cell(r, 2, s(p.get("numero_expediente", "")))
-        ws.cell(r, 3, s(p.get("titulo", "")))
-        ws.cell(r, 4, s(g.get("Tipo expediente", "")))
-        ws.cell(r, 5, s(g.get("Fecha inicio", "")))
-        ws.cell(r, 6, s(g.get("Vencimiento cuatrienal", "")))
-        ws.cell(r, 7, s(g.get("Ley", "")))
-    ws.column_dimensions["B"].width = 14
-    ws.column_dimensions["C"].width = 70
-
-    ws_t = wb.create_sheet("Tramitación")
-    enc(ws_t, ["Expediente", "Órgano", "Descripción", "Fecha Inicio", "Fecha Término"])
-    r = 2
-    for p in proyectos:
-        for t in p.get("tramitacion", []):
-            ws_t.cell(r, 1, s(p.get("numero_expediente", ""))); ws_t.cell(r, 2, s(t.get("Órgano", "")))
-            ws_t.cell(r, 3, s(t.get("Descripción", ""))); ws_t.cell(r, 4, s(t.get("Fecha Inicio", ""))); ws_t.cell(r, 5, s(t.get("Fecha Término", ""))); r += 1
-
-    ws_p = wb.create_sheet("Proponentes")
-    enc(ws_p, ["Expediente", "Firma", "Nombre", "Administración"])
-    r = 2
-    for p in proyectos:
-        for prop in p.get("proponentes", []):
-            ws_p.cell(r, 1, s(p.get("numero_expediente", ""))); ws_p.cell(r, 2, s(prop.get("Firma", "")))
-            ws_p.cell(r, 3, s(prop.get("Nombre", ""))); ws_p.cell(r, 4, s(prop.get("Administración", ""))); r += 1
-
-    wb.save(nombre)
-    log(f"Excel guardado: {nombre}")
 
 
 # ══════════════════════════════════════════════════════════════════════

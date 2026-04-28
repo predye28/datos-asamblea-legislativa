@@ -17,7 +17,6 @@ from models import (
     CategoriaResumen,
     Proponente,
     TramiteItem,
-    DocumentoItem,
     Paginacion,
 )
 
@@ -216,12 +215,10 @@ def listar_proyectos(
             p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr.id)   AS total_proponentes,
-            COUNT(DISTINCT tr.id)   AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
+            COUNT(DISTINCT tr.id)   AS total_tramites
         FROM proyectos p
         LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
         LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
-        LEFT JOIN documentos  doc ON doc.proyecto_id = p.id
         {where}
         GROUP BY p.id
         ORDER BY {orden_sql}
@@ -287,7 +284,6 @@ def buscar_proyectos(
     join_sql = """
         LEFT JOIN proponentes pr2 ON pr2.proyecto_id = p.id
         LEFT JOIN tramitacion tr2  ON tr2.proyecto_id = p.id
-        LEFT JOIN documentos  doc  ON doc.proyecto_id = p.id
     """
 
     total = fetchval(
@@ -323,8 +319,7 @@ def buscar_proyectos(
             p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr2.id)   AS total_proponentes,
-            COUNT(DISTINCT tr2.id)   AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
+            COUNT(DISTINCT tr2.id)   AS total_tramites
         {from_sql}
         {join_sql}
         {where_sql}
@@ -374,12 +369,10 @@ def detalle_proyecto(numero_expediente: int):
             p.estado_grupo,
             p.creado_en,
             COUNT(DISTINCT pr.id)  AS total_proponentes,
-            COUNT(DISTINCT tr.id)  AS total_tramites,
-            COUNT(DISTINCT doc.id) > 0 AS tiene_documento
+            COUNT(DISTINCT tr.id)  AS total_tramites
         FROM proyectos p
         LEFT JOIN proponentes pr  ON pr.proyecto_id  = p.id
         LEFT JOIN tramitacion tr  ON tr.proyecto_id  = p.id
-        LEFT JOIN documentos  doc ON doc.proyecto_id = p.id
         WHERE p.numero_expediente = %s
         GROUP BY p.id
         """,
@@ -409,19 +402,12 @@ def detalle_proyecto(numero_expediente: int):
     )
     tramitacion = [TramiteItem(**t) for t in tram_rows]
 
-    doc_rows = fetchall(
-        "SELECT tipo, ruta_archivo FROM documentos WHERE proyecto_id = %s",
-        (row["id"],),
-    )
-    documentos = [DocumentoItem(**d) for d in doc_rows]
-
     categorias = _cats_de_proyecto(row["id"])
 
     data = dict(row)
     data["es_ley"] = bool(data.get("numero_ley"))
     data["proponentes"] = proponentes
     data["tramitacion"] = tramitacion
-    data["documentos"] = documentos
     data["categorias"] = categorias
 
     return ProyectoDetalle(**data)

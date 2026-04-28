@@ -9,7 +9,6 @@ Tablas que gestiona
   proyectos           → datos maestros del proyecto
   proponentes         → firmantes/proponentes (N por proyecto)
   tramitacion         → historial de órganos (N por proyecto)
-  documentos          → ruta del PDF/DOCX descargado (0-1 por proyecto)
   scraper_estado      → checkpoint de Fase 2 (página actual)
   categorias          → catálogo temático de categorías
   proyecto_categorias → relación N:M proyecto ↔ categoría
@@ -94,14 +93,6 @@ def crear_tablas():
         fecha_inicio  DATE,
         fecha_termino DATE,
         tipo_tramite  TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS documentos (
-        id            SERIAL PRIMARY KEY,
-        proyecto_id   INTEGER REFERENCES proyectos(id) ON DELETE CASCADE,
-        tipo          TEXT,
-        ruta_archivo  TEXT,
-        descargado_en TIMESTAMP DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS scraper_estado (
@@ -533,18 +524,6 @@ def sync_proyectos(proyectos: list) -> dict:
                     tram_count, tram_changed = _sync_tramitacion(
                         cur, proyecto_id, tramitacion_scrap, cambios
                     )
-
-                    # ── Documento (replace, evita duplicados por re-scrape) ─
-                    doc = proy.get("documento", {})
-                    if doc.get("archivo"):
-                        cur.execute(
-                            "DELETE FROM documentos WHERE proyecto_id = %s",
-                            (proyecto_id,),
-                        )
-                        cur.execute(
-                            "INSERT INTO documentos (proyecto_id, tipo, ruta_archivo) VALUES (%s, %s, %s)",
-                            (proyecto_id, doc.get("tipo"), doc.get("archivo")),
-                        )
 
                     cats_asignadas = sync_categorias_proyecto(
                         proyecto_id, proy.get("titulo", ""), cur

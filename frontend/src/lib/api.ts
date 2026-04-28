@@ -44,7 +44,6 @@ export interface ProyectoResumen {
   numero_ley: string | null
   total_proponentes: number
   total_tramites: number
-  tiene_documento: boolean
   estado_actual: string | null
   estado_grupo: 'ley' | 'discusion' | 'archivado' | 'otro' | null
   es_ley: boolean
@@ -54,7 +53,6 @@ export interface ProyectoResumen {
 export interface ProyectoDetalle extends ProyectoResumen {
   proponentes: Proponente[]
   tramitacion: TramiteItem[]
-  documentos: { tipo: string | null; ruta_archivo: string | null }[]
 }
 
 export interface Paginacion {

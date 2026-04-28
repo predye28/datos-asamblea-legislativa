@@ -211,24 +211,6 @@ export default async function DetallePage({ params }: Props) {
                 </section>
               )}
 
-              {/* Documentos */}
-              {proyecto.documentos.length > 0 && (
-                <section className={styles.card}>
-                  <h2 className={styles.cardTitle}>Documentos adjuntos</h2>
-                  <div className={styles.docList}>
-                    {proyecto.documentos.map((doc, i) => (
-                      <div key={i} className={styles.docItem}>
-                        <IconFile />
-                        <span className={styles.docTipo}>{cleanText(doc.tipo) || 'Documento'}</span>
-                        {doc.ruta_archivo && (
-                          <span className={styles.docPath}>{doc.ruta_archivo}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
             </main>
 
             {/* ── Sidebar ── */}

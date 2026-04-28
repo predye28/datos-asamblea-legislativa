@@ -38,11 +38,6 @@ class TramiteItem(BaseModel):
     tipo_tramite: Optional[str]  = None
 
 
-class DocumentoItem(BaseModel):
-    tipo:         Optional[str] = None
-    ruta_archivo: Optional[str] = None
-
-
 # ── Proyecto en listado (tarjeta resumida) ────────────────────────────
 
 class ProyectoResumen(BaseModel):
@@ -59,7 +54,6 @@ class ProyectoResumen(BaseModel):
     # Campos calculados / enriquecidos
     total_proponentes:      int = 0
     total_tramites:         int = 0
-    tiene_documento:        bool = False
     estado_actual:          Optional[str] = None   # último órgano en tramitación
     estado_grupo:           Optional[str] = None   # 'ley' | 'discusion' | 'archivado' | 'otro'
     es_ley:                 bool = False            # tiene numero_ley
@@ -71,7 +65,6 @@ class ProyectoResumen(BaseModel):
 class ProyectoDetalle(ProyectoResumen):
     proponentes: list[Proponente]  = []
     tramitacion: list[TramiteItem] = []
-    documentos:  list[DocumentoItem] = []
 
 
 # ── Paginación genérica ────────────────────────────────────────────────
