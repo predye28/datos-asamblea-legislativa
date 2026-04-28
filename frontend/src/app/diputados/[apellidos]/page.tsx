@@ -76,9 +76,9 @@ export default async function PerfilDiputadoPage({ params }: Props) {
   const totalTemas = perfil.temas.reduce((s, t) => s + t.total, 0) || 1
   const temaTop = perfil.temas[0]
   const hue = avatarHue(apellidosRaw)
-  const añosActivo = perfil.primer_proyecto
-    ? new Date().getFullYear() - new Date(perfil.primer_proyecto).getFullYear()
-    : 0
+  const inicioActividad = perfil.primer_proyecto
+    ? new Date(perfil.primer_proyecto).getFullYear()
+    : null
 
   return (
     <div className={styles.page}>
@@ -144,9 +144,9 @@ export default async function PerfilDiputadoPage({ params }: Props) {
             <span className={styles.statHelp}>De cada 100 proyectos, cuántos llegan a ser ley.</span>
           </div>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>{añosActivo === 1 ? 'Año activo' : 'Años activo'}</span>
-            <span className={styles.statNum}>{añosActivo || '—'}</span>
-            <span className={styles.statHelp}>Desde su primer proyecto registrado.</span>
+            <span className={styles.statLabel}>Activo desde</span>
+            <span className={styles.statNum}>{inicioActividad || '—'}</span>
+            <span className={styles.statHelp}>Año en que presentó su primer proyecto registrado.</span>
           </div>
         </div>
 
@@ -186,7 +186,7 @@ export default async function PerfilDiputadoPage({ params }: Props) {
         {/* ── Enfoque temático ── */}
         {perfil.temas.length > 0 && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Los temas que más le importan</h2>
+            <h2 className={styles.sectionTitle}>Temas más frecuentes en sus proyectos</h2>
             <p className={styles.sectionDesc}>
               Cómo se reparten sus {perfil.total_proyectos} proyectos entre temas. El porcentaje es sobre su propio total.
             </p>

@@ -442,6 +442,14 @@ function ProyectosContent() {
                 variant="secondary"
                 size="sm"
                 disabled={pagina <= 1}
+                onClick={() => { setPagina(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                aria-label="Ir a la primera página"
+                title="Primera página"
+              >«</Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={pagina <= 1}
                 onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
               >← Anterior</Button>
 
@@ -474,6 +482,14 @@ function ProyectosContent() {
                 disabled={pagina >= paginacion.total_paginas}
                 onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
               >Siguiente →</Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={pagina >= paginacion.total_paginas}
+                onClick={() => { setPagina(paginacion.total_paginas); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                aria-label="Ir a la última página"
+                title="Última página"
+              >»</Button>
             </div>
           )}
 

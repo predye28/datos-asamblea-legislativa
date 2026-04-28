@@ -74,27 +74,28 @@ export default function Footer() {
             </div>
 
             {/* Contact */}
-            <div className={styles.col}>
+            <div className={`${styles.col} ${styles.contactCol}`}>
               <div className={styles.colHeading}>Contacto</div>
               <a
                 href="https://github.com/omarmr14/datos-asamblea-legislativa"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.contactLink}
+                aria-label="Repositorio en GitHub"
+                title="Repositorio en GitHub"
               >
                 <IconGitHub />
-                Repositorio
+                <span className={styles.contactLabel}>Repositorio</span>
               </a>
               <a
                 href="mailto:omarmr14.02@gmail.com"
                 className={styles.contactLink}
+                aria-label="Enviar correo"
+                title="omarmr14.02@gmail.com"
               >
                 <IconMail />
-                omarmr14.02@gmail.com
+                <span className={styles.contactLabel}>omarmr14.02@gmail.com</span>
               </a>
-              <p className={styles.madeBy}>
-                Hecho por <span className={styles.author}>Omar Madrigal</span>
-              </p>
             </div>
 
           </div>
@@ -105,16 +106,8 @@ export default function Footer() {
           <span className={styles.copy}>
             © {new Date().getFullYear()} La Asamblea al Día · Costa Rica
           </span>
-          <span className={styles.source}>
-            Datos del{' '}
-            <a
-              href="https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/SIL.aspx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.sourceLink}
-            >
-              Sistema de Información Legislativa (SIL)
-            </a>
+          <span className={styles.madeBy}>
+            Hecho por <span className={styles.author}>Omar Madrigal</span>
           </span>
         </div>
       </div>

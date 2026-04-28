@@ -312,6 +312,7 @@
 
 /* ── Sidebar cards ── */
 .sideCard {
+  position: relative;
   background: #181c1e;
   border: 1px solid var(--rule);
   border-radius: 14px;
@@ -366,6 +367,64 @@
 
 .proponenteLink:hover {
   color: var(--accent);
+}
+
+.sideHint {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  font-family: var(--body);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+  background: transparent;
+  cursor: help;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sideHint:hover,
+.sideHint:focus {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.sideHintTooltip {
+  position: absolute;
+  top: 52px;
+  left: 14px;
+  right: 14px;
+  padding: 10px 12px;
+  background: #0c0e10;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-family: var(--body);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-muted);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 5;
+}
+
+.sideHint:hover .sideHintTooltip,
+.sideHint:focus .sideHintTooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .tagCloud {

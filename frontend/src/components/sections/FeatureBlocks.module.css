@@ -192,20 +192,61 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .section {
+    padding: 32px 0 56px;
+  }
+  .sectionHeader {
+    margin-bottom: 36px;
+  }
+  .sectionEyebrow {
+    font-size: 30px;
+  }
+  .cardTitle {
+    font-size: 26px;
+  }
+  .promise {
+    font-size: 15.5px;
+  }
+  .dataLabel {
+    font-size: 14px;
+  }
+  .cta {
+    font-size: 14.5px;
+  }
+}
+
 @media (max-width: 640px) {
   .section {
-    padding: 24px 0 64px;
+    padding: 24px 0 40px;
   }
   .container {
     padding: 0 20px;
+  }
+  .sectionHeader {
+    margin-bottom: 28px;
+  }
+  .sectionEyebrow {
+    font-size: 26px;
   }
   .card {
     padding: 28px 24px 24px;
   }
   .cardTitle {
-    font-size: 24px;
+    font-size: 22px;
+  }
+  .promise {
+    font-size: 15px;
+    line-height: 1.65;
   }
   .dataValue {
     font-size: 20px;
+  }
+  .dataLabel {
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .cta {
+    font-size: 14px;
   }
 }

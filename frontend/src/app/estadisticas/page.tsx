@@ -182,10 +182,26 @@ export default function EstadisticasPage() {
   const g = globalData?.general
   const categorias = useMemo(() => data?.por_categoria ?? [], [data])
   const topDip = useMemo(() => data?.top_diputados ?? [], [data])
-  const topEfic = useMemo(
-    () => (data?.top_diputados_eficacia ?? []).filter(d => d.total_proyectos >= 3),
-    [data]
-  )
+  // Mínimo de proyectos para entrar al ranking de eficacia.
+  // Sin esto, diputados antiguos con 3 proyectos todos aprobados aparecen
+  // con 100% — lo cual es técnicamente cierto pero engañoso comparado con
+  // legisladores modernos prolíficos.
+  // Lo escalamos a ~5% del proponente más activo, con piso 5 y techo 15.
+  const eficaciaThreshold = useMemo(() => {
+    const top = data?.top_diputados?.[0]?.total_proyectos ?? 0
+    return Math.min(15, Math.max(5, Math.floor(top * 0.05)))
+  }, [data])
+
+  // Si en el período seleccionado no hay 10 diputados que cumplan el umbral,
+  // bajamos el umbral hasta llegar a 10 (con piso 3 para evitar 100% engañosos
+  // de un único proyecto aprobado).
+  const topEfic = useMemo(() => {
+    const all = data?.top_diputados_eficacia ?? []
+    const strict = all.filter(d => d.total_proyectos >= eficaciaThreshold)
+    if (strict.length >= 10) return strict.slice(0, 10)
+    const fallback = Math.max(3, Math.floor(eficaciaThreshold / 2))
+    return all.filter(d => d.total_proyectos >= fallback).slice(0, 10)
+  }, [data, eficaciaThreshold])
   const tipos = data?.por_tipo ?? []
   const organos = data?.organos_activos ?? []
   const porMes = useMemo(() => globalData?.por_mes ?? [], [globalData])
@@ -301,24 +317,17 @@ export default function EstadisticasPage() {
   return (
     <div className={styles.page}>
 
-      {/* ── 00 · Hero de datos ── */}
-      <section className={styles.heroData}>
+      {/* ── Page header ── */}
+      <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
-        <div className={styles.heroDataInner}>
-          <div className={styles.heroDataHead}>
-            <div className={styles.portadaMasthead}>
-              <span className={styles.portadaEdicion}>EDICIÓN N.º {new Date().getFullYear()}</span>
-              <span className={styles.portadaSep}>·</span>
-              <span className={styles.portadaFecha}>ACTUALIZADO {fechaHoy.toUpperCase()}</span>
-            </div>
-            <h1 className={styles.heroDataTitle}>
-              La Asamblea, <span className={styles.heroDataTitleAccent}>en cifras.</span>
-            </h1>
-            <p className={styles.heroDataDeck}>
-              Una mirada visual a cómo trabaja el Congreso costarricense — los temas, los protagonistas y el ritmo del trabajo legislativo.
+        <div className={styles.heroInner}>
+          <div className={styles.heroText}>
+            <span className={styles.heroEyebrow}>Datos de la Asamblea</span>
+            <h1 className={styles.heroTitle}>Estadísticas</h1>
+            <p className={styles.heroDesc}>
+              Una mirada a los temas, los diputados y el ritmo del trabajo legislativo en Costa Rica.
             </p>
           </div>
-
         </div>
       </section>
 
@@ -372,9 +381,9 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="01"
-                  kicker="¿De qué se habla?"
+                  kicker="Temas"
                   title="Los temas que mueven la agenda"
-                  deck="Ranking por volumen de proyectos presentados. El tema con más iniciativas encabeza; los demás siguen en orden."
+                  deck="Los 10 temas con más proyectos presentados."
                   filtro={filtroLabel}
                 />
                 <p className={styles.insight}>
@@ -424,20 +433,29 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="02"
-                  kicker="Los protagonistas"
+                  kicker="Diputados"
                   title="Quiénes proponen · quiénes aprueban"
                   deck={
                     <>
-                      Dos rankings distintos. A la izquierda, <strong>volumen</strong>: los que presentan más iniciativas.
-                      A la derecha, <strong>eficacia</strong>: los que logran que un porcentaje alto de sus proyectos se convierta en ley.
+                      Izquierda: quiénes presentan <strong>más proyectos</strong>.{' '}
+                      Derecha: quiénes logran que <strong>una mayor proporción</strong> llegue a ser ley.
                     </>
                   }
                   filtro={filtroLabel}
                 />
-                {topEfic.length > 0 && (
+                {topEfic.length >= 3 && topDip.length >= 3 && (
                   <p className={styles.insight}>
-                    Solo <strong>{overlapTop} de los 10</strong> diputados más activos aparecen también en el top de eficacia.{' '}
-                    <strong>Volumen no garantiza resultado.</strong>
+                    {overlapTop > 0 ? (
+                      <>
+                        Solo <strong>{overlapTop} de los 10</strong> diputados más activos aparecen también en el top de eficacia.{' '}
+                        <strong>Volumen no garantiza resultado.</strong>
+                      </>
+                    ) : (
+                      <>
+                        Los diputados con más volumen <strong>no son los mismos</strong> que los más eficaces:{' '}
+                        proponer mucho y aprobar mucho son cosas distintas.
+                      </>
+                    )}
                   </p>
                 )}
                 <div className={styles.podioGrid}>
@@ -479,7 +497,11 @@ export default function EstadisticasPage() {
                       <div className={styles.podioColHead}>
                         <span className={`${styles.podioColKicker} ${styles.podioColKickerGreen}`}>COLUMNA B</span>
                         <h3 className={styles.podioColTitle}>Los que más aprueban</h3>
-                        <p className={styles.podioColDeck}>Top 10 por tasa de aprobación (mínimo 3 proyectos presentados).</p>
+                        <p className={styles.podioColDeck}>
+                          Top 10 por tasa de aprobación. Solo se incluyen diputados con al menos{' '}
+                          <strong>{eficaciaThreshold} proyectos</strong> presentados, para que la comparación
+                          sea representativa.
+                        </p>
                       </div>
                       <div className={styles.dipList}>
                         {topEfic.slice(0, 10).map((d, i) => (
@@ -620,10 +642,10 @@ export default function EstadisticasPage() {
             {mensualStats && porMes.length >= 3 && (
               <>
                 <SectionIntro
-                  num="05"
-                  kicker="El ritmo"
+                  num="03"
+                  kicker="Ritmo mensual"
                   title="Proyectos presentados mes a mes"
-                  deck="Últimos 12 meses de actividad. Verde señala picos (30% sobre el promedio), ámbar indica meses bajos."
+                  deck="Últimos 12 meses. Verde marca picos; ámbar, meses bajos."
                   filtro="Últimos 12 meses"
                 />
                 <p className={styles.insight}>
@@ -646,10 +668,10 @@ export default function EstadisticasPage() {
             {timelineStats && (
               <>
                 <SectionIntro
-                  num="06"
-                  kicker="La historia larga"
+                  num="04"
+                  kicker="Histórico"
                   title={`${timelineStats.totalAnios} años de producción legislativa`}
-                  deck={`Cantidad de proyectos convertidos en ley entre ${timelineStats.desde} y ${timelineStats.hasta}. Los picos reflejan ciclos políticos, las caídas marcan años de bloqueo o transición.`}
+                  deck={`Leyes aprobadas por año entre ${timelineStats.desde} y ${timelineStats.hasta}.`}
                   filtro={`Histórico · ${timelineStats.desde}–${timelineStats.hasta}`}
                 />
                 <p className={styles.insight}>
@@ -745,36 +767,6 @@ export default function EstadisticasPage() {
               </>
             )} */}
 
-            {/* ── Colofón ── */}
-            <div className={styles.colofon}>
-              <div className={styles.colofonKicker}>08 · COLOFÓN</div>
-              <h3 className={styles.colofonTitle}>Sobre esta edición</h3>
-              <div className={styles.colofonCols}>
-                <div>
-                  <div className={styles.colofonLabel}>Fuente</div>
-                  <p>
-                    Datos abiertos de la Asamblea Legislativa de Costa Rica, procesados y servidos por esta plataforma.
-                  </p>
-                </div>
-                <div>
-                  <div className={styles.colofonLabel}>Actualización</div>
-                  <p>
-                    {fechaHoy}. Las métricas se recalculan automáticamente cuando se publican nuevos expedientes.
-                  </p>
-                </div>
-                <div>
-                  <div className={styles.colofonLabel}>Metodología</div>
-                  <p>
-                    Cada proyecto se cuenta una sola vez por expediente. La tasa de aprobación mide proyectos convertidos en ley
-                    sobre el total presentado en el período elegido.
-                  </p>
-                </div>
-              </div>
-              <blockquote className={styles.colofonQuote}>
-                Los datos son públicos. Esta es una forma de leerlos.
-              </blockquote>
-            </div>
-
           </div>
         </div>
       )}
@@ -791,12 +783,13 @@ function SectionIntro({ num, kicker, title, deck, filtro }: {
 }) {
   return (
     <div className={styles.sectionIntro}>
-      <div className={styles.sectionKicker}>
-        <span className={styles.sectionNum}>{num}</span>
-        <span className={styles.sectionKickerLabel}>{kicker}</span>
-        <span className={styles.sectionKickerLine} />
+      <div className={styles.sectionHead}>
+        <span className={styles.sectionNum} aria-hidden>{num}</span>
+        <div className={styles.sectionHeadText}>
+          <span className={styles.sectionKickerLabel}>{kicker}</span>
+          <h2 className={styles.sectionTitle}>{title}</h2>
+        </div>
       </div>
-      <h2 className={styles.sectionTitle}>{title}</h2>
       <p className={styles.sectionDeck}>{deck}</p>
       {filtro && (
         <div className={styles.filtroHint}>

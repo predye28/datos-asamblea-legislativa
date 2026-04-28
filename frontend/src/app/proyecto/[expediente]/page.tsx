@@ -243,7 +243,20 @@ export default async function DetallePage({ params }: Props) {
               {/* Temas */}
               {proyecto.categorias.length > 0 && (
                 <div className={styles.sideCard}>
-                  <h3 className={styles.sideTitle}>Temas</h3>
+                  <h3 className={styles.sideTitle}>
+                    Temas
+                    <span
+                      className={styles.sideHint}
+                      tabIndex={0}
+                      role="button"
+                      aria-label="¿Cómo se asignan los temas?"
+                    >
+                      ?
+                      <span className={styles.sideHintTooltip} role="tooltip">
+                        Los temas se detectan automáticamente del título del proyecto. Tocá uno para ver otros proyectos parecidos.
+                      </span>
+                    </span>
+                  </h3>
                   <div className={styles.tagCloud}>
                     {proyecto.categorias.map(c => (
                       <Link

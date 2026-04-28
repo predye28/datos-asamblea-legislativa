@@ -156,9 +156,46 @@
   transform: translateX(2px);
 }
 
+@media (max-width: 1024px) {
+  .section {
+    padding: 56px 0;
+  }
+  .sectionTitle {
+    font-size: 32px;
+  }
+  .name {
+    font-size: 22px;
+  }
+  .role {
+    font-size: 14.5px;
+  }
+  .bio {
+    font-size: 15.5px;
+    line-height: 1.7;
+  }
+  .bioSmall {
+    font-size: 14.5px;
+  }
+  .link {
+    font-size: 14.5px;
+  }
+}
+
 @media (max-width: 640px) {
   .section {
-    padding: 60px 0;
+    padding: 40px 0 48px;
+  }
+  .sectionTitle {
+    font-size: 26px;
+  }
+  .role {
+    font-size: 14px;
+  }
+  .bioSmall {
+    font-size: 14px;
+  }
+  .link {
+    font-size: 14px;
   }
   
   .container {
@@ -180,11 +217,12 @@
   }
   
   .name {
-    font-size: 20px;
+    font-size: 21px;
   }
-  
+
   .bio {
-    font-size: 15px;
+    font-size: 15.5px;
+    line-height: 1.7;
   }
   
   .links {

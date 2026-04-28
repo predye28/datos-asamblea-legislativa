@@ -26,7 +26,7 @@
 .main {
   display: flex;
   gap: 40px;
-  padding: 44px 0 36px;
+  padding: 36px 0 28px;
   align-items: flex-start;
 }
 
@@ -148,14 +148,16 @@
   font-family: var(--body);
   font-size: 12px;
   color: var(--ink-faint);
-  margin-top: 6px;
-  padding-top: 12px;
-  border-top: 1px solid var(--rule);
 }
 
 .author {
   color: var(--ink-muted);
   font-weight: 600;
+}
+
+/* Etiqueta interna del contacto — visible en desktop, ícono solo en mobile */
+.contactLabel {
+  display: inline;
 }
 
 /* ── Bottom bar ── */
@@ -196,12 +198,17 @@
 @media (max-width: 860px) {
   .main {
     flex-direction: column;
-    gap: 28px;
-    padding: 32px 0 28px;
+    gap: 20px;
+    padding: 24px 0 20px;
   }
 
   .brand {
     max-width: 100%;
+  }
+
+  /* En tablet/celular el footer va más compacto: el tagline se omite. */
+  .tagline {
+    display: none;
   }
 
   .cols {
@@ -211,31 +218,109 @@
 
 @media (max-width: 560px) {
   .container {
-    padding: 0 16px;
+    padding: 0 20px;
   }
 
   .main {
-    gap: 20px;
-    padding: 20px 0 16px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 0 14px;
+    text-align: center;
+    align-items: center;
   }
 
-  .brand, .logo {
-    margin-bottom: 4px;
+  .brand {
+    margin: 0;
   }
-  
+
+  .logo {
+    font-size: 17px;
+    margin: 0;
+  }
+
+  /* Truco: display:contents permite que los links de cada columna fluyan
+     directamente como hijos de .cols, así formamos una sola fila con todo. */
   .cols {
-    flex-direction: column;
-    gap: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    row-gap: 6px;
+    width: 100%;
   }
 
   .col {
-    gap: 4px;
+    display: contents;
   }
-  
+
+  /* Las etiquetas de columna (EXPLORAR / PROYECTO / CONTACTO) sobran cuando
+     todo va en una sola fila. */
+  .colHeading {
+    display: none;
+  }
+
+  /* Links de navegación: separados por un punto medio (·). */
+  .link {
+    font-size: 12.5px;
+    padding: 0 9px;
+    line-height: 1.4;
+    border-right: 1px solid var(--rule);
+    color: var(--ink-muted);
+  }
+
+  .link:last-of-type {
+    border-right: none;
+  }
+
+  /* Contactos: pills con ícono + texto, centrados, ocupan su propia fila. */
+  .contactCol {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-basis: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .contactLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    background: transparent;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+
+  .contactLink:hover,
+  .contactLink:focus-visible {
+    color: var(--gold);
+    border-color: var(--gold-dim);
+    background: rgba(2, 158, 185, 0.06);
+  }
+
+  .contactLabel {
+    display: inline;
+  }
+
+  /* Bottom: copyright + autor en una sola línea cuando cabe, en dos si no. */
   .bottom {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 10px 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 10px;
+    padding: 10px 0 14px;
+    text-align: center;
+  }
+
+  .copy,
+  .madeBy {
+    font-size: 11px;
   }
 }

@@ -1,42 +1,60 @@
 /* ── Base ────────────────────────────────────────────────── */
 .page { min-height: 100vh; background: var(--paper); }
 
-/* ── 00 · Hero de datos (mega KPIs) ───────────────────────── */
-.heroData {
+/* ── Hero (mismo patrón que /proyectos y /diputados) ──────── */
+.hero {
   position: relative;
   background: var(--paper);
-  padding: 48px 0 32px;
+  padding: 56px 0 44px;
   overflow: hidden;
   border-bottom: 1px solid var(--rule);
 }
-.heroDataInner {
-  position: relative; z-index: 1;
-  max-width: var(--container-max); margin: 0 auto;
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: var(--container-max);
+  margin: 0 auto;
   padding: 0 var(--container-pad);
 }
-.heroDataHead { max-width: 820px; margin-bottom: 28px; }
-.heroDataTitle {
-  font-family: var(--serif);
-  font-size: clamp(38px, 6.2vw, 72px);
-  font-weight: 900;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-  line-height: 1;
-  margin: 14px 0 16px;
-}
-.heroDataTitleAccent { color: var(--accent); font-style: italic; }
-.heroDataDeck {
-  font-family: var(--serif);
-  font-size: clamp(15px, 1.5vw, 17px);
-  color: var(--ink-muted);
-  line-height: 1.6;
-  font-style: italic;
-  margin: 0;
-  max-width: 60ch;
+
+.heroText {
+  margin-bottom: 0;
 }
 
-@media (max-width: 480px) {
-  .heroData { padding: 32px 0 24px; }
+.heroEyebrow {
+  display: inline-block;
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.heroTitle {
+  font-family: var(--serif);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.heroDesc {
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink-muted);
+  max-width: 580px;
+  line-height: 1.65;
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 36px 0 28px; }
+  .heroTitle { font-size: clamp(26px, 8vw, 36px); }
+  .heroDesc { font-size: 14px; }
 }
 
 .kpiGridMini {
@@ -446,6 +464,18 @@
   .temaName { font-size: 15px; }
   .temaCount strong { font-size: 18px; }
   .temasList { padding: 4px 16px; }
+
+  /* Layout consistente en mobile: el "% llega a ley" siempre va debajo del
+     nombre del tema, sin importar si el nombre es corto o largo. */
+  .temaNameRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .temaRate {
+    font-size: 12px;
+  }
 }
 
 /* ── Ritmo mensual ───────────────────────────────────────── */
@@ -653,56 +683,148 @@
 .main { padding: 48px 0 96px; }
 .container { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-pad); }
 
-/* ── Section intro (editorial) ────────────────────────────── */
+/* ── Section intro (divisor editorial) ────────────────────── */
 .sectionIntro {
-  max-width: 780px;
-  margin: 72px 0 28px;
+  position: relative;
+  margin: 112px 0 32px;
+  padding-top: 56px;
 }
-.sectionIntro:first-child { margin-top: 0; }
+/* Sin divisor cuando es la primera sección, o cuando viene justo después
+   del banner de filtro (que actúa como separador suficiente). */
+.sectionIntro:first-child,
+.periodBanner + .sectionIntro {
+  margin-top: 24px;
+  padding-top: 8px;
+}
 
-.sectionKicker {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 16px;
+/* Línea horizontal con degradé suave — se desvanece a los lados. */
+.sectionIntro::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--rule) 18%,
+    var(--rule) 82%,
+    transparent 100%
+  );
 }
+
+/* Diamante dorado centrado sobre la línea — punto focal del separador. */
+.sectionIntro::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  background: var(--gold);
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 6px var(--paper), 0 0 12px rgba(212, 175, 55, 0.25);
+}
+
+.sectionIntro:first-child::before,
+.sectionIntro:first-child::after,
+.periodBanner + .sectionIntro::before,
+.periodBanner + .sectionIntro::after {
+  display: none;
+}
+
+/* Cabecera de sección: número grande + (kicker + title). */
+.sectionHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 14px;
+  max-width: 880px;
+}
+
 .sectionNum {
+  flex-shrink: 0;
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 72px;
   font-weight: 900;
-  color: var(--accent);
-  letter-spacing: -0.02em;
+  line-height: 0.85;
+  letter-spacing: -0.045em;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 45%, var(--gold)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+  padding: 4px 0 0 0;
+}
+
+/* Pequeño subrayado decorativo bajo el número. */
+.sectionNum::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  bottom: -2px;
+  width: calc(100% - 8px);
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    rgba(2, 158, 185, 0.55),
+    rgba(212, 175, 55, 0.25)
+  );
+  border-radius: 2px;
+}
+
+.sectionHeadText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  min-width: 0;
+}
+
+.sectionKickerLabel {
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
   line-height: 1;
 }
-.sectionKickerLabel {
-  font-family: var(--mono);
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--gold);
-  white-space: nowrap;
-}
-.sectionKickerLine {
-  flex: 1; height: 1px;
-  background: var(--rule);
-}
+
 .sectionTitle {
   font-family: var(--serif);
-  font-size: clamp(26px, 3.8vw, 38px);
+  font-size: clamp(26px, 3.6vw, 36px);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.025em;
-  line-height: 1.12;
-  margin-bottom: 12px;
+  line-height: 1.15;
+  margin: 0;
 }
+
 .sectionDeck {
-  font-family: var(--serif);
-  font-size: 16px;
+  font-family: var(--body);
+  font-size: 15px;
   color: var(--ink-muted);
   line-height: 1.65;
-  font-style: italic;
+  max-width: 880px;
+  margin-bottom: 0;
 }
 .sectionDeck strong {
   color: var(--ink);
   font-weight: 700;
-  font-style: normal;
+}
+
+/* Compatibilidad — los antiguos elementos del kicker ya no se renderizan,
+   pero conservamos las reglas en caso de cambios futuros. */
+.sectionKicker,
+.sectionKickerLine {
+  display: none;
 }
 
 /* ── Panel genérico ───────────────────────────────────────── */
@@ -1563,7 +1685,15 @@
 @media (max-width: 860px) {
   .portadaInner, .filtersInner, .container { padding-left: 20px; padding-right: 20px; }
   .portada { padding: 56px 0 44px; }
-  .sectionIntro { margin: 56px 0 22px; }
+  .sectionIntro { margin: 80px 0 22px; padding-top: 40px; }
+  .sectionIntro:first-child,
+  .periodBanner + .sectionIntro { margin-top: 16px; padding-top: 4px; }
+
+  /* Mismo layout que desktop (número izquierda · texto derecha) pero
+     proporcionado para pantallas chicas. */
+  .sectionHead { gap: 16px; align-items: center; }
+  .sectionNum { font-size: 48px; padding-top: 0; line-height: 1; }
+  .sectionHeadText { padding-top: 0; gap: 4px; }
 
   .tickerChip { padding: 8px 14px; }
   .tickerValue { font-size: 17px; }
@@ -1676,9 +1806,12 @@
 
   .anatomiaBig { font-size: 46px; }
 
-  .sectionTitle { font-size: 24px; }
+  .sectionTitle { font-size: 21px; line-height: 1.2; }
   .sectionDeck { font-size: 14.5px; }
-  .sectionNum { font-size: 18px; }
+  .sectionNum { font-size: 40px; }
+  .sectionHead { gap: 12px; }
+  .sectionIntro { padding-top: 36px; }
+  .sectionKickerLabel { font-size: 10.5px; letter-spacing: 0.16em; }
 
   .colofonQuote { font-size: 18px; padding: 0 16px; }
 }

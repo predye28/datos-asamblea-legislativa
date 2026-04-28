@@ -236,12 +236,12 @@
   border: 1px solid rgba(2, 158, 185, 0.2);
   border-left: 3px solid var(--gold);
   border-radius: var(--radius-lg);
-  padding: 32px 28px 28px 28px;
+  padding: 22px 22px 20px 22px;
   overflow: hidden;
   transition: border-color 0.2s, transform 0.25s, box-shadow 0.25s;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
   animation: principleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -257,7 +257,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .quoteChar {
@@ -296,28 +296,127 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .pillarsSection {
+    padding: 24px 0 40px;
+  }
+  .principlesSection {
+    padding: 56px 0;
+  }
+  .header {
+    margin-bottom: 36px;
+  }
+  .principlesHeader {
+    margin-bottom: 36px;
+  }
+  .wave {
+    height: 80px;
+  }
+  .title {
+    font-size: 38px;
+  }
+  .subtitle {
+    font-size: 15.5px;
+  }
+  .pillarHeading {
+    font-size: 42px;
+    margin-bottom: 22px;
+  }
+  .pillarSubtitle {
+    font-size: 15.5px;
+  }
+  .pillarBody {
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+  .principlesTitle {
+    font-size: 30px;
+  }
+  .principleTitle {
+    font-size: 16px;
+  }
+  .quoteText {
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+}
+
 @media (max-width: 700px) {
   .container {
-    padding: 64px 20px 72px;
+    padding: 0 20px;
   }
 
   .principlesGrid {
     grid-template-columns: 1fr;
     gap: 14px;
+    padding-top: 28px;
+  }
+
+  .pillarsSection {
+    padding: 16px 0 28px;
+  }
+
+  .principlesSection {
+    padding: 40px 0 48px;
+  }
+
+  .header {
+    margin-bottom: 28px;
+  }
+
+  .principlesHeader {
+    margin-bottom: 24px;
+  }
+
+  .wave {
+    height: 60px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 14.5px;
+  }
+
+  .pillarHeading {
+    font-size: 34px;
+    margin-bottom: 20px;
+  }
+
+  .pillarSubtitle {
+    font-size: 15px;
+  }
+
+  .pillarBody {
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+
+  .principlesTitle {
+    font-size: 24px;
+  }
+
+  .principleTitle {
+    font-size: 15.5px;
   }
 
   .quoteText {
-    font-size: 14px;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+}
+
+/* La animación de "bajada" de la sección solo en laptop/desktop.
+   En tablet y celular es pesada y se siente brusca, así que la sección
+   simplemente aparece en su lugar. */
+@media (max-width: 1024px) {
+  .section {
+    transform: none;
   }
 
-  .pillarsSection,
-  .principlesSection {
-    padding: 60px 0;
-  }
-
-  /* En celular damos más tiempo y un poco más de pausa para apreciar la
-     bajada de la sección. */
   .sectionIn {
-    animation: sectionSlideDown 2.1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+    animation: none;
   }
 }

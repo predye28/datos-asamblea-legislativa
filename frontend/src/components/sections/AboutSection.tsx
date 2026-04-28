@@ -41,19 +41,19 @@ const PILLARS = [
 const PRINCIPLES = [
   {
     label: 'Datos oficiales del SIL',
-    quote: 'Toda la información proviene directamente del Sistema de Información Legislativa de la Asamblea Legislativa de Costa Rica — el sistema oficial de acceso público.',
+    quote: 'La información viene directamente del Sistema de Información Legislativa, la fuente oficial y pública de la Asamblea.',
   },
   {
     label: 'Sin editoriales',
-    quote: 'Mostramos los datos tal como la Asamblea los publica. No editamos, no interpretamos, no opinamos. Vos sacás tus propias conclusiones.',
+    quote: 'Mostramos los datos tal como se publican. No editamos ni opinamos: las conclusiones las sacás vos.',
   },
   {
     label: 'Código abierto',
-    quote: 'El scraper, la API y este portal están disponibles públicamente. Cualquiera puede revisar cómo funciona, mejorarlo o construir sobre él.',
+    quote: 'El scraper, la API y este portal son públicos. Cualquiera puede revisarlos, mejorarlos o construir sobre ellos.',
   },
   {
     label: 'Sin fines de lucro',
-    quote: 'Este proyecto no tiene intereses económicos ni comerciales. Es un aporte ciudadano al acceso a la información pública de Costa Rica.',
+    quote: 'Sin intereses comerciales ni políticos. Es un aporte ciudadano al acceso a la información pública de Costa Rica.',
   },
 ]
 
