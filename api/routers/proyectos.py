@@ -125,7 +125,7 @@ def listar_proyectos(
     params: list = []
 
     if tipo:
-        condiciones.append("p.tipo_expediente ILIKE %s ESCAPE '\\'")
+        condiciones.append("unaccent(p.tipo_expediente) ILIKE unaccent(%s) ESCAPE '\\'")
         params.append(f"%{_like_escape(tipo)}%")
 
     if anio:
@@ -166,10 +166,10 @@ def listar_proyectos(
             EXISTS (
                 SELECT 1 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
-                  AND (pr.apellidos ILIKE %s ESCAPE '\\'
-                       OR pr.nombre    ILIKE %s ESCAPE '\\'
-                       OR CONCAT(pr.nombre, ' ', pr.apellidos) ILIKE %s ESCAPE '\\'
-                       OR CONCAT(pr.apellidos, ' ', pr.nombre) ILIKE %s ESCAPE '\\')
+                  AND (unaccent(pr.apellidos) ILIKE unaccent(%s) ESCAPE '\\'
+                       OR unaccent(pr.nombre)    ILIKE unaccent(%s) ESCAPE '\\'
+                       OR unaccent(CONCAT(pr.nombre, ' ', pr.apellidos)) ILIKE unaccent(%s) ESCAPE '\\'
+                       OR unaccent(CONCAT(pr.apellidos, ' ', pr.nombre)) ILIKE unaccent(%s) ESCAPE '\\')
             )
             """
         )
@@ -256,16 +256,17 @@ def buscar_proyectos(
     condiciones = [
         """
         (
-            p.titulo ILIKE %s ESCAPE '\\'
+            unaccent(p.titulo) ILIKE unaccent(%s) ESCAPE '\\'
             OR EXISTS (
                 SELECT 1 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
-                  AND (pr.apellidos ILIKE %s ESCAPE '\\' OR pr.nombre ILIKE %s ESCAPE '\\')
+                  AND (unaccent(pr.apellidos) ILIKE unaccent(%s) ESCAPE '\\'
+                       OR unaccent(pr.nombre) ILIKE unaccent(%s) ESCAPE '\\')
             )
             OR EXISTS (
                 SELECT 1 FROM tramitacion tr
                 WHERE tr.proyecto_id = p.id
-                  AND tr.organo ILIKE %s ESCAPE '\\'
+                  AND unaccent(tr.organo) ILIKE unaccent(%s) ESCAPE '\\'
             )
         )
         """

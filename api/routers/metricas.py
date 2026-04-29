@@ -489,7 +489,7 @@ def diputados_ranking(
     if q_norm:
         q_val = f"%{_like_escape(q_norm.lower())}%"
         condiciones.append(
-            "LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)) LIKE %s ESCAPE '\\'"
+            "unaccent(LOWER(CONCAT(pr.apellidos, ' ', pr.nombre))) LIKE unaccent(%s) ESCAPE '\\'"
         )
         params.append(q_val)
     else:
@@ -547,8 +547,8 @@ def perfil_diputado(nombre_completo: str):
 
     if len(palabras) >= 2:
         search_condition = """
-            UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'
-            AND UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'
+            unaccent(UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre))) LIKE unaccent(UPPER(%s)) ESCAPE '\\'
+            AND unaccent(UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre))) LIKE unaccent(UPPER(%s)) ESCAPE '\\'
         """
         search_params_general = (
             f"%{_like_escape(palabras[0])}%",
@@ -556,7 +556,7 @@ def perfil_diputado(nombre_completo: str):
         )
     else:
         search_condition = (
-            "UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre)) LIKE UPPER(%s) ESCAPE '\\'"
+            "unaccent(UPPER(CONCAT_WS(' ', pr.apellidos, pr.nombre))) LIKE unaccent(UPPER(%s)) ESCAPE '\\'"
         )
         search_params_general = (f"%{_like_escape(palabras[0])}%",)
 
