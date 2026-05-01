@@ -123,18 +123,42 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Filters bar ── */
+/* ── Filters bar ──
+   La barra está oculta por defecto y solo se anima cuando la página añade
+   la clase `.filtersBarReady`, lo que ocurre al terminar la primera carga
+   de datos. Así el usuario ve el sweep cuando ya está mirando el contenido,
+   no antes.
+*/
 .filtersBar {
-  background: #1e1d1b;
+  background: linear-gradient(180deg, #221f1c 0%, #1c1b19 100%);
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
   position: relative;
   z-index: 10;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  animation: filtersBarReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  opacity: 0;
+  transform: translateY(-12px);
 }
 
-/* Línea de acento que recorre la barra para llamar la atención al filtro. */
+/* Línea de acento superior — glow sutil que pulsa al revelarse. */
+.filtersBar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(6, 182, 212, 0.55) 35%,
+    rgba(245, 158, 11, 0.7) 50%,
+    rgba(6, 182, 212, 0.55) 65%,
+    transparent 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Línea de acento inferior — recorre de izquierda a derecha. */
 .filtersBar::after {
   content: '';
   position: absolute;
@@ -145,19 +169,34 @@
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   transform: scaleX(0);
   transform-origin: left center;
-  animation: filtersBarSweep 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
   pointer-events: none;
 }
 
+/* Hijos: comienzan invisibles. */
 .filtersInner > * {
-  animation: filtersChildIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
 }
-.filtersInner > *:nth-child(1) { animation-delay: 0.20s; }
-.filtersInner > *:nth-child(2) { animation-delay: 0.28s; }
-.filtersInner > *:nth-child(3) { animation-delay: 0.36s; }
-.filtersInner > *:nth-child(4) { animation-delay: 0.44s; }
-.filtersInner > *:nth-child(5) { animation-delay: 0.52s; }
-.filtersInner > *:nth-child(6) { animation-delay: 0.60s; }
+
+/* Estado revelado: anima la barra y los hijos en cascada. */
+.filtersBarReady {
+  animation: filtersBarReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.filtersBarReady::before {
+  animation: filtersTopGlow 2.6s ease-in-out 0.6s forwards;
+}
+.filtersBarReady::after {
+  animation: filtersBarSweep 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+}
+.filtersBarReady .filtersInner > * {
+  animation: filtersChildIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.filtersBarReady .filtersInner > *:nth-child(1) { animation-delay: 0.20s; }
+.filtersBarReady .filtersInner > *:nth-child(2) { animation-delay: 0.28s; }
+.filtersBarReady .filtersInner > *:nth-child(3) { animation-delay: 0.36s; }
+.filtersBarReady .filtersInner > *:nth-child(4) { animation-delay: 0.44s; }
+.filtersBarReady .filtersInner > *:nth-child(5) { animation-delay: 0.52s; }
+.filtersBarReady .filtersInner > *:nth-child(6) { animation-delay: 0.60s; }
 
 @keyframes filtersBarReveal {
   from { opacity: 0; transform: translateY(-12px); }
@@ -171,6 +210,15 @@
 @keyframes filtersChildIn {
   from { opacity: 0; transform: translateY(8px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes filtersTopGlow {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+@keyframes filtersDotPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.25); }
 }
 
 .filtersInner {
@@ -218,11 +266,18 @@
   font-family: var(--label);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--accent);
   flex-shrink: 0;
   margin-right: 8px;
+  text-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+  position: relative;
+}
+
+.filtersLabel svg {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.4));
 }
 
 .selects {

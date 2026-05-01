@@ -5,7 +5,7 @@
 
 /* ── Back bar ── */
 .backBar {
-  max-width: 900px;
+  max-width: var(--container-max);
   margin: 0 auto;
   padding: 16px 40px 0;
 }
@@ -51,7 +51,7 @@
 .heroInner {
   position: relative;
   z-index: 1;
-  max-width: 900px;
+  max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 40px;
   display: flex;
@@ -130,7 +130,7 @@
 
 /* ── Container ── */
 .container {
-  max-width: 900px;
+  max-width: var(--container-max);
   margin: 0 auto;
   padding: 40px 40px 80px;
   display: flex;
@@ -581,6 +581,143 @@
 @keyframes barGrow {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Skeleton primitives ── */
+.skLine {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skBlock {
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skAvatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid var(--rule);
+  flex-shrink: 0;
+  animation: pulseSoft 1.6s ease-in-out infinite;
+}
+
+.skBadge {
+  width: 110px;
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--rule) 25%, #2a2a28 50%, var(--rule) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 14px;
+}
+
+.skTitle {
+  width: 70%;
+  height: 32px;
+  margin-bottom: 12px;
+}
+
+.skSubtitle {
+  width: 45%;
+  height: 14px;
+}
+
+.skStatLabel { width: 55%; height: 10px; margin-bottom: 4px; }
+.skStatNum   { width: 70%; height: 32px; margin-bottom: 6px; }
+.skStatHelp  { width: 80%; height: 11px; }
+
+.skSectionTitle { width: 220px; height: 18px; margin-bottom: 8px; }
+.skSectionDesc  { width: 360px; max-width: 80%; height: 12px; margin-bottom: 16px; }
+
+.skPeriodoBars {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper-card);
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.skPeriodoRow {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skPeriodoRow:last-child { border-bottom: none; }
+
+.skPeriodoTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.skBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.skTemaCard {
+  padding: 16px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skProyectoCard {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skLoadingHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--label);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 6px;
+  animation: fadeUp 0.5s ease both;
+}
+
+.skLoadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulseSoft 1.2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.65);
 }
 
 /* ── Error ── */

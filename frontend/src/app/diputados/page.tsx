@@ -6,11 +6,10 @@ import { api } from '@/lib/api'
 import type { DiputadoRanking } from '@/lib/api'
 import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatDiputadoName, cleanText } from '@/lib/utils'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import { Button } from '@/components/ui/Button'
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
 
 function IconSearch() {
   return (
@@ -44,8 +43,6 @@ function IconX() {
   )
 }
 
-// ── Rank badge helper ─────────────────────────────────────────────────────────
-
 function rankClass(i: number) {
   if (i === 0) return styles.rankGold
   if (i === 1) return styles.rankSilver
@@ -53,12 +50,9 @@ function rankClass(i: number) {
   return styles.rankPlain
 }
 
-// ── Diputado card ─────────────────────────────────────────────────────────────
-
 function getInitials(nombreCompleto: string) {
   const words = cleanText(nombreCompleto).toLowerCase().split(/\s+/).filter(w => w.length > 0)
   if (words.length === 0) return '·'
-  // reordenamos igual que formatDiputadoName para tomar iniciales del nombre real
   const reordered = words.length === 3
     ? [words[2], words[0]]
     : words.length === 4
@@ -74,6 +68,7 @@ function avatarHue(seed: string) {
 }
 
 function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; max: number }) {
+  const { dict } = useT()
   const pct = max > 0 ? (d.total_proyectos / max) * 100 : 0
   const slug = encodeURIComponent(d.nombre_completo)
   const initials = getInitials(d.nombre_completo)
@@ -82,7 +77,6 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
 
   return (
     <Link href={`/diputados/${slug}`} className={styles.card}>
-      {/* Avatar + rank overlay */}
       <div className={styles.avatarWrap}>
         <div
           className={styles.avatar}
@@ -96,9 +90,9 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
         </div>
       </div>
 
-      {/* Body */}
       <div className={styles.cardBody}>
         <p className={styles.cardName}>
+          {/* Nombre del diputado — NO se traduce */}
           <span className={styles.cardSurname}>{formatDiputadoName(d.nombre_completo)}</span>
         </p>
         <div className={styles.barRow}>
@@ -108,19 +102,15 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
         </div>
       </div>
 
-      {/* Count */}
       <div className={styles.cardCount}>
         <strong>{d.total_proyectos}</strong>
-        <span>{d.total_proyectos === 1 ? 'proyecto' : 'proyectos'}</span>
+        <span>{d.total_proyectos === 1 ? dict.diputadosPage.proyectoSingular : dict.diputadosPage.proyectoPlural}</span>
       </div>
 
-      {/* Arrow */}
       <div className={styles.cardArrow} aria-hidden><IconChevron /></div>
     </Link>
   )
 }
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
@@ -134,9 +124,8 @@ function Skeleton() {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 export default function DiputadosPage() {
+  const { dict } = useT()
   const [query, setQuery]     = useState('')
   const [periodo, setPeriodo] = useState('6 meses')
   const [orden, setOrden]     = useState('proyectos')
@@ -144,9 +133,12 @@ export default function DiputadosPage() {
   const [data, setData]       = useState<DiputadoRanking[]>([])
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(10)
+  // Activa la animación de la barra de filtros sólo después de la primera
+  // carga, para que el sweep y el reveal sean visibles cuando el usuario
+  // ya está mirando el contenido.
+  const [filtersAnimated, setFiltersAnimated] = useState(false)
   const legislativePeriods = useLegislativePeriods()
 
-  // Combined debounced fetch — periodo changes fire immediately, query changes wait 350ms.
   const prevPeriodoRef = useRef(periodo)
   useEffect(() => {
     const periodoChanged = prevPeriodoRef.current !== periodo
@@ -169,7 +161,7 @@ export default function DiputadosPage() {
         })
         if (cancelled) return
         setData(result.datos)
-        setVisible(10) // reset pagination when new data arrives
+        setVisible(10)
       } catch {
         if (!cancelled) setData([])
       } finally {
@@ -182,6 +174,13 @@ export default function DiputadosPage() {
       clearTimeout(timer)
     }
   }, [query, periodo, legislativePeriods])
+
+  useEffect(() => {
+    if (!loading && !filtersAnimated) {
+      const t = setTimeout(() => setFiltersAnimated(true), 120)
+      return () => clearTimeout(t)
+    }
+  }, [loading, filtersAnimated])
 
   const onOrdenChange = (v: string) => { setOrden(v); setVisible(10) }
 
@@ -203,7 +202,7 @@ export default function DiputadosPage() {
   }, [data, orden])
 
   const periodOptions = [
-    { value: '', label: 'Cualquier período' },
+    { value: '', label: dict.diputadosPage.cualquierPeriodo },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
     ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
   ]
@@ -211,19 +210,17 @@ export default function DiputadosPage() {
   return (
     <div className={styles.page}>
 
-      {/* ── Hero ── */}
       <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
-            <span className={styles.heroEyebrow}>Representantes del pueblo</span>
-            <h1 className={styles.heroTitle}>Diputados</h1>
+            <span className={styles.heroEyebrow}>{dict.diputadosPage.heroEyebrow}</span>
+            <h1 className={styles.heroTitle}>{dict.diputados.pageTitle}</h1>
             <p className={styles.heroDesc}>
-              Explorá la actividad legislativa de los {data.length > 0 ? data.length : '…'} diputados por número de proyectos presentados.
+              {dict.diputadosPage.heroDescPrefix} {data.length > 0 ? data.length : '…'} {dict.diputadosPage.heroDescSuffix}
             </p>
           </div>
 
-          {/* Search */}
           <div className={styles.searchWrap}>
             <span className={styles.searchIcon}><IconSearch /></span>
             <input
@@ -231,15 +228,15 @@ export default function DiputadosPage() {
               type="search"
               inputMode="search"
               enterKeyHint="search"
-              aria-label="Buscar diputado por nombre o apellido"
-              placeholder="Buscá por nombre o apellido…"
+              aria-label={dict.diputadosPage.searchAria}
+              placeholder={dict.diputadosPage.searchPlaceholder}
               value={query}
               onChange={e => setQuery(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
             {query && (
-              <button className={styles.searchClear} onClick={() => setQuery('')} aria-label="Limpiar búsqueda">
+              <button className={styles.searchClear} onClick={() => setQuery('')} aria-label={dict.diputadosPage.clearSearchAria}>
                 <IconX />
               </button>
             )}
@@ -247,27 +244,26 @@ export default function DiputadosPage() {
         </div>
       </section>
 
-      {/* ── Filters bar ── */}
-      <div className={styles.filtersBar}>
+      <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> Filtros</span>
+          <span className={styles.filtersLabel}><IconFilter /> {dict.diputadosPage.filtersLabel}</span>
 
           <FilterPill
             value={periodo}
             onChange={setPeriodo}
-            placeholder="Cualquier período"
+            placeholder={dict.diputadosPage.cualquierPeriodo}
             options={periodOptions}
           />
 
           <FilterPill
             value={orden}
             onChange={onOrdenChange}
-            placeholder="Más proyectos"
+            placeholder={dict.diputadosPage.masProyectos}
             active={orden !== 'proyectos'}
             options={[
-              { value: 'proyectos', label: 'Más proyectos' },
-              { value: 'az', label: 'A → Z' },
-              { value: 'za', label: 'Z → A' },
+              { value: 'proyectos', label: dict.diputadosPage.masProyectos },
+              { value: 'az', label: dict.diputadosPage.az },
+              { value: 'za', label: dict.diputadosPage.za },
             ]}
           />
 
@@ -275,43 +271,41 @@ export default function DiputadosPage() {
             <>
               <div className={styles.filtersSep} aria-hidden />
               <Button variant="ghost" size="sm" onClick={clearFilters} leftIcon={<IconX />}>
-                Limpiar
+                {dict.diputadosPage.limpiar}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      {/* ── Results ── */}
       <div className={styles.main}>
         <div className={styles.container}>
 
           <div className={styles.resultsRow}>
             <p className={styles.resultsCount}>
               {loading
-                ? 'Cargando…'
-                : `${sorted.length.toLocaleString('es-CR')} diputado${sorted.length !== 1 ? 's' : ''}`}
+                ? dict.diputadosPage.cargando
+                : `${sorted.length.toLocaleString(dict.common.locale)} ${sorted.length !== 1 ? dict.diputadosPage.diputadoPlural : dict.diputadosPage.diputadoSingular}`}
             </p>
 
             <div className={styles.activeChips}>
-              {/* Período: siempre visible, muestra el período activo */}
               <span className={styles.chip}>
-                {periodo || 'Cualquier período'}
+                {periodo || dict.diputadosPage.cualquierPeriodo}
                 {periodo !== '6 meses' && (
-                  <button onClick={() => setPeriodo('6 meses')} aria-label="Volver a 6 meses"><IconX /></button>
+                  <button onClick={() => setPeriodo('6 meses')} aria-label={dict.diputadosPage.volverA6Meses}><IconX /></button>
                 )}
               </span>
 
               {query && (
                 <span className={styles.chip}>
                   &ldquo;{query}&rdquo;
-                  <button onClick={() => setQuery('')} aria-label="Quitar búsqueda"><IconX /></button>
+                  <button onClick={() => setQuery('')} aria-label={dict.diputadosPage.quitarBusqueda}><IconX /></button>
                 </span>
               )}
               {orden !== 'proyectos' && (
                 <span className={styles.chip}>
-                  {orden === 'az' ? 'A → Z' : 'Z → A'}
-                  <button onClick={() => onOrdenChange('proyectos')} aria-label="Quitar orden"><IconX /></button>
+                  {orden === 'az' ? dict.diputadosPage.az : dict.diputadosPage.za}
+                  <button onClick={() => onOrdenChange('proyectos')} aria-label={dict.diputadosPage.quitarOrden}><IconX /></button>
                 </span>
               )}
             </div>
@@ -323,8 +317,8 @@ export default function DiputadosPage() {
             </div>
           ) : sorted.length === 0 ? (
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>Sin resultados</p>
-              <p className={styles.emptyDesc}>Intentá con otro nombre o período diferente.</p>
+              <p className={styles.emptyTitle}>{dict.diputadosPage.sinResultadosTitle}</p>
+              <p className={styles.emptyDesc}>{dict.diputadosPage.sinResultadosDesc}</p>
             </div>
           ) : (
             <>
@@ -336,7 +330,7 @@ export default function DiputadosPage() {
               {visible < sorted.length && (
                 <div className={styles.loadMoreRow}>
                   <Button variant="secondary" onClick={() => setVisible(v => v + 10)}>
-                    Ver más diputados ({sorted.length - visible} restantes)
+                    {dict.diputadosPage.verMasPrefix} ({dict.diputadosPage.verMasRestantes(sorted.length - visible)})
                   </Button>
                 </div>
               )}

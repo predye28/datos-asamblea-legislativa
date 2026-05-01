@@ -1,4 +1,7 @@
-import { etiquetaEstado } from '@/lib/estados'
+'use client'
+
+import { etiquetaEstado, renderEtiquetaEstado } from '@/lib/estados'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './EstadoChip.module.css'
 
 interface Props {
@@ -10,6 +13,7 @@ interface Props {
 }
 
 export function EstadoChip({ estadoActual, esLey, numeroLey, estadoGrupo, size = 'md' }: Props) {
+  const { dict } = useT()
   const info = etiquetaEstado(estadoActual, esLey, numeroLey, estadoGrupo)
   return (
     <span
@@ -17,7 +21,7 @@ export function EstadoChip({ estadoActual, esLey, numeroLey, estadoGrupo, size =
       title={info.textoCompleto}
     >
       <span className={styles.dot} aria-hidden />
-      {info.etiqueta}
+      {renderEtiquetaEstado(info.etiquetaKey, dict)}
     </span>
   )
 }

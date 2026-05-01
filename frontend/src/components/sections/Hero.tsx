@@ -1,3 +1,6 @@
+'use client'
+
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './Hero.module.css'
 
 function IconBuilding() {
@@ -18,14 +21,14 @@ function IconBuilding() {
 }
 
 export default function Hero() {
+  const { dict } = useT()
+
   return (
     <section className={styles.hero}>
-      {/* Decorative corner circles — like Ruby */}
       <div className={styles.decTopLeft}  aria-hidden />
       <div className={styles.decTopRight} aria-hidden />
       <div className={styles.decBotLeft}  aria-hidden />
 
-      {/* Warm radial glow behind center */}
       <div className={styles.centerGlow} aria-hidden />
 
       <div className={styles.container}>
@@ -41,10 +44,7 @@ export default function Hero() {
           La <span className={styles.accent}>Asamblea</span> al Día
         </h1>
 
-        <p className={styles.description}>
-          Plataforma independiente para dar seguimiento a la actividad legislativa
-          de Costa Rica. Proyectos de ley, diputados y estadísticas del SIL, en un solo lugar.
-        </p>
+        <p className={styles.description}>{dict.hero.description}</p>
 
         <div className={styles.divider} />
 

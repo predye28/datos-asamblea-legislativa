@@ -1,12 +1,52 @@
 'use client'
 
-import { useEffect, useRef, useState, CSSProperties, ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './FeatureBlocks.module.css'
 
-export type DataItem = { value: string; label: ReactNode }
+type ProyectosData = {
+  registrados: number | null
+  esteAnio: number | null
+  aprobacion: number | null
+}
 
-interface CardProps {
+type DiputadosData = {
+  historicos: number | null
+  topActivoCount: number | null
+  topActivoNombre: string | null
+  topEficaciaPct: number | null
+  topEficaciaNombre: string | null
+}
+
+type EstadisticasData = {
+  nuncaLey: number | null
+  tramites: number | null
+  ultimoMesTotal: number | null
+  ultimoMesNombre: string | null
+  ultimoMesAnio: number | null
+}
+
+export type CardPayload =
+  | { id: 'proyectos'; accent: string; href: string; data: ProyectosData }
+  | { id: 'diputados'; accent: string; href: string; data: DiputadosData }
+  | { id: 'estadisticas'; accent: string; href: string; data: EstadisticasData }
+
+type DataItem = { value: string; label: ReactNode }
+
+function fmt(n: number | null, locale: string): string {
+  return n == null ? '—' : n.toLocaleString(locale)
+}
+
+function Card({
+  index,
+  accent,
+  title,
+  promise,
+  data,
+  href,
+  cta,
+}: {
   index: number
   accent: string
   title: string
@@ -14,9 +54,7 @@ interface CardProps {
   data: DataItem[]
   href: string
   cta: string
-}
-
-function Card({ index, accent, title, promise, data, href, cta }: CardProps) {
+}) {
   return (
     <div
       className={styles.card}
@@ -43,11 +81,13 @@ function Card({ index, accent, title, promise, data, href, cta }: CardProps) {
 }
 
 interface Props {
-  cards: Array<Omit<CardProps, 'index'>>
+  cards: CardPayload[]
 }
 
 export default function FeatureBlocksGrid({ cards }: Props) {
-  // Must start as `false` on both server and client to avoid hydration mismatch.
+  const { dict } = useT()
+  const locale = dict.common.locale
+
   const [inView, setInView] = useState(false)
   const gridRef = useRef<HTMLDivElement | null>(null)
 
@@ -55,7 +95,6 @@ export default function FeatureBlocksGrid({ cards }: Props) {
     const el = gridRef.current
     if (!el) return
 
-    // Fallback for environments without IntersectionObserver.
     if (typeof IntersectionObserver === 'undefined') {
       queueMicrotask(() => setInView(true))
       return
@@ -77,14 +116,87 @@ export default function FeatureBlocksGrid({ cards }: Props) {
     return () => obs.disconnect()
   }, [])
 
+  const resolved = useMemo(() => {
+    return cards.map((card) => {
+      if (card.id === 'proyectos') {
+        const t = dict.featureBlocks.proyectos
+        const items: DataItem[] = [
+          { value: fmt(card.data.registrados, locale), label: t.labelRegistrados },
+          { value: fmt(card.data.esteAnio, locale), label: t.labelEsteAnio },
+          {
+            value: card.data.aprobacion == null ? '—' : `${card.data.aprobacion}%`,
+            label: t.labelAprobacion,
+          },
+        ]
+        return { ...card, title: t.title, promise: t.promise, cta: t.cta, items }
+      }
+
+      if (card.id === 'diputados') {
+        const t = dict.featureBlocks.diputados
+        const { topActivoCount, topActivoNombre, topEficaciaPct, topEficaciaNombre } = card.data
+        const items: DataItem[] = [
+          { value: fmt(card.data.historicos, locale), label: t.labelHistoricos },
+          {
+            value: topActivoCount == null ? '—' : String(topActivoCount),
+            label: topActivoNombre
+              ? <span>{t.labelMasActivoPrefix} (<strong>{topActivoNombre}</strong>)</span>
+              : t.labelMasActivoFallback,
+          },
+          {
+            value: topEficaciaPct == null ? '—' : `${topEficaciaPct}%`,
+            label: topEficaciaNombre
+              ? <span>{t.labelEficaciaPrefix} (<strong>{topEficaciaNombre}</strong>)</span>
+              : t.labelEficaciaFallback,
+          },
+        ]
+        return { ...card, title: t.title, promise: t.promise, cta: t.cta, items }
+      }
+
+      // estadisticas
+      const t = dict.featureBlocks.estadisticas
+      const { nuncaLey, tramites, ultimoMesTotal, ultimoMesNombre, ultimoMesAnio } = card.data
+      const items: DataItem[] = [
+        {
+          value: nuncaLey == null ? '—' : `${nuncaLey}%`,
+          label: t.labelNuncaLey,
+        },
+        {
+          value: tramites == null ? '—' : String(tramites),
+          label: t.labelTramites,
+        },
+        {
+          value: ultimoMesTotal == null ? '—' : String(ultimoMesTotal),
+          label: ultimoMesNombre && ultimoMesAnio
+            ? <span>{t.labelEsteMesPrefix} <strong>{ultimoMesNombre} {ultimoMesAnio}</strong></span>
+            : t.labelEsteMesFallback,
+        },
+      ]
+      return { ...card, title: t.title, promise: t.promise, cta: t.cta, items }
+    })
+  }, [cards, dict, locale])
+
   return (
-    <div
-      ref={gridRef}
-      className={`${styles.grid} ${inView ? styles.inView : ''}`}
-    >
-      {cards.map((card, i) => (
-        <Card key={card.href} index={i} {...card} />
-      ))}
-    </div>
+    <>
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionEyebrow}>{dict.featureBlocks.sectionEyebrow}</h2>
+      </div>
+      <div
+        ref={gridRef}
+        className={`${styles.grid} ${inView ? styles.inView : ''}`}
+      >
+        {resolved.map((card, i) => (
+          <Card
+            key={card.href}
+            index={i}
+            accent={card.accent}
+            title={card.title}
+            promise={card.promise}
+            data={card.items}
+            href={card.href}
+            cta={card.cta}
+          />
+        ))}
+      </div>
+    </>
   )
 }

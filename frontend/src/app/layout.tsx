@@ -4,6 +4,7 @@ import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ScrollToTop from '@/components/layout/ScrollToTop'
+import { LanguageProvider } from '@/i18n/LanguageProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -82,11 +83,22 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${inter.variable} ${outfit.variable} ${mono.variable}`}>
+      <head>
+        {/* Sincroniza <html lang> con la preferencia guardada antes del primer paint.
+            Evita que un usuario en inglés vea atributos en español para a11y/screen readers. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var l=localStorage.getItem('lang');if(l==='es'||l==='en')document.documentElement.lang=l;}catch(e){}`,
+          }}
+        />
+      </head>
       <body>
-        <ScrollToTop />
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <LanguageProvider>
+          <ScrollToTop />
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   )

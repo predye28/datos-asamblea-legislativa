@@ -3,28 +3,22 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './Navbar.module.css'
 
-const NAV_LINKS = [
-  { href: '/',             label: 'Inicio' },
-  { href: '/proyectos',    label: 'Proyectos' },
-  { href: '/diputados',    label: 'Diputados' },
-  { href: '/estadisticas', label: 'Estadísticas' },
-  { href: '/acerca',       label: 'Acerca de' },
-]
-
-// Empty subscribe — date only needs to render once on the client after hydration.
 const noopSubscribe = () => () => {}
 
-function useClientDate(): string {
+function useClientDate(locale: string): string {
   return useSyncExternalStore(
     noopSubscribe,
     () => {
       const d = new Date()
       const day = d.getDate()
-      const month = d.toLocaleString('es-CR', { month: 'long' })
+      const month = d.toLocaleString(locale, { month: 'long' })
       const year = d.getFullYear()
-      return `${day} ${month} ${year}`
+      return locale.startsWith('en')
+        ? `${month} ${day}, ${year}`
+        : `${day} ${month} ${year}`
     },
     () => '',
   )
@@ -33,9 +27,17 @@ function useClientDate(): string {
 export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
-  const currentDate = useClientDate()
+  const { dict, lang, toggleLang } = useT()
+  const currentDate = useClientDate(dict.common.locale)
 
-  // Close menu when the URL changes — subscribing to external state (history).
+  const navLinks = [
+    { href: '/',             label: dict.navbar.inicio },
+    { href: '/proyectos',    label: dict.navbar.proyectos },
+    { href: '/diputados',    label: dict.navbar.diputados },
+    { href: '/estadisticas', label: dict.navbar.estadisticas },
+    { href: '/acerca',       label: dict.navbar.acerca },
+  ]
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
@@ -47,18 +49,21 @@ export default function Navbar() {
 
     html.style.overflow = 'hidden'
     body.style.overflow = 'hidden'
-    
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false)
     }
     window.addEventListener('keydown', onKey)
-    
+
     return () => {
       html.style.overflow = prevHtml
       body.style.overflow = prevBody
       window.removeEventListener('keydown', onKey)
     }
   }, [menuOpen])
+
+  // El botón muestra el idioma al que cambiará (UX más clara que mostrar el actual).
+  const otherLangLabel = lang === 'es' ? 'EN' : 'ES'
 
   return (
     <>
@@ -68,7 +73,6 @@ export default function Navbar() {
             href="/"
             className={styles.logo}
             onClick={(e) => {
-              // Si ya estamos en el inicio, no recargamos: solo subimos al tope.
               if (pathname === '/') {
                 e.preventDefault()
                 window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -78,16 +82,14 @@ export default function Navbar() {
             La <span className={styles.accent}>Asamblea</span> al Día
           </Link>
 
-          <nav className={styles.nav} aria-label="Navegación principal">
-            {NAV_LINKS.map((l) => (
+          <nav className={styles.nav} aria-label={dict.navbar.mainNav}>
+            {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
                 className={`${styles.link} ${pathname === l.href ? styles.active : ''}`}
                 aria-current={pathname === l.href ? 'page' : undefined}
                 onClick={(e) => {
-                  // Si ya estamos en esa ruta, en vez de no hacer nada
-                  // subimos al tope para que se sienta como un "ir al inicio".
                   if (pathname === l.href) {
                     e.preventDefault()
                     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -100,14 +102,21 @@ export default function Navbar() {
           </nav>
 
           <div className={styles.rightZone}>
-            <button className={styles.langPill} aria-label="Idioma">ES</button>
+            <button
+              className={styles.langPill}
+              onClick={toggleLang}
+              aria-label={dict.navbar.langAria}
+              title={dict.navbar.langAria}
+            >
+              {otherLangLabel}
+            </button>
             {currentDate && (
               <span className={styles.dateDisplay}>{currentDate}</span>
             )}
             <button
               className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-label={menuOpen ? dict.navbar.menuClose : dict.navbar.menuOpen}
               aria-expanded={menuOpen}
             >
               <span className={styles.line1} />
@@ -130,8 +139,8 @@ export default function Navbar() {
         className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ''}`}
         aria-hidden={!menuOpen}
       >
-        <nav aria-label="Menú móvil">
-          {NAV_LINKS.map((l) => (
+        <nav aria-label={dict.navbar.mobileNav}>
+          {navLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}

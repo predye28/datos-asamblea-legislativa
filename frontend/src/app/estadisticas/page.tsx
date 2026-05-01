@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import type { MetricasResponse, ProximoVencer } from '@/lib/api'
 import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatTitle, formatDiputadoName } from '@/lib/utils'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './estadisticas.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import CountUp from '@/components/shared/CountUp'
@@ -13,40 +14,11 @@ import { Button } from '@/components/ui/Button'
 import { TimelineAreaChart } from '@/components/charts/TimelineAreaChart'
 import { MonthlyBarsChart } from '@/components/charts/MonthlyBarsChart'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number) { return n.toLocaleString('es-CR') }
+function fmtN(n: number, locale: string) { return n.toLocaleString(locale) }
 function fmtPct(n: number) { return `${n.toFixed(1)}%` }
 function toISO(d: Date) { return d.toISOString().slice(0, 10) }
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
-
-const PALETTE = [
-  '#06B6D4', '#818CF8', '#22C55E', '#F59E0B',
-  '#EC4899', '#A78BFA', '#14B8A6', '#F97316',
-]
-
-const TIPO_HELP: Record<string, string> = {
-  'Ley Ordinaria': 'Norma general aprobada por mayoría simple.',
-  'Reforma Constitucional': 'Modificación al texto de la Constitución Política.',
-  'Aprobación de Contratos': 'Convenios que requieren aval legislativo.',
-  'Aprobación de Convenios': 'Tratados y convenios internacionales.',
-  'Tratado Internacional': 'Acuerdos con otros Estados u organismos.',
-  'Acuerdo Legislativo': 'Decisiones internas del plenario.',
-  'Ley Especial': 'Normas para materias o sectores específicos.',
-  'Reforma a la Ley': 'Modificación parcial a una ley existente.',
-}
-
 type RangoRapido = '' | 'este_mes' | 'seis_meses' | 'este_anio' | 'diez_anios' | 'personalizado'
-
-const RANGO_LABEL: Record<RangoRapido, string> = {
-  '': 'Histórico (todo)',
-  'este_mes': 'Este mes',
-  'seis_meses': 'Últimos 6 meses',
-  'este_anio': 'Este año',
-  'diez_anios': 'Últimos 10 años',
-  'personalizado': 'Personalizado',
-}
 
 function rangoACifras(rango: RangoRapido): { desde?: string; hasta?: string } {
   const hoy = new Date()
@@ -114,6 +86,19 @@ function SkeletonPage() {
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function EstadisticasPage() {
+  const { dict } = useT()
+  const t = dict.estadisticasPage
+  const fmt = (n: number) => fmtN(n, dict.common.locale)
+
+  const RANGO_LABEL: Record<RangoRapido, string> = {
+    '': t.rangoFiltroHistorico,
+    'este_mes': t.rangoEsteMes,
+    'seis_meses': t.rango6Meses,
+    'este_anio': t.rangoEsteAnio,
+    'diez_anios': t.rango10Anios,
+    'personalizado': t.rangoPersonalizado,
+  }
+
   const [rangoRapido, setRangoRapido] = useState<RangoRapido>('')
   const [customDesde, setCustomDesde] = useState('')
   const [customHasta, setCustomHasta] = useState('')
@@ -123,6 +108,10 @@ export default function EstadisticasPage() {
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
   const [proxVencer, setProxVencer] = useState<ProximoVencer[]>([])
   const [loading, setLoading] = useState(true)
+  // Activa la animación de la barra de filtros sólo después de la primera
+  // carga, para que el sweep y el reveal sean visibles cuando el usuario
+  // ya está mirando el contenido.
+  const [filtersAnimated, setFiltersAnimated] = useState(false)
   const legislativePeriods = useLegislativePeriods()
 
   // Rango efectivo (prioridad: custom > rápido > legislativo > histórico)
@@ -152,6 +141,15 @@ export default function EstadisticasPage() {
     return () => { cancelled = true }
   }, [])
 
+  // Dispara la animación de la barra de filtros una sola vez, después de la
+  // primera carga de datos.
+  useEffect(() => {
+    if (!loading && !filtersAnimated) {
+      const t = setTimeout(() => setFiltersAnimated(true), 120)
+      return () => clearTimeout(t)
+    }
+  }, [loading, filtersAnimated])
+
   // Datos filtrados por el período seleccionado (recarga al cambiar filtros).
   useEffect(() => {
     let cancelled = false
@@ -173,9 +171,9 @@ export default function EstadisticasPage() {
   }, [desde, hasta])
 
   const periodOptions = [
-    { value: '', label: 'Todos los períodos' },
+    { value: '', label: t.todosPeriodos },
     ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
-    { value: '__sep__', label: '── Períodos legislativos ──', disabled: true },
+    { value: '__sep__', label: t.separadorLegislativos, disabled: true },
     ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
   ]
 
@@ -267,24 +265,22 @@ export default function EstadisticasPage() {
   const hasLegislative = periodo !== ''
   const hasFilter = hasRapido || hasLegislative
   const isLegislativePeriod = legislativePeriods.some(p => p.label === periodo)
-  const hoy = new Date()
-  const fechaHoy = hoy.toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })
 
   const rangoTextoHumano = hasRapido
     ? (rangoRapido === 'personalizado' && customDesde && customHasta
-      ? `del ${customDesde} al ${customHasta}`
+      ? t.rangoPersonalizadoFmt(customDesde, customHasta)
       : RANGO_LABEL[rangoRapido].toLowerCase())
     : hasLegislative
       ? periodo
-      : 'histórico'
+      : t.rangoHistorico
 
   const filtroLabel = hasRapido
     ? (rangoRapido === 'personalizado' && customDesde && customHasta
-      ? `${customDesde} al ${customHasta}`
+      ? t.rangoPersonalizadoFmtLabel(customDesde, customHasta)
       : RANGO_LABEL[rangoRapido])
     : hasLegislative
       ? periodo
-      : 'Histórico (todo)'
+      : t.rangoFiltroHistorico
 
   const onChangePeriodo = (v: string) => {
     setPeriodo(v)
@@ -317,36 +313,30 @@ export default function EstadisticasPage() {
   return (
     <div className={styles.page}>
 
-      {/* ── Page header ── */}
       <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
-            <span className={styles.heroEyebrow}>Datos de la Asamblea</span>
-            <h1 className={styles.heroTitle}>Estadísticas</h1>
-            <p className={styles.heroDesc}>
-              Una mirada a los temas, los diputados y el ritmo del trabajo legislativo en Costa Rica.
-            </p>
+            <span className={styles.heroEyebrow}>{t.heroEyebrow}</span>
+            <h1 className={styles.heroTitle}>{t.heroTitle}</h1>
+            <p className={styles.heroDesc}>{t.heroDesc}</p>
           </div>
         </div>
       </section>
 
-
-
-      {/* ── Filters ── */}
-      <div className={styles.filtersBar}>
+      <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> Período legislativo</span>
+          <span className={styles.filtersLabel}><IconFilter /> {t.filtroPeriodoLabel}</span>
           <FilterPill
             value={periodo}
             onChange={onChangePeriodo}
-            placeholder="Todos los períodos"
+            placeholder={t.todosPeriodos}
             active={hasLegislative}
             options={periodOptions}
           />
           {hasFilter && (
             <Button variant="ghost" size="sm" onClick={limpiarTodo} leftIcon={<IconX />}>
-              Limpiar
+              {t.limpiar}
             </Button>
           )}
         </div>
@@ -358,7 +348,7 @@ export default function EstadisticasPage() {
         <div className={styles.main}>
           <div className={styles.container}>
             <p style={{ color: 'var(--ink-faint)', padding: '80px 0', textAlign: 'center' }}>
-              No se pudieron cargar los datos.
+              {t.noData}
             </p>
           </div>
         </div>
@@ -370,8 +360,8 @@ export default function EstadisticasPage() {
               <div className={styles.periodBanner}>
                 <span className={styles.periodBannerDot} />
                 <span className={styles.periodBannerText}>
-                  Mostrando datos <strong>{rangoTextoHumano}</strong>
-                  {isLegislativePeriod && ' · período legislativo'}
+                  {t.bannerPrefix} <strong>{rangoTextoHumano}</strong>
+                  {isLegislativePeriod && t.bannerSuffix}
                 </span>
               </div>
             )}
@@ -381,18 +371,19 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="01"
-                  kicker="Temas"
-                  title="Los temas que mueven la agenda"
-                  deck="Los 10 temas con más proyectos presentados."
+                  kicker={t.section01Kicker}
+                  title={t.section01Title}
+                  deck={t.section01Deck}
                   filtro={filtroLabel}
                 />
                 <p className={styles.insight}>
                   {topTema && (
                     <>
-                      <strong>{formatTitle(topTema.categoria)}</strong> domina la agenda con{' '}
-                      <strong>{topTema.total} proyectos</strong>
+                      {/* Nombre del tema — viene del SIL, no se traduce */}
+                      <strong>{formatTitle(topTema.categoria, dict.estado.sinTitulo)}</strong> {t.insightTemaDominaPrefix}{' '}
+                      <strong>{topTema.total} {t.insightProyectos}</strong>
                       {temaMasEficaz && temaMasEficaz.slug !== topTema.slug && temaMasEficaz.tasa_aprobacion > 0 && (
-                        <>, pero <strong>{formatTitle(temaMasEficaz.categoria)}</strong> tiene la mayor efectividad (<strong>{fmtPct(temaMasEficaz.tasa_aprobacion)} llega a ley</strong>)</>
+                        <>{t.insightPero} <strong>{formatTitle(temaMasEficaz.categoria, dict.estado.sinTitulo)}</strong> {t.insightTemaEficacia}<strong>{fmtPct(temaMasEficaz.tasa_aprobacion)}{t.insightLlegaALeyClose}</strong></>
                       )}
                       .
                     </>
@@ -411,8 +402,9 @@ export default function EstadisticasPage() {
                         <span className={styles.temaRank}>{i + 1}</span>
                         <div className={styles.temaBody}>
                           <div className={styles.temaNameRow}>
-                            <span className={styles.temaName}>{formatTitle(c.categoria)}</span>
-                            <span className={styles.temaRate}>{fmtPct(c.tasa_aprobacion)} llega a ley</span>
+                            {/* Nombre del tema — no se traduce */}
+                            <span className={styles.temaName}>{formatTitle(c.categoria, dict.estado.sinTitulo)}</span>
+                            <span className={styles.temaRate}>{fmtPct(c.tasa_aprobacion)} {t.insightLlegaALey}</span>
                           </div>
                           <div className={styles.temaBar}>
                             <div className={styles.temaFill} style={{ width: `${width}%` }} />
@@ -420,7 +412,7 @@ export default function EstadisticasPage() {
                         </div>
                         <div className={styles.temaCount}>
                           <strong>{fmt(c.total)}</strong>
-                          <span>proyectos</span>
+                          <span>{t.insightProyectos}</span>
                         </div>
                       </Link>
                     )
@@ -433,12 +425,11 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="02"
-                  kicker="Diputados"
-                  title="Quiénes proponen · quiénes aprueban"
+                  kicker={t.section02Kicker}
+                  title={t.section02Title}
                   deck={
                     <>
-                      Izquierda: quiénes presentan <strong>más proyectos</strong>.{' '}
-                      Derecha: quiénes logran que <strong>una mayor proporción</strong> llegue a ser ley.
+                      {t.section02DeckLeftPrefix} <strong>{t.section02DeckLeftStrong}</strong>{t.section02DeckRightPrefix} <strong>{t.section02DeckRightStrong}</strong>{t.section02DeckRightSuffix}
                     </>
                   }
                   filtro={filtroLabel}
@@ -447,13 +438,12 @@ export default function EstadisticasPage() {
                   <p className={styles.insight}>
                     {overlapTop > 0 ? (
                       <>
-                        Solo <strong>{overlapTop} de los 10</strong> diputados más activos aparecen también en el top de eficacia.{' '}
-                        <strong>Volumen no garantiza resultado.</strong>
+                        {t.insightOverlap(overlapTop)}{' '}
+                        <strong>{t.insightOverlapStrong}</strong>
                       </>
                     ) : (
                       <>
-                        Los diputados con más volumen <strong>no son los mismos</strong> que los más eficaces:{' '}
-                        proponer mucho y aprobar mucho son cosas distintas.
+                        {t.insightDiferentesPrefix} <strong>{t.insightDiferentesStrong}</strong>{t.insightDiferentesSuffix}
                       </>
                     )}
                   </p>
@@ -461,9 +451,9 @@ export default function EstadisticasPage() {
                 <div className={styles.podioGrid}>
                   <div className={styles.podioCol}>
                     <div className={styles.podioColHead}>
-                      <span className={styles.podioColKicker}>COLUMNA A</span>
-                      <h3 className={styles.podioColTitle}>Los que más proponen</h3>
-                      <p className={styles.podioColDeck}>Top 10 por número total de proyectos presentados en el período.</p>
+                      <span className={styles.podioColKicker}>{t.columnaAKicker}</span>
+                      <h3 className={styles.podioColTitle}>{t.columnaATitle}</h3>
+                      <p className={styles.podioColDeck}>{t.columnaADeck}</p>
                     </div>
                     <div className={styles.dipList}>
                       {topDip.slice(0, 10).map((d, i) => {
@@ -477,6 +467,7 @@ export default function EstadisticasPage() {
                           >
                             <span className={`${styles.dipRank} ${medal}`}>{i + 1}</span>
                             <div className={styles.dipBody}>
+                              {/* Nombre del diputado — no se traduce */}
                               <div className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</div>
                               <div className={styles.dipBar}>
                                 <div className={styles.dipFill} style={{ width: `${width}%` }} />
@@ -484,7 +475,7 @@ export default function EstadisticasPage() {
                             </div>
                             <div className={styles.dipMeta}>
                               <strong>{fmt(d.total_proyectos)}</strong>
-                              <span>proyectos</span>
+                              <span>{t.insightProyectos}</span>
                             </div>
                           </Link>
                         )
@@ -495,12 +486,11 @@ export default function EstadisticasPage() {
                   {topEfic.length > 0 && (
                     <div className={styles.podioCol}>
                       <div className={styles.podioColHead}>
-                        <span className={`${styles.podioColKicker} ${styles.podioColKickerGreen}`}>COLUMNA B</span>
-                        <h3 className={styles.podioColTitle}>Los que más aprueban</h3>
+                        <span className={`${styles.podioColKicker} ${styles.podioColKickerGreen}`}>{t.columnaBKicker}</span>
+                        <h3 className={styles.podioColTitle}>{t.columnaBTitle}</h3>
                         <p className={styles.podioColDeck}>
-                          Top 10 por tasa de aprobación. Solo se incluyen diputados con al menos{' '}
-                          <strong>{eficaciaThreshold} proyectos</strong> presentados, para que la comparación
-                          sea representativa.
+                          {t.columnaBDeckPrefix}{' '}
+                          <strong>{t.columnaBDeckStrong(eficaciaThreshold)}</strong>{t.columnaBDeckSuffix}
                         </p>
                       </div>
                       <div className={styles.dipList}>
@@ -519,7 +509,7 @@ export default function EstadisticasPage() {
                             </div>
                             <div className={`${styles.dipMeta} ${styles.dipMetaGreen}`}>
                               <strong>{fmtPct(d.tasa_aprobacion)}</strong>
-                              <span>{d.leyes_aprobadas} de {d.total_proyectos}</span>
+                              <span>{d.leyes_aprobadas} {t.de} {d.total_proyectos}</span>
                             </div>
                           </Link>
                         ))}
@@ -643,19 +633,19 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="03"
-                  kicker="Ritmo mensual"
-                  title="Proyectos presentados mes a mes"
-                  deck="Últimos 12 meses. Verde marca picos; ámbar, meses bajos."
-                  filtro="Últimos 12 meses"
+                  kicker={t.section03Kicker}
+                  title={t.section03Title}
+                  deck={t.section03Deck}
+                  filtro={t.section03Filtro}
                 />
                 <p className={styles.insight}>
                   {mensualStats.pico.total > mensualStats.promedio * 1.2 ? (
                     <>
-                      Hubo un <strong>pico en {mensualStats.pico.mes_nombre} {mensualStats.pico.anio}</strong> con{' '}
-                      <strong>{mensualStats.pico.total} proyectos</strong> ({Math.round((mensualStats.pico.total / mensualStats.promedio - 1) * 100)}% sobre el promedio de {mensualStats.promedio.toFixed(1)}).
+                      {t.insightPicoPrefix} <strong>{t.insightPicoStrong(mensualStats.pico.mes_nombre, mensualStats.pico.anio)}</strong> {t.insightPicoCon}{' '}
+                      <strong>{mensualStats.pico.total} {t.insightPicoProyectosPlural}</strong> {t.insightPicoSobreProm(Math.round((mensualStats.pico.total / mensualStats.promedio - 1) * 100), mensualStats.promedio.toFixed(1))}
                     </>
                   ) : (
-                    <>La actividad mensual se mantiene estable alrededor de <strong>{mensualStats.promedio.toFixed(1)} proyectos por mes</strong>.</>
+                    <>{t.insightEstable} <strong>{t.insightEstableProyectosMes(mensualStats.promedio.toFixed(1))}</strong>.</>
                   )}
                 </p>
                 <div className={styles.mensualPanel}>
@@ -669,48 +659,48 @@ export default function EstadisticasPage() {
               <>
                 <SectionIntro
                   num="04"
-                  kicker="Histórico"
-                  title={`${timelineStats.totalAnios} años de producción legislativa`}
-                  deck={`Leyes aprobadas por año entre ${timelineStats.desde} y ${timelineStats.hasta}.`}
-                  filtro={`Histórico · ${timelineStats.desde}–${timelineStats.hasta}`}
+                  kicker={t.section04Kicker}
+                  title={t.section04Title(timelineStats.totalAnios)}
+                  deck={t.section04Deck(timelineStats.desde, timelineStats.hasta)}
+                  filtro={t.section04Filtro(timelineStats.desde, timelineStats.hasta)}
                 />
                 <p className={styles.insight}>
                   {Math.abs(timelineStats.deltaPct) >= 5 ? (
                     <>
-                      En los últimos 3 años la producción legislativa{' '}
-                      <strong>{timelineStats.deltaPct > 0 ? 'subió' : 'cayó'} un {Math.abs(timelineStats.deltaPct).toFixed(0)}%</strong>{' '}
-                      respecto al promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.
+                      {t.insightTendencia}{' '}
+                      <strong>{timelineStats.deltaPct > 0 ? t.insightTendenciaSubio(Math.abs(timelineStats.deltaPct)) : t.insightTendenciaCayo(Math.abs(timelineStats.deltaPct))}</strong>{' '}
+                      {t.insightTendenciaSuffix} <strong>{t.insightLeyesAnio(timelineStats.promedio.toFixed(1))}</strong>.
                     </>
                   ) : (
-                    <>Los últimos 3 años se mantienen cerca del promedio histórico de <strong>{timelineStats.promedio.toFixed(1)} leyes/año</strong>.</>
+                    <>{t.insightEstableHistorico} <strong>{t.insightLeyesAnio(timelineStats.promedio.toFixed(1))}</strong>.</>
                   )}
                 </p>
                 <div className={styles.pulsoPanel}>
                   <TimelineAreaChart data={timeline} height={300} />
                   <div className={styles.pulsoStats}>
                     <div className={styles.pulsoStat}>
-                      <div className={styles.pulsoStatLabel}>Año con más leyes</div>
+                      <div className={styles.pulsoStatLabel}>{t.pulsoMaxLabel}</div>
                       <div className={styles.pulsoStatValue} style={{ color: '#F59E0B' }}>
                         {timelineStats.peak.anio}
                       </div>
                       <div className={styles.pulsoStatHelp}>
-                        <strong>{timelineStats.peak.leyes_aprobadas}</strong> leyes aprobadas
+                        {t.pulsoMaxHelp(timelineStats.peak.leyes_aprobadas)}
                       </div>
                     </div>
                     <div className={styles.pulsoStat}>
-                      <div className={styles.pulsoStatLabel}>Año con menos leyes</div>
+                      <div className={styles.pulsoStatLabel}>{t.pulsoMinLabel}</div>
                       <div className={styles.pulsoStatValue}>{timelineStats.low.anio}</div>
                       <div className={styles.pulsoStatHelp}>
-                        solo <strong>{timelineStats.low.leyes_aprobadas}</strong> leyes
+                        {t.pulsoMinHelp(timelineStats.low.leyes_aprobadas)}
                       </div>
                     </div>
                     <div className={styles.pulsoStat}>
-                      <div className={styles.pulsoStatLabel}>Promedio anual</div>
+                      <div className={styles.pulsoStatLabel}>{t.pulsoPromLabel}</div>
                       <div className={styles.pulsoStatValue} style={{ color: 'var(--accent)' }}>
                         <CountUp end={timelineStats.promedio} decimals={1} />
                       </div>
                       <div className={styles.pulsoStatHelp}>
-                        leyes por año ({timelineStats.totalAnios} años de registro)
+                        {t.pulsoPromHelp(timelineStats.totalAnios)}
                       </div>
                     </div>
                   </div>
@@ -781,6 +771,7 @@ export default function EstadisticasPage() {
 function SectionIntro({ num, kicker, title, deck, filtro }: {
   num: string; kicker: string; title: string; deck: React.ReactNode; filtro?: string
 }) {
+  const { dict } = useT()
   return (
     <div className={styles.sectionIntro}>
       <div className={styles.sectionHead}>
@@ -794,7 +785,7 @@ function SectionIntro({ num, kicker, title, deck, filtro }: {
       {filtro && (
         <div className={styles.filtroHint}>
           <span className={styles.filtroHintDot} />
-          <span className={styles.filtroHintLabel}>Mostrando:</span>
+          <span className={styles.filtroHintLabel}>{dict.estadisticasPage.bannerFiltroLabel}</span>
           <strong>{filtro}</strong>
         </div>
       )}

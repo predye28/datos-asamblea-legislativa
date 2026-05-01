@@ -84,13 +84,26 @@ def metricas(
     if hasta:
         condiciones.append("fecha_inicio <= %s")
         params.append(hasta)
-        
+
     where = "WHERE " + " AND ".join(condiciones)
 
     # ── 1. Métricas generales ─────────────────────────────────────────
+    # `total_proyectos` se cuenta sin filtrar `fecha_inicio IS NOT NULL`
+    # cuando no hay rango de fechas, para que coincida con el total del
+    # listado /proyectos (que tampoco filtra). Cuando sí hay rango, los
+    # filtros de fecha ya descartan NULLs.
+    where_total = (
+        "WHERE " + " AND ".join(c for c in condiciones if c != "fecha_inicio IS NOT NULL")
+        if any(c != "fecha_inicio IS NOT NULL" for c in condiciones)
+        else ""
+    )
+    total = fetchval(
+        f"SELECT COUNT(*) FROM proyectos {where_total}",
+        tuple(params),
+    ) or 0
+
     gen = fetchone(f"""
         SELECT
-            COUNT(*)                                        AS total_proyectos,
             COUNT(*) FILTER (WHERE numero_ley IS NOT NULL)  AS total_leyes_aprobadas,
             COUNT(*) FILTER (
                 WHERE DATE_TRUNC('month', fecha_inicio) = DATE_TRUNC('month', NOW())
@@ -102,7 +115,6 @@ def metricas(
         {where}
     """, tuple(params)) or {}
 
-    total           = gen.get("total_proyectos")    or 0
     total_leyes     = gen.get("total_leyes_aprobadas") or 0
     tasa_aprobacion = round((total_leyes / total * 100), 1) if total else 0.0
 

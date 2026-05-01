@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './Footer.module.css'
 
 function IconGitHub() {
@@ -18,51 +21,50 @@ function IconMail() {
   )
 }
 
-const EXPLORE_LINKS = [
-  { href: '/proyectos',    label: 'Proyectos' },
-  { href: '/diputados',    label: 'Diputados' },
-  { href: '/estadisticas', label: 'Estadísticas' },
-]
-
-const PROJECT_LINKS = [
-  { href: '/acerca', label: 'Acerca de' },
-  { href: 'https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/SIL.aspx', label: 'SIL oficial', external: true },
-]
-
 export default function Footer() {
+  const { dict } = useT()
+
+  const exploreLinks = [
+    { href: '/proyectos',    label: dict.navbar.proyectos },
+    { href: '/diputados',    label: dict.navbar.diputados },
+    { href: '/estadisticas', label: dict.navbar.estadisticas },
+  ]
+
+  const projectLinks = [
+    { href: '/acerca', label: dict.navbar.acerca, external: false as const },
+    {
+      href: 'https://www.asamblea.go.cr/Centro_de_informacion/Consultas_SIL/SitePages/SIL.aspx',
+      label: dict.footer.silOficial,
+      external: true as const,
+    },
+  ]
+
   return (
     <footer className={styles.footer}>
-
-      {/* Top gold gradient divider */}
       <div className={styles.topRule} />
 
       <div className={styles.container}>
         <div className={styles.main}>
 
-          {/* Brand */}
           <div className={styles.brand}>
             <div className={styles.logo}>
               La <span className={styles.accent}>Asamblea</span> al Día
             </div>
-            <p className={styles.tagline}>
-              Plataforma independiente que facilita el acceso a la información
-              legislativa de Costa Rica. Datos del SIL, presentados con claridad.
-            </p>
+            <p className={styles.tagline}>{dict.footer.tagline}</p>
           </div>
 
-          {/* Nav columns */}
           <div className={styles.cols}>
 
             <div className={styles.col}>
-              <div className={styles.colHeading}>Explorar</div>
-              {EXPLORE_LINKS.map(l => (
+              <div className={styles.colHeading}>{dict.footer.explorarHeading}</div>
+              {exploreLinks.map(l => (
                 <Link key={l.href} href={l.href} className={styles.link}>{l.label}</Link>
               ))}
             </div>
 
             <div className={styles.col}>
-              <div className={styles.colHeading}>Proyecto</div>
-              {PROJECT_LINKS.map(l =>
+              <div className={styles.colHeading}>{dict.footer.proyectoHeading}</div>
+              {projectLinks.map(l =>
                 l.external ? (
                   <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className={styles.link}>
                     {l.label} <span className={styles.ext}>↗</span>
@@ -73,24 +75,23 @@ export default function Footer() {
               )}
             </div>
 
-            {/* Contact */}
             <div className={`${styles.col} ${styles.contactCol}`}>
-              <div className={styles.colHeading}>Contacto</div>
+              <div className={styles.colHeading}>{dict.footer.contactoHeading}</div>
               <a
                 href="https://github.com/omarmr14/datos-asamblea-legislativa"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.contactLink}
-                aria-label="Repositorio en GitHub"
-                title="Repositorio en GitHub"
+                aria-label={dict.footer.repositorioAria}
+                title={dict.footer.repositorioAria}
               >
                 <IconGitHub />
-                <span className={styles.contactLabel}>Repositorio</span>
+                <span className={styles.contactLabel}>{dict.footer.repositorio}</span>
               </a>
               <a
                 href="mailto:omarmr14.02@gmail.com"
                 className={styles.contactLink}
-                aria-label="Enviar correo"
+                aria-label={dict.footer.enviarCorreoAria}
                 title="omarmr14.02@gmail.com"
               >
                 <IconMail />
@@ -101,13 +102,12 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className={styles.bottom}>
           <span className={styles.copy}>
-            © {new Date().getFullYear()} La Asamblea al Día · Costa Rica
+            © {new Date().getFullYear()} {dict.footer.copyrightSuffix}
           </span>
           <span className={styles.madeBy}>
-            Hecho por <span className={styles.author}>Omar Madrigal</span>
+            {dict.footer.madeBy} <span className={styles.author}>Omar Madrigal</span>
           </span>
         </div>
       </div>

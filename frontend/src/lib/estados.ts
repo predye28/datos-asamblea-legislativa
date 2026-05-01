@@ -1,9 +1,23 @@
+import type { Dictionary } from '@/i18n/dictionaries/es'
+
 export type EstadoGrupo = 'ley' | 'discusion' | 'archivado' | 'otro'
+
+// Clave UI categorizada que NOSOTROS asignamos. Se traduce vía dict.estado.
+export type EstadoEtiquetaKey =
+  | 'leyVigente'
+  | { kind: 'leyNumero'; numero: string }
+  | 'archivado'
+  | 'enPlenario'
+  | 'enComision'
+  | 'primerDebate'
+  | 'segundoDebate'
+  | 'enTramite'
+  | { kind: 'raw'; text: string } // Texto oficial del backend; no se traduce.
 
 export interface EstadoInfo {
   grupo: EstadoGrupo
-  etiqueta: string
-  textoCompleto: string
+  etiquetaKey: EstadoEtiquetaKey
+  textoCompleto: string // Cadena oficial del SIL — nunca se traduce.
 }
 
 // Fallback para datos viejos sin estado_grupo poblado.
@@ -24,11 +38,6 @@ function clasificarFallback(estadoActual: string | null, esLey: boolean): Estado
   return 'otro'
 }
 
-/**
- * Resuelve el grupo de estado.
- * Prioriza el campo `estadoGrupo` que llega del backend (fuente de verdad).
- * Si no viene poblado, cae al fallback local.
- */
 export function resolverGrupo(
   estadoGrupo: string | null | undefined,
   estadoActual: string | null,
@@ -49,29 +58,42 @@ export function etiquetaEstado(
 ): EstadoInfo {
   const grupo = resolverGrupo(estadoGrupo, estadoActual, esLey)
   const textoCompleto = esLey
-    ? `Ley vigente${numeroLey ? ` N.º ${numeroLey}` : ''}`
+    ? `Ley vigente${numeroLey && numeroLey.toUpperCase() !== 'SI' ? ` N.º ${numeroLey}` : ''}`
     : (estadoActual || 'Sin estado registrado')
 
-  let etiqueta = textoCompleto
-  if (grupo === 'ley') etiqueta = numeroLey ? `LEY N.º ${numeroLey}` : 'LEY VIGENTE'
-  else if (grupo === 'archivado') etiqueta = 'Archivado'
-  else if (grupo === 'discusion') {
+  let etiquetaKey: EstadoEtiquetaKey
+  if (grupo === 'ley') {
+    etiquetaKey = (numeroLey && numeroLey.toUpperCase() !== 'SI') ? { kind: 'leyNumero', numero: numeroLey } : 'leyVigente'
+  } else if (grupo === 'archivado') {
+    etiquetaKey = 'archivado'
+  } else if (grupo === 'discusion') {
     const s = (estadoActual || '').toLowerCase()
-    if (s.includes('plenario')) etiqueta = 'En plenario'
-    else if (s.includes('comisión') || s.includes('comision')) etiqueta = 'En comisión'
-    else if (s.includes('primer debate')) etiqueta = 'Primer debate'
-    else if (s.includes('segundo debate')) etiqueta = 'Segundo debate'
-    else etiqueta = 'En trámite'
-  } else if (grupo === 'otro') {
-    etiqueta = textoCompleto.length > 28 ? textoCompleto.slice(0, 26) + '…' : textoCompleto
+    if (s.includes('plenario')) etiquetaKey = 'enPlenario'
+    else if (s.includes('comisión') || s.includes('comision')) etiquetaKey = 'enComision'
+    else if (s.includes('primer debate')) etiquetaKey = 'primerDebate'
+    else if (s.includes('segundo debate')) etiquetaKey = 'segundoDebate'
+    else etiquetaKey = 'enTramite'
+  } else {
+    // grupo === 'otro' → mostramos el texto oficial truncado (no se traduce).
+    const trimmed = textoCompleto.length > 28 ? textoCompleto.slice(0, 26) + '…' : textoCompleto
+    etiquetaKey = { kind: 'raw', text: trimmed }
   }
 
-  return { grupo, etiqueta, textoCompleto }
+  return { grupo, etiquetaKey, textoCompleto }
 }
 
-export const ESTADO_FILTROS: { value: string; label: string }[] = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'discusion', label: 'En discusión' },
-  { value: 'ley', label: 'Ley vigente' },
-  { value: 'archivado', label: 'Archivado' },
-]
+// Resuelve la clave a string usando el diccionario activo.
+export function renderEtiquetaEstado(key: EstadoEtiquetaKey, dict: Dictionary): string {
+  if (typeof key === 'string') return dict.estado[key]
+  if (key.kind === 'leyNumero') return dict.estado.leyNumero(key.numero)
+  return key.text
+}
+
+export function getEstadoFiltros(dict: Dictionary): { value: string; label: string }[] {
+  return [
+    { value: '',          label: dict.estado.filtroTodos },
+    { value: 'discusion', label: dict.estado.filtroDiscusion },
+    { value: 'ley',       label: dict.estado.filtroLey },
+    { value: 'archivado', label: dict.estado.filtroArchivado },
+  ]
+}

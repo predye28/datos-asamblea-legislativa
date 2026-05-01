@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './AboutSection.module.css'
 
 const WaveTop = () => (
@@ -15,49 +16,8 @@ const WaveBottom = () => (
   </svg>
 )
 
-const PILLARS = [
-  {
-    heading: 'Transparencia',
-    subtitle: 'Los datos públicos, en un formato que cualquiera entiende',
-    body: 'La Asamblea Legislativa publica toda su actividad en el Sistema de Información Legislativa (SIL). Nosotros tomamos esos datos y los convertimos en una experiencia visual, clara y navegable para cualquier ciudadano.',
-  },
-  {
-    heading: 'Independencia',
-    subtitle: 'Sin agenda política. Sin intereses comerciales. Solo datos',
-    body: 'No apoyamos ni criticamos a ningún partido ni diputado. Presentamos la información tal como la Asamblea la publica. No somos voceros de nadie. El análisis y las conclusiones son únicamente tuyas.',
-  },
-  {
-    heading: 'Participación',
-    subtitle: 'Una ciudadanía informada es una ciudadanía activa',
-    body: 'Al simplificar el acceso a los proyectos de ley y los perfiles de los diputados, damos herramientas para que cada costarricense pueda conocer a sus representantes, dar seguimiento a lo que se vota y exigir cuentas.',
-  },
-  {
-    heading: 'Accesible',
-    subtitle: 'Diseñado para cualquier persona, no solo para expertos',
-    body: 'Transformamos datos técnicos y lenguaje jurídico en información comprensible. No hace falta ser abogado ni politólogo para entender qué está pasando en la Asamblea. Está hecho para vos.',
-  },
-]
-
-const PRINCIPLES = [
-  {
-    label: 'Datos oficiales del SIL',
-    quote: 'La información viene directamente del Sistema de Información Legislativa, la fuente oficial y pública de la Asamblea.',
-  },
-  {
-    label: 'Sin editoriales',
-    quote: 'Mostramos los datos tal como se publican. No editamos ni opinamos: las conclusiones las sacás vos.',
-  },
-  {
-    label: 'Código abierto',
-    quote: 'El scraper, la API y este portal son públicos. Cualquiera puede revisarlos, mejorarlos o construir sobre ellos.',
-  },
-  {
-    label: 'Sin fines de lucro',
-    quote: 'Sin intereses comerciales ni políticos. Es un aporte ciudadano al acceso a la información pública de Costa Rica.',
-  },
-]
-
 export default function AboutSection() {
+  const { dict } = useT()
   const ref = useRef<HTMLElement | null>(null)
   const [inView, setInView] = useState(false)
 
@@ -87,14 +47,14 @@ export default function AboutSection() {
       <div className={styles.pillarsSection}>
         <div className={styles.container}>
           <header className={styles.header}>
-            <h2 className={styles.title}>¿Qué es La Asamblea al Día?</h2>
+            <h2 className={styles.title}>{dict.about.title}</h2>
             <p className={styles.subtitle}>
-              ¿Por qué existe esta plataforma? ¿Qué la hace <strong>diferente</strong>?
+              {dict.about.subtitlePrefix} <strong>{dict.about.subtitleStrong}</strong>{dict.about.subtitleSuffix}
             </p>
           </header>
 
           <div className={styles.pillarsGrid}>
-            {PILLARS.map((p) => (
+            {dict.about.pillars.map((p) => (
               <div key={p.heading} className={styles.pillar}>
                 <h3 className={styles.pillarHeading}>{p.heading}</h3>
                 <p className={styles.pillarSubtitle}>{p.subtitle}</p>
@@ -110,11 +70,11 @@ export default function AboutSection() {
       <div className={styles.principlesSection}>
         <div className={styles.container}>
           <header className={styles.principlesHeader}>
-            <span className={styles.principlesEyebrow}>Nuestros compromisos</span>
-            <h2 className={styles.principlesTitle}>Datos en los que podés confiar</h2>
+            <span className={styles.principlesEyebrow}>{dict.about.principlesEyebrow}</span>
+            <h2 className={styles.principlesTitle}>{dict.about.principlesTitle}</h2>
           </header>
           <div className={styles.principlesGrid}>
-            {PRINCIPLES.map((pr, i) => (
+            {dict.about.principles.map((pr, i) => (
               <div
                 key={pr.label}
                 className={styles.principle}

@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { ProyectoResumen, Categoria, Paginacion } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
 import { getPeriodos, useLegislativePeriods } from '@/lib/periodos'
-import { ESTADO_FILTROS } from '@/lib/estados'
+import { getEstadoFiltros } from '@/lib/estados'
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './proyectos.module.css'
 import FilterPill from '@/components/ui/FilterPill'
 import { Button } from '@/components/ui/Button'
@@ -15,16 +16,6 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { EstadoChip } from '@/components/ui/EstadoChip'
 
 const POR_PAGINA = 10
-
-const ORDEN_LABELS: Record<string, string> = {
-  reciente:   'Más recientes',
-  antiguo:    'Más antiguos',
-  expediente: 'N° expediente',
-  titulo_az:  'Título A → Z',
-  titulo_za:  'Título Z → A',
-}
-
-// ── Icons ────────────────────────────────────────────────────────────────────
 
 function IconSearch() {
   return (
@@ -58,9 +49,10 @@ function IconX() {
   )
 }
 
-// ── Tipo abbreviation ─────────────────────────────────────────────────────────
-
-const TIPO_MAP: Record<string, string> = {
+// Tipos de expediente — son nombres oficiales del SIL. Mantenemos las versiones
+// abreviadas (que son nuestras) traducibles, y caemos al texto crudo si no
+// reconocemos el tipo.
+const TIPO_MAP_ES: Record<string, string> = {
   'PROCEDIMIENTO PROYECTO DE LEY ORDINARIO': 'Ley ordinaria',
   'PROCEDIMIENTO PROYECTOS DE COMISION DE HONORES': 'Comisión de honores',
   'PROCEDIMIENTO REFORMAS AL REGLAMENTO DE LA ASAMBLEA LEGISLATIVA': 'Reforma al reglamento',
@@ -69,25 +61,33 @@ const TIPO_MAP: Record<string, string> = {
   'PROCEDIMIENTO QUERELLAS DE LOS MIEMBROS DE LOS SUPREMOS PODERES': 'Querella',
 }
 
-function abbreviateTipo(tipo: string): string {
+const TIPO_MAP_EN: Record<string, string> = {
+  'PROCEDIMIENTO PROYECTO DE LEY ORDINARIO': 'Ordinary law',
+  'PROCEDIMIENTO PROYECTOS DE COMISION DE HONORES': 'Honors commission',
+  'PROCEDIMIENTO REFORMAS AL REGLAMENTO DE LA ASAMBLEA LEGISLATIVA': 'Rules of procedure reform',
+  'PROCEDIMIENTO COMISIONES ESPECIALES INVESTIGADORAS': 'Investigative commission',
+  'PROCEDIMIENTO DE NOMBRAMIENTOS / RATIFICACIONES / REELECCIONES': 'Appointment / Ratification',
+  'PROCEDIMIENTO QUERELLAS DE LOS MIEMBROS DE LOS SUPREMOS PODERES': 'Complaint',
+}
+
+function abbreviateTipo(tipo: string, lang: 'es' | 'en'): string {
   const clean = tipo.trim().toUpperCase()
-  if (TIPO_MAP[clean]) return TIPO_MAP[clean]
+  const map = lang === 'en' ? TIPO_MAP_EN : TIPO_MAP_ES
+  if (map[clean]) return map[clean]
   const stripped = clean.replace(/^PROCEDIMIENTO\s+(DE\s+)?/, '')
   return stripped.charAt(0) + stripped.slice(1).toLowerCase()
 }
 
-// ── Project card ─────────────────────────────────────────────────────────────
-
 function ProyectoCard({ p }: { p: ProyectoResumen }) {
+  const { dict, lang } = useT()
   const isLey = p.es_ley
   return (
     <Link href={`/proyecto/${p.numero_expediente}`} className={`${styles.card} ${isLey ? styles.cardLey : ''}`}>
       <div className={styles.cardAccent} />
 
       <div className={styles.cardBody}>
-        {/* Top row: exp number + estado chip */}
         <div className={styles.cardTop}>
-          <span className={styles.expediente}>Exp. {p.numero_expediente}</span>
+          <span className={styles.expediente}>{dict.proyectosPage.expedientePrefix} {p.numero_expediente}</span>
           <EstadoChip
             estadoActual={p.estado_actual}
             estadoGrupo={p.estado_grupo}
@@ -97,27 +97,30 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
           />
         </div>
 
-        {/* Title */}
-        <h2 className={styles.cardTitle}>{formatTitle(p.titulo)}</h2>
+        {/* Nombre del expediente — NO se traduce (es nombre legal oficial) */}
+        <h2 className={styles.cardTitle}>{formatTitle(p.titulo, dict.estado.sinTitulo)}</h2>
 
-        {/* Meta row: tipo · fecha · proponentes · trámites */}
         <div className={styles.cardMeta}>
           {p.tipo_expediente && (
-            <span className={styles.metaTipo}>{abbreviateTipo(p.tipo_expediente)}</span>
+            <span className={styles.metaTipo}>{abbreviateTipo(p.tipo_expediente, lang)}</span>
           )}
           {p.fecha_inicio && (
             <>
               <span className={styles.metaSep} aria-hidden>·</span>
-              <span className={styles.metaStat}>{formatDate(p.fecha_inicio)}</span>
+              <span className={styles.metaStat}>{formatDate(p.fecha_inicio, dict.common.locale)}</span>
             </>
           )}
           <span className={styles.metaSep} aria-hidden>·</span>
-          <span className={styles.metaStat}>{formatQuantity(p.total_proponentes, 'proponente', 'proponentes')}</span>
+          <span className={styles.metaStat}>
+            {formatQuantity(p.total_proponentes, dict.proyectosPage.proponenteSingular, dict.proyectosPage.proponentePlural)}
+          </span>
           <span className={styles.metaSep} aria-hidden>·</span>
-          <span className={styles.metaStat}>{formatQuantity(p.total_tramites, 'trámite', 'trámites')}</span>
+          <span className={styles.metaStat}>
+            {formatQuantity(p.total_tramites, dict.proyectosPage.tramiteSingular, dict.proyectosPage.tramitePlural)}
+          </span>
         </div>
 
-        {/* Category tags */}
+        {/* Categorías — vienen del SIL, NO se traducen */}
         {p.categorias.length > 0 && (
           <div className={styles.cardTags}>
             {p.categorias.slice(0, 4).map(c => (
@@ -135,8 +138,6 @@ function ProyectoCard({ p }: { p: ProyectoResumen }) {
   )
 }
 
-// ── Skeleton ─────────────────────────────────────────────────────────────────
-
 function Skeleton() {
   return (
     <div className={styles.skeleton}>
@@ -147,12 +148,21 @@ function Skeleton() {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 function ProyectosContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  const { dict } = useT()
+
+  const ordenLabels = useMemo<Record<string, string>>(() => ({
+    reciente:   dict.proyectosPage.masRecientes,
+    antiguo:    dict.proyectosPage.masAntiguos,
+    expediente: dict.proyectosPage.numExpediente,
+    titulo_az:  dict.proyectosPage.tituloAZ,
+    titulo_za:  dict.proyectosPage.tituloZA,
+  }), [dict])
+
+  const estadoFiltros = useMemo(() => getEstadoFiltros(dict), [dict])
 
   const [query, setQuery]         = useState(() => searchParams.get('q') || '')
   const [categoria, setCategoria] = useState(() => searchParams.get('categoria') || '')
@@ -168,9 +178,12 @@ function ProyectosContent() {
   const [paginacion, setPaginacion] = useState<Paginacion | null>(null)
   const [loading, setLoading]       = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  // Se activa cuando termina la primera carga, para que la animación de la
+  // barra de filtros se ejecute justo cuando el usuario está mirando el
+  // contenido (no antes, mientras todavía hay skeleton).
+  const [filtersAnimated, setFiltersAnimated] = useState(false)
   const legislativePeriods = useLegislativePeriods()
 
-  // Load categories once.
   useEffect(() => {
     let cancelled = false
     queueMicrotask(async () => {
@@ -182,7 +195,16 @@ function ProyectosContent() {
     return () => { cancelled = true }
   }, [])
 
-  // Sync filters → URL (back/forward y URLs compartibles).
+  // Dispara la animación de la barra de filtros una sola vez, cuando termina
+  // la primera carga de proyectos. Un pequeño retardo asegura que el
+  // contenido ya esté visible antes del "reveal".
+  useEffect(() => {
+    if (!loading && !filtersAnimated) {
+      const t = setTimeout(() => setFiltersAnimated(true), 120)
+      return () => clearTimeout(t)
+    }
+  }, [loading, filtersAnimated])
+
   useEffect(() => {
     const qs = new URLSearchParams()
     if (query)              qs.set('q', query)
@@ -198,7 +220,6 @@ function ProyectosContent() {
     }
   }, [query, categoria, periodo, orden, estado, pagina, pathname, router, searchParams])
 
-  // Combined fetch — debounce only for query changes, immediate for filters/pagination.
   const prevFiltersRef = useRef({ query, categoria, periodo, orden, estado, pagina })
   useEffect(() => {
     const prev = prevFiltersRef.current
@@ -223,7 +244,6 @@ function ProyectosContent() {
 
         const trimmedQuery = query.trim()
         let result
-        // Backend exige q.length >= 2 — evitar disparar 1-char y caer en 422.
         if (trimmedQuery.length >= 2) {
           result = await api.proyectos.buscar(
             trimmedQuery, pagina,
@@ -255,7 +275,6 @@ function ProyectosContent() {
     return () => { cancelled = true; clearTimeout(timer) }
   }, [query, categoria, periodo, orden, estado, pagina, legislativePeriods])
 
-  // Filter change handlers reset pagination to page 1 up-front.
   const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
   const onCategoriaChange = (v: string) => { setPagina(1); setCategoria(v) }
   const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v) }
@@ -270,25 +289,23 @@ function ProyectosContent() {
   const hasFilters = !!(query || categoria || periodo || estado || orden !== 'reciente')
 
   const totalStr = paginacion
-    ? `${paginacion.total.toLocaleString('es-CR')} proyecto${paginacion.total !== 1 ? 's' : ''}`
+    ? `${paginacion.total.toLocaleString(dict.common.locale)} ${paginacion.total !== 1 ? dict.proyectosPage.proyectoPlural : dict.proyectosPage.proyectoSingular}`
     : ''
 
   return (
     <div className={styles.page}>
 
-      {/* ── Page header ── */}
       <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
-            <span className={styles.heroEyebrow}>Base de datos legislativa</span>
-            <h1 className={styles.heroTitle}>Proyectos de Ley</h1>
+            <span className={styles.heroEyebrow}>{dict.proyectosPage.heroEyebrow}</span>
+            <h1 className={styles.heroTitle}>{dict.proyectos.pageTitle}</h1>
             <p className={styles.heroDesc}>
-              Explorá los {paginacion ? paginacion.total.toLocaleString('es-CR') : '…'} proyectos registrados en la Asamblea Legislativa de Costa Rica.
+              {dict.proyectosPage.heroDescPrefix} {paginacion ? paginacion.total.toLocaleString(dict.common.locale) : '…'} {dict.proyectosPage.heroDescSuffix}
             </p>
           </div>
 
-          {/* Search bar */}
           <div className={styles.searchWrap}>
             <span className={styles.searchIcon}><IconSearch /></span>
             <input
@@ -296,15 +313,15 @@ function ProyectosContent() {
               type="search"
               inputMode="search"
               enterKeyHint="search"
-              aria-label="Buscar proyectos de ley"
-              placeholder="Buscá por título, número de expediente o tema…"
+              aria-label={dict.proyectosPage.searchAria}
+              placeholder={dict.proyectosPage.searchPlaceholder}
               value={query}
               onChange={e => onQueryChange(e.target.value)}
               autoComplete="off"
               spellCheck={false}
             />
             {query && (
-              <button className={styles.searchClear} onClick={() => onQueryChange('')} aria-label="Limpiar búsqueda">
+              <button className={styles.searchClear} onClick={() => onQueryChange('')} aria-label={dict.proyectosPage.clearSearchAria}>
                 <IconX />
               </button>
             )}
@@ -312,27 +329,26 @@ function ProyectosContent() {
         </div>
       </section>
 
-      {/* ── Filters bar ── */}
-      <div className={styles.filtersBar}>
+      <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> Filtros</span>
+          <span className={styles.filtersLabel}><IconFilter /> {dict.proyectosPage.filtersLabel}</span>
 
           <div className={styles.selects}>
             <FilterPill
               value={categoria}
               onChange={onCategoriaChange}
-              placeholder="Todos los temas"
+              placeholder={dict.proyectosPage.todosTemas}
               options={[
-                { value: '', label: 'Todos los temas' },
+                { value: '', label: dict.proyectosPage.todosTemas },
                 ...categorias.map(c => ({ value: c.slug, label: c.nombre })),
               ]}
             />
             <FilterPill
               value={periodo}
               onChange={onPeriodoChange}
-              placeholder="Cualquier período"
+              placeholder={dict.proyectosPage.cualquierPeriodo}
               options={[
-                { value: '', label: 'Cualquier período' },
+                { value: '', label: dict.proyectosPage.cualquierPeriodo },
                 ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
                 ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
               ]}
@@ -340,92 +356,88 @@ function ProyectosContent() {
             <FilterPill
               value={estado}
               onChange={onEstadoChange}
-              placeholder="Todos los estados"
+              placeholder={dict.proyectosPage.todosEstados}
               active={!!estado}
-              options={ESTADO_FILTROS}
+              options={estadoFiltros}
             />
             <FilterPill
               value={orden}
               onChange={onOrdenChange}
-              placeholder="Más recientes"
+              placeholder={dict.proyectosPage.masRecientes}
               active={orden !== 'reciente'}
               options={[
-                { value: 'reciente',   label: 'Más recientes' },
-                { value: 'antiguo',    label: 'Más antiguos' },
-                { value: 'expediente', label: 'N° expediente' },
-                { value: 'titulo_az',  label: 'Título A → Z' },
-                { value: 'titulo_za',  label: 'Título Z → A' },
+                { value: 'reciente',   label: dict.proyectosPage.masRecientes },
+                { value: 'antiguo',    label: dict.proyectosPage.masAntiguos },
+                { value: 'expediente', label: dict.proyectosPage.numExpediente },
+                { value: 'titulo_az',  label: dict.proyectosPage.tituloAZ },
+                { value: 'titulo_za',  label: dict.proyectosPage.tituloZA },
               ]}
             />
           </div>
 
           {hasFilters && (
             <button className={styles.clearBtn} onClick={clearFilters}>
-              <IconX /> Limpiar
+              <IconX /> {dict.proyectosPage.limpiar}
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Results ── */}
       <div className={styles.main}>
         <div className={styles.container}>
 
-          {/* Results count */}
           <div className={styles.resultsRow}>
             <p className={styles.resultsCount}>
-              {loading ? 'Buscando…' : totalStr}
+              {loading ? dict.proyectosPage.buscando : totalStr}
             </p>
 
-            {/* Active filter chips — one per active filter */}
             {hasFilters && (
               <div className={styles.activeChips}>
                 {query && (
                   <span className={styles.chip}>
                     &ldquo;{query}&rdquo;
-                    <button onClick={() => onQueryChange('')} aria-label="Quitar búsqueda"><IconX /></button>
+                    <button onClick={() => onQueryChange('')} aria-label={dict.proyectosPage.quitarBusqueda}><IconX /></button>
                   </span>
                 )}
                 {categoria && (
                   <span className={styles.chip}>
                     {categorias.find(c => c.slug === categoria)?.nombre ?? categoria}
-                    <button onClick={() => onCategoriaChange('')} aria-label="Quitar tema"><IconX /></button>
+                    <button onClick={() => onCategoriaChange('')} aria-label={dict.proyectosPage.quitarTema}><IconX /></button>
                   </span>
                 )}
                 {periodo && (
                   <span className={styles.chip}>
                     {periodo}
-                    <button onClick={() => onPeriodoChange('')} aria-label="Quitar período"><IconX /></button>
+                    <button onClick={() => onPeriodoChange('')} aria-label={dict.proyectosPage.quitarPeriodo}><IconX /></button>
                   </span>
                 )}
                 {estado && (
                   <span className={styles.chip}>
-                    {ESTADO_FILTROS.find(e => e.value === estado)?.label ?? estado}
-                    <button onClick={() => onEstadoChange('')} aria-label="Quitar filtro de estado"><IconX /></button>
+                    {estadoFiltros.find(e => e.value === estado)?.label ?? estado}
+                    <button onClick={() => onEstadoChange('')} aria-label={dict.proyectosPage.quitarEstado}><IconX /></button>
                   </span>
                 )}
                 {orden !== 'reciente' && (
                   <span className={styles.chip}>
-                    {ORDEN_LABELS[orden] ?? orden}
-                    <button onClick={() => onOrdenChange('reciente')} aria-label="Quitar orden"><IconX /></button>
+                    {ordenLabels[orden] ?? orden}
+                    <button onClick={() => onOrdenChange('reciente')} aria-label={dict.proyectosPage.quitarOrden}><IconX /></button>
                   </span>
                 )}
               </div>
             )}
           </div>
 
-          {/* Cards */}
           {loading ? (
             <div className={styles.list}>
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)}
             </div>
           ) : proyectos.length === 0 ? (
             <EmptyState
-              title="Sin resultados"
-              description="Intentá con otros filtros o una búsqueda diferente."
+              title={dict.proyectosPage.sinResultadosTitle}
+              description={dict.proyectosPage.sinResultadosDesc}
               actions={
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  Limpiar filtros
+                  {dict.proyectosPage.limpiarFiltros}
                 </Button>
               }
             />
@@ -435,7 +447,6 @@ function ProyectosContent() {
             </div>
           )}
 
-          {/* Pagination */}
           {paginacion && paginacion.total_paginas > 1 && !loading && (
             <div className={styles.pagination}>
               <Button
@@ -443,15 +454,15 @@ function ProyectosContent() {
                 size="sm"
                 disabled={pagina <= 1}
                 onClick={() => { setPagina(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                aria-label="Ir a la primera página"
-                title="Primera página"
+                aria-label={dict.proyectosPage.primeraPaginaAria}
+                title={dict.proyectosPage.primeraPaginaTitle}
               >«</Button>
               <Button
                 variant="secondary"
                 size="sm"
                 disabled={pagina <= 1}
                 onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              >← Anterior</Button>
+              >{dict.proyectosPage.paginaAnterior}</Button>
 
               <div className={styles.pageNums}>
                 {Array.from({ length: Math.min(paginacion.total_paginas, 5) }, (_, i) => {
@@ -481,14 +492,14 @@ function ProyectosContent() {
                 size="sm"
                 disabled={pagina >= paginacion.total_paginas}
                 onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              >Siguiente →</Button>
+              >{dict.proyectosPage.paginaSiguiente}</Button>
               <Button
                 variant="secondary"
                 size="sm"
                 disabled={pagina >= paginacion.total_paginas}
                 onClick={() => { setPagina(paginacion.total_paginas); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                aria-label="Ir a la última página"
-                title="Última página"
+                aria-label={dict.proyectosPage.ultimaPaginaAria}
+                title={dict.proyectosPage.ultimaPaginaTitle}
               >»</Button>
             </div>
           )}

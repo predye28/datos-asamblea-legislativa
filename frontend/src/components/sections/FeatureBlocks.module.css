@@ -55,15 +55,23 @@
   border-radius: 16px;
   opacity: 0;
   transform: translateY(20px);
+  /* Transición por propiedad: entry animation con stagger, hover SIN delay */
   transition:
     opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.25s ease;
-  transition-delay: calc(300ms + var(--i, 0) * 220ms);
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  transition-delay:
+    calc(300ms + var(--i, 0) * 220ms),
+    calc(300ms + var(--i, 0) * 220ms),
+    0ms,
+    0ms;
+  will-change: opacity, transform;
 }
 
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.18);
 }
 
 .grid.inView > .card {

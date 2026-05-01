@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/i18n/LanguageProvider'
 import styles from './CreatorSection.module.css'
 
 function IconMail() {
@@ -28,12 +29,13 @@ function IconLinkedIn() {
 }
 
 export default function CreatorSection() {
+  const { dict } = useT()
   return (
     <section className={styles.section}>
       <div className={styles.container}>
         <header className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Quién está detrás del proyecto</span>
-          <h2 className={styles.sectionTitle}>Sobre el Creador</h2>
+          <span className={styles.sectionEyebrow}>{dict.creator.eyebrow}</span>
+          <h2 className={styles.sectionTitle}>{dict.creator.title}</h2>
         </header>
         <div className={styles.card}>
           <div className={styles.content}>
@@ -41,16 +43,14 @@ export default function CreatorSection() {
               <div className={styles.avatar}>OM</div>
               <div className={styles.titles}>
                 <h2 className={styles.name}>Omar Madrigal</h2>
-                <p className={styles.role}>Creador de La Asamblea al Día</p>
+                <p className={styles.role}>{dict.creator.role}</p>
               </div>
             </div>
 
             <p className={styles.bio}>
-              Desarrollador apasionado por los datos abiertos y la transparencia.
-              Este proyecto nace del deseo de acercar el trabajo legislativo a todas las personas
-              mediante tecnología y diseño accesible.
+              {dict.creator.bio}
               <br />
-              <span className={styles.bioSmall}>Actualmente soy estudiante de Ingeniería en Computación en el Tecnológico de Costa Rica.</span>
+              <span className={styles.bioSmall}>{dict.creator.bioSmall}</span>
             </p>
             <div className={styles.links}>
               <a href="mailto:omarmr14.02@gmail.com" className={styles.link}>

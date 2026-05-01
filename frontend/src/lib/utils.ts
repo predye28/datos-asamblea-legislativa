@@ -1,8 +1,10 @@
-export function formatDateES(date: Date): string {
+export function formatDateES(date: Date, locale: string = 'es-CR'): string {
   const day = date.getDate()
-  const month = date.toLocaleString('es-CR', { month: 'long' })
+  const month = date.toLocaleString(locale, { month: 'long' })
   const year = date.getFullYear()
-  return `${day} ${month} ${year}`
+  return locale.startsWith('en')
+    ? `${month} ${day}, ${year}`
+    : `${day} ${month} ${year}`
 }
 
 export function cleanText(text: string | null | undefined): string {
@@ -12,9 +14,9 @@ export function cleanText(text: string | null | undefined): string {
   return c.trim().replace(/\s+/g, ' ')
 }
 
-export function formatTitle(title: string | null | undefined): string {
+export function formatTitle(title: string | null | undefined, fallback: string = 'Sin título'): string {
   const t = cleanText(title).toLowerCase()
-  if (!t) return 'Sin título'
+  if (!t) return fallback
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
@@ -39,10 +41,10 @@ export function formatDiputadoName(name: string | null | undefined): string {
   return words.map(cap).join(' ')
 }
 
-export function formatDate(dateStr: string | null | undefined): string {
+export function formatDate(dateStr: string | null | undefined, locale: string = 'es-CR'): string {
   if (!dateStr) return '—'
   try {
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CR', {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString(locale, {
       day: 'numeric', month: 'short', year: 'numeric',
     })
   } catch { return dateStr }
