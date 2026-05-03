@@ -118,17 +118,24 @@
   margin: 4px 0 0;
 }
 
-.bio {
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.8;
-  color: var(--ink-muted);
+.bioContainer {
   margin-bottom: 24px;
 }
 
+.bio {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink-muted);
+  margin: 0 0 16px 0;
+  text-wrap: pretty;
+}
+
+.bio:last-child {
+  margin-bottom: 0;
+}
+
 .bioSmall {
-  display: block;
-  margin-top: 12px;
   font-size: 15px;
   opacity: 0.85;
 }
@@ -171,7 +178,8 @@
   }
   .bio {
     font-size: 15.5px;
-    line-height: 1.7;
+    line-height: 1.65;
+    margin-bottom: 14px;
   }
   .bioSmall {
     font-size: 14.5px;
@@ -220,9 +228,18 @@
     font-size: 21px;
   }
 
+  .bioContainer {
+    margin-bottom: 24px;
+  }
+
   .bio {
-    font-size: 15.5px;
-    line-height: 1.7;
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  
+  .bioSmall {
+    font-size: 14px;
   }
   
   .links {

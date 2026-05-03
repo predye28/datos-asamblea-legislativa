@@ -27,6 +27,7 @@ export default function Footer() {
   const exploreLinks = [
     { href: '/proyectos',    label: dict.navbar.proyectos },
     { href: '/diputados',    label: dict.navbar.diputados },
+    { href: '/partidos',     label: dict.navbar.partidos },
     { href: '/estadisticas', label: dict.navbar.estadisticas },
   ]
 

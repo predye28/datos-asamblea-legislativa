@@ -36,3 +36,10 @@ asamblea-portal-frontend/
 .vscode/
 *.suo
 *.user
+
+# ── Claude Code ───────────────────────────────
+.claude/settings.local.json
+
+# ── OS ────────────────────────────────────────
+Thumbs.db
+*.log

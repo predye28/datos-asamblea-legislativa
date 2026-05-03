@@ -5,7 +5,7 @@ main.py — API principal del portal ciudadano de la Asamblea Legislativa CR
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import proyectos, metricas, categorias, periodos
+from routers import proyectos, metricas, categorias, periodos, partidos
 
 app = FastAPI(
     title="Asamblea Legislativa CR — API Ciudadana",
@@ -39,6 +39,7 @@ app.include_router(proyectos.router,  prefix="/api/v1", tags=["Proyectos"])
 app.include_router(metricas.router,   prefix="/api/v1", tags=["Métricas"])
 app.include_router(categorias.router, prefix="/api/v1", tags=["Categorías"])
 app.include_router(periodos.router,   prefix="/api/v1", tags=["Períodos"])
+app.include_router(partidos.router,   prefix="/api/v1", tags=["Partidos"])
 
 
 @app.get("/", tags=["Health"])

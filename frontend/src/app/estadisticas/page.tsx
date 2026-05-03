@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import type { MetricasResponse, ProximoVencer } from '@/lib/api'
+import type { MetricasResponse, ProximoVencer, MetricasPartidosResponse } from '@/lib/api'
 import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatTitle, formatDiputadoName } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
@@ -13,6 +13,7 @@ import CountUp from '@/components/shared/CountUp'
 import { Button } from '@/components/ui/Button'
 import { TimelineAreaChart } from '@/components/charts/TimelineAreaChart'
 import { MonthlyBarsChart } from '@/components/charts/MonthlyBarsChart'
+import { PartidosPieChart } from '@/components/charts/PartidosPieChart'
 
 function fmtN(n: number, locale: string) { return n.toLocaleString(locale) }
 function fmtPct(n: number) { return `${n.toFixed(1)}%` }
@@ -107,11 +108,10 @@ export default function EstadisticasPage() {
   const [globalData, setGlobalData] = useState<MetricasResponse | null>(null)
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])
   const [proxVencer, setProxVencer] = useState<ProximoVencer[]>([])
+  const [metricasPartidos, setMetricasPartidos] = useState<MetricasPartidosResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  // Activa la animación de la barra de filtros sólo después de la primera
-  // carga, para que el sweep y el reveal sean visibles cuando el usuario
-  // ya está mirando el contenido.
-  const [filtersAnimated, setFiltersAnimated] = useState(false)
+  // Los filtros se muestran de inmediato, sin esperar la primera carga.
+  const [filtersAnimated, setFiltersAnimated] = useState(true)
   const legislativePeriods = useLegislativePeriods()
 
   // Rango efectivo (prioridad: custom > rápido > legislativo > histórico)
@@ -140,15 +140,6 @@ export default function EstadisticasPage() {
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
-
-  // Dispara la animación de la barra de filtros una sola vez, después de la
-  // primera carga de datos.
-  useEffect(() => {
-    if (!loading && !filtersAnimated) {
-      const t = setTimeout(() => setFiltersAnimated(true), 120)
-      return () => clearTimeout(t)
-    }
-  }, [loading, filtersAnimated])
 
   // Datos filtrados por el período seleccionado (recarga al cambiar filtros).
   useEffect(() => {
@@ -266,6 +257,19 @@ export default function EstadisticasPage() {
   const hasFilter = hasRapido || hasLegislative
   const isLegislativePeriod = legislativePeriods.some(p => p.label === periodo)
 
+  // Cargar métricas por partido solo cuando hay un período legislativo seleccionado
+  useEffect(() => {
+    if (!isLegislativePeriod || !periodo) {
+      setMetricasPartidos(null)
+      return
+    }
+    let cancelled = false
+    api.metricas.metricasPartidos(periodo)
+      .then(mp => { if (!cancelled) setMetricasPartidos(mp) })
+      .catch(() => { if (!cancelled) setMetricasPartidos(null) })
+    return () => { cancelled = true }
+  }, [periodo, isLegislativePeriod])
+
   const rangoTextoHumano = hasRapido
     ? (rangoRapido === 'personalizado' && customDesde && customHasta
       ? t.rangoPersonalizadoFmt(customDesde, customHasta)
@@ -364,6 +368,26 @@ export default function EstadisticasPage() {
                   {isLegislativePeriod && t.bannerSuffix}
                 </span>
               </div>
+            )}
+
+            {/* ── Partidos políticos (solo en períodos legislativos) ── */}
+            {isLegislativePeriod && metricasPartidos && metricasPartidos.por_partido.length > 0 && (
+              <>
+                <SectionIntro
+                  num="01"
+                  kicker="Partidos políticos"
+                  title="Actividad legislativa por partido"
+                  deck={`De ${fmtN(metricasPartidos.total_propuestas, dict.common.locale)} propuestas registradas en este período, así se distribuyen entre los partidos con representación en la Asamblea.`}
+                  filtro={periodo}
+                />
+                <div className={styles.partidosPieWrap}>
+                  <PartidosPieChart
+                    datos={metricasPartidos.por_partido}
+                    total_propuestas={metricasPartidos.total_propuestas}
+                    periodo={periodo}
+                  />
+                </div>
+              </>
             )}
 
             {/* ── 01 · Temas ── */}
@@ -708,7 +732,9 @@ export default function EstadisticasPage() {
               </>
             )}
 
-            {/* ── 07 · Lo que está por vencer (urgente) — deshabilitado temporalmente ── */}
+            {/* Party stats section is rendered FIRST — see above */}
+
+            {/* ── 08 · Lo que está por vencer (urgente) — deshabilitado temporalmente ── */}
             {/* {proxVencer.length > 0 && (
               <>
                 <SectionIntro

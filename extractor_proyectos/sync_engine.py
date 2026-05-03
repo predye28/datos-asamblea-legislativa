@@ -119,6 +119,26 @@ def crear_tablas():
     CREATE INDEX IF NOT EXISTS idx_pc_proyecto  ON proyecto_categorias(proyecto_id);
     CREATE INDEX IF NOT EXISTS idx_pc_categoria ON proyecto_categorias(categoria_id);
 
+    CREATE TABLE IF NOT EXISTS partidos (
+        id      SERIAL PRIMARY KEY,
+        codigo  TEXT UNIQUE NOT NULL,
+        nombre  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS historial_diputados (
+        id               SERIAL PRIMARY KEY,
+        apellidos        TEXT NOT NULL,
+        nombre           TEXT NOT NULL,
+        administracion   TEXT NOT NULL,
+        fecha_nacimiento DATE,
+        provincia        TEXT,
+        partido_id       INTEGER REFERENCES partidos(id) ON DELETE CASCADE,
+        fecha_desde      DATE,
+        fecha_hasta      DATE
+    );
+    CREATE INDEX IF NOT EXISTS idx_hd_nombres ON historial_diputados(apellidos, nombre);
+
+
     INSERT INTO categorias (slug, nombre, orden) VALUES
       ('salud',            'Salud',                        1),
       ('ambiente',         'Ambiente',                     2),
@@ -707,3 +727,109 @@ def sync_categorias_proyecto(proyecto_id: int, titulo: str, cur) -> int:
             (proyecto_id, cat_id)
         )
     return len(cat_rows)
+
+
+def sync_partidos_y_diputados(diputados_data: list) -> dict:
+    """
+    Sincroniza la lista de diputados y partidos scrapeados.
+    
+    Args:
+        diputados_data: lista de diccionarios con la estructura:
+        {
+            "apellidos": str,
+            "nombre": str,
+            "administracion": str,
+            "fecha_nacimiento": str,
+            "provincia": str,
+            "fracciones": [
+                {"codigo": str, "nombre": str, "desde": str, "hasta": str}
+            ]
+        }
+    """
+    stats = {"actualizados": 0, "errores": 0}
+    total = len(diputados_data)
+
+    print(f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] Sincronizando {total} diputados/historial...")
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for idx, dip in enumerate(diputados_data, start=1):
+                apellidos = dip.get("apellidos", "").strip()
+                nombre = dip.get("nombre", "").strip()
+                administracion = dip.get("administracion", "").strip()
+
+                if not apellidos or not nombre or not administracion:
+                    stats["errores"] += 1
+                    continue
+
+                try:
+                    # 1. Eliminar el historial previo de este diputado para esta administración
+                    # (Para evitar duplicados y hacer la sincronización idempotente)
+                    cur.execute(
+                        """
+                        DELETE FROM historial_diputados 
+                        WHERE apellidos = %s AND nombre = %s AND administracion = %s
+                        """,
+                        (apellidos, nombre, administracion)
+                    )
+
+                    fecha_nac = parsear_fecha(dip.get("fecha_nacimiento", ""))
+                    provincia = dip.get("provincia")
+                    fracciones = dip.get("fracciones", [])
+
+                    # Si el diputado no tiene fracciones registradas, insertamos al menos sus datos básicos
+                    if not fracciones:
+                        cur.execute(
+                            """
+                            INSERT INTO historial_diputados 
+                                (apellidos, nombre, administracion, fecha_nacimiento, provincia, partido_id, fecha_desde, fecha_hasta)
+                            VALUES (%s, %s, %s, %s, %s, NULL, NULL, NULL)
+                            """,
+                            (apellidos, nombre, administracion, fecha_nac, provincia)
+                        )
+                    else:
+                        for f in fracciones:
+                            codigo = f.get("codigo", "").strip()
+                            nombre_partido = f.get("nombre", "").strip()
+
+                            partido_id = None
+                            if codigo and nombre_partido:
+                                # Upsert del Partido
+                                cur.execute(
+                                    """
+                                    INSERT INTO partidos (codigo, nombre)
+                                    VALUES (%s, %s)
+                                    ON CONFLICT (codigo) DO UPDATE SET nombre = EXCLUDED.nombre
+                                    RETURNING id;
+                                    """,
+                                    (codigo, nombre_partido)
+                                )
+                                partido_id = cur.fetchone()[0]
+
+                            # Insertar historial de la fracción
+                            cur.execute(
+                                """
+                                INSERT INTO historial_diputados 
+                                    (apellidos, nombre, administracion, fecha_nacimiento, provincia, partido_id, fecha_desde, fecha_hasta)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                """,
+                                (
+                                    apellidos, nombre, administracion, fecha_nac, provincia,
+                                    partido_id,
+                                    parsear_fecha(f.get("desde", "")),
+                                    parsear_fecha(f.get("hasta", ""))
+                                )
+                            )
+                    
+                    stats["actualizados"] += 1
+
+                except Exception as exc:
+                    conn.rollback()
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] ERROR con {nombre} {apellidos}: {exc}")
+                    stats["errores"] += 1
+                    continue
+
+        conn.commit()
+    
+    print(f"[{datetime.now().strftime('%H:%M:%S')}][SYNC] Diputados sincronizados: {stats['actualizados']} OK, {stats['errores']} errores.")
+    return stats

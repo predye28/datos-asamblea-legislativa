@@ -163,3 +163,89 @@ class PeriodoLegislativo(BaseModel):
 
 class PeriodosResponse(BaseModel):
     datos: list[PeriodoLegislativo]
+
+
+# ── Partidos políticos ────────────────────────────────────────────────────
+
+class PartidoResumen(BaseModel):
+    id:              int
+    codigo:          str
+    nombre:          str
+    total_diputados: int = 0
+
+
+class PartidosResponse(BaseModel):
+    datos: list[PartidoResumen]
+
+
+class HistorialPartido(BaseModel):
+    partido_id:  int
+    codigo:      str
+    nombre:      str
+    administracion: str
+    desde:       Optional[date] = None
+    hasta:       Optional[date] = None
+
+
+# ── Métricas por partido ──────────────────────────────────────────────────
+
+class EstadisticaPartido(BaseModel):
+    partido_id:       int
+    codigo:           str
+    nombre:           str
+    total_diputados:  int = 0
+    total_propuestas: int
+    leyes_aprobadas:  int
+    tasa_aprobacion:  float
+    pct_propuestas:   float
+
+
+class MetricasPartidosResponse(BaseModel):
+    administracion:  str
+    total_propuestas: int
+    por_partido:     list[EstadisticaPartido]
+
+
+# ── Perfil de partido ──────────────────────────────────────────────────────
+
+class DiputadoPartidoItem(BaseModel):
+    nombre_completo: str
+    apellidos:       str
+    nombre:          str
+    total_proyectos: int
+    leyes_aprobadas: int
+    tasa_aprobacion: float
+
+
+class PeriodoPartido(BaseModel):
+    administracion:  str
+    total_propuestas: int
+    leyes_aprobadas: int
+    tasa_aprobacion: float
+    total_diputados: int
+
+
+class CategoriaPartido(BaseModel):
+    categoria:       str
+    slug:            str
+    total:           int
+    leyes_aprobadas: int
+    tasa_aprobacion: float
+
+
+class PerfilPartidoResponse(BaseModel):
+    partido_id:       int
+    codigo:           str
+    nombre:           str
+    total_propuestas: int
+    total_leyes:      int
+    tasa_aprobacion:  float
+    total_diputados:  int
+    por_administracion: list[PeriodoPartido]
+    top_diputados:    list[DiputadoPartidoItem]
+    por_categoria:    list[CategoriaPartido]
+
+
+class MetricasPartidosResumenResponse(BaseModel):
+    total_propuestas: int
+    por_partido:      list[EstadisticaPartido]

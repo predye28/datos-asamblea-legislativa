@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import type { PerfilDiputado } from '@/lib/api'
+import type { PerfilDiputado, HistorialPartido } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity, formatDiputadoName, cleanText } from '@/lib/utils'
 import { EstadoChip } from '@/components/ui/EstadoChip'
 import { useT } from '@/i18n/LanguageProvider'
+import { getPaletaPartido } from '@/lib/partidos'
 import styles from './perfil.module.css'
 
 function avatarHue(seed: string) {
@@ -51,6 +52,18 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
     ? new Date(perfil.primer_proyecto).getFullYear()
     : null
 
+  // Partido más reciente
+  const historialPartidos: HistorialPartido[] = perfil.historial_partidos ?? []
+  const partidoActual = historialPartidos[0] ?? null
+  const paleta = partidoActual ? getPaletaPartido(partidoActual.partido_codigo) : null
+
+  // Agrupar historial por administración para mostrar compacto
+  const historialPorAdm = historialPartidos.reduce<Record<string, HistorialPartido[]>>((acc, h) => {
+    if (!acc[h.administracion]) acc[h.administracion] = []
+    acc[h.administracion].push(h)
+    return acc
+  }, {})
+
   return (
     <div className={styles.page}>
 
@@ -65,7 +78,9 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
         <div className={styles.heroInner}>
           <div
             className={styles.avatar}
-            style={{ background: `linear-gradient(135deg, hsl(${hue} 55% 32%), hsl(${(hue + 40) % 360} 55% 20%))` }}
+            style={{ background: paleta
+              ? `linear-gradient(135deg, ${paleta.bg}, color-mix(in srgb, ${paleta.bg} 70%, #000))`
+              : `linear-gradient(135deg, hsl(${hue} 55% 32%), hsl(${(hue + 40) % 360} 55% 20%))` }}
           >
             {getInitials(apellidosRaw)}
           </div>
@@ -73,6 +88,7 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
             <span className={styles.heroEyebrow}>{t.heroEyebrow}</span>
             {/* Nombre del diputado — NO se traduce */}
             <h1 className={styles.heroName}>{nombreDisplay}</h1>
+
             <p className={styles.heroSub}>{t.heroSub}</p>
             {perfil.primer_proyecto && (
               <p className={styles.heroRange}>
@@ -121,18 +137,94 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
           </div>
         </div>
 
+        {historialPartidos.length > 0 && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>{t.partidosTitle}</h2>
+            <p className={styles.sectionDesc}>{t.partidosDesc}</p>
+            <div className={styles.partidosGrid}>
+              <div className={styles.partidoCardGroup}>
+                <h3 className={styles.partidoCardLabel}>{t.partidoActual}</h3>
+                <div className={styles.partidoCardList}>
+                  <Link
+                    href={`/partidos/${partidoActual!.partido_codigo}`}
+                    className={`${styles.partidoCard} ${styles.partidoCardCurrent}`}
+                    style={{ '--partido-color': paleta!.bg } as React.CSSProperties}
+                  >
+                    <div className={styles.partidoCardSwatch} style={{ background: paleta!.bg }} />
+                    <div className={styles.partidoCardInfo}>
+                      <span className={styles.partidoCardNombre}>{formatTitle(partidoActual!.partido_nombre)}</span>
+                      <span className={styles.partidoCardAdm}>{partidoActual!.administracion}</span>
+                    </div>
+                    <IconChevron />
+                  </Link>
+                </div>
+              </div>
+
+              {historialPartidos.length > 1 && (
+                <div className={styles.partidoCardGroup}>
+                  <h3 className={styles.partidoCardLabel}>{t.partidosAnteriores}</h3>
+                  <div className={styles.partidoCardList}>
+                    {historialPartidos.slice(1).map((h, idx) => {
+                      const p = getPaletaPartido(h.partido_codigo)
+                      return (
+                        <Link
+                          key={`${h.partido_codigo}-${idx}`}
+                          href={`/partidos/${h.partido_codigo}`}
+                          className={styles.partidoCard}
+                          style={{ '--partido-color': p.bg } as React.CSSProperties}
+                        >
+                          <div className={styles.partidoCardSwatch} style={{ background: p.bg }} />
+                          <div className={styles.partidoCardInfo}>
+                            <span className={styles.partidoCardNombre}>{formatTitle(h.partido_nombre)}</span>
+                            <span className={styles.partidoCardAdm}>{h.administracion}</span>
+                          </div>
+                          <IconChevron />
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {perfil.por_periodo.length > 0 && (
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>{t.periodosTitle}</h2>
             <p className={styles.sectionDesc}>{t.periodosDesc}</p>
             <div className={styles.periodoBars}>
               {perfil.por_periodo.map(p => {
-                const pct    = Math.round((p.total   / maxPeriodo) * 100)
-                const leyPct = Math.round((p.leyes   / maxPeriodo) * 100)
+                const pct    = Math.round((p.total / maxPeriodo) * 100)
+                const leyPct = Math.round((p.leyes / maxPeriodo) * 100)
+                const partidos = historialPorAdm[p.periodo] ?? []
                 return (
                   <div key={p.periodo} className={styles.periodoRow}>
                     <div className={styles.periodoInfo}>
-                      <span className={styles.periodoLabel}>{p.periodo}</span>
+                      {/* Período + partido(s) fusionado */}
+                      <div className={styles.periodoLabelGroup}>
+                        <span className={styles.periodoLabel}>{p.periodo}</span>
+                        {partidos.length > 0 && (
+                          <div className={styles.periodoPartidos}>
+                            {partidos.map((h, i) => {
+                              const pp = getPaletaPartido(h.partido_codigo)
+                              return (
+                                <span key={i} className={styles.periodoPartidoItem}>
+                                  <span className={styles.periodoFlagSwatch} style={{ background: pp.bg }} />
+                                  <span className={styles.periodoPartidoNombre}>
+                                    {h.partido_nombre}
+                                  </span>
+                                  {partidos.length > 1 && h.fecha_desde && (
+                                    <span className={styles.periodoPartidoAno}>
+                                      {new Date(h.fecha_desde).getFullYear()}
+                                    </span>
+                                  )}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
                       <div className={styles.periodoNums}>
                         <span className={styles.periodoTotal}>
                           {formatQuantity(p.total, t.proyectoSingular, t.proyectoPlural)}

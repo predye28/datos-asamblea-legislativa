@@ -83,6 +83,9 @@ export interface DiputadoRanking {
   nombre: string
   nombre_completo: string
   total_proyectos: number
+  partido_id?: number | null
+  partido_codigo?: string | null
+  partido_nombre?: string | null
 }
 
 export interface DiputadoEficacia {
@@ -92,6 +95,15 @@ export interface DiputadoEficacia {
   total_proyectos: number
   leyes_aprobadas: number
   tasa_aprobacion: number
+}
+
+export interface HistorialPartido {
+  partido_id: number
+  partido_codigo: string
+  partido_nombre: string
+  administracion: string
+  fecha_desde: string | null
+  fecha_hasta: string | null
 }
 
 export interface PerfilDiputado {
@@ -111,6 +123,74 @@ export interface PerfilDiputado {
     estado_actual: string | null
     estado_grupo: 'ley' | 'discusion' | 'archivado' | 'otro' | null
   }[]
+  historial_partidos: HistorialPartido[]
+}
+
+export interface PartidoResumen {
+  id: number
+  codigo: string
+  nombre: string
+  total_diputados: number
+}
+
+export interface EstadisticaPartido {
+  partido_id: number
+  codigo: string
+  nombre: string
+  total_diputados: number
+  total_propuestas: number
+  leyes_aprobadas: number
+  tasa_aprobacion: number
+  pct_propuestas: number
+}
+
+export interface MetricasPartidosResponse {
+  administracion: string
+  total_propuestas: number
+  por_partido: EstadisticaPartido[]
+}
+
+export interface MetricasPartidosResumenResponse {
+  total_propuestas: number
+  por_partido: EstadisticaPartido[]
+}
+
+export interface DiputadoPartidoItem {
+  nombre_completo: string
+  apellidos: string
+  nombre: string
+  total_proyectos: number
+  leyes_aprobadas: number
+  tasa_aprobacion: number
+}
+
+export interface PeriodoPartido {
+  administracion: string
+  total_propuestas: number
+  leyes_aprobadas: number
+  tasa_aprobacion: number
+  total_diputados: number
+}
+
+export interface CategoriaPartido {
+  categoria: string
+  slug: string
+  total: number
+  leyes_aprobadas: number
+  tasa_aprobacion: number
+}
+
+export interface PerfilPartido {
+  partido_id: number
+  codigo: string
+  nombre: string
+  total_propuestas: number
+  total_leyes: number
+  tasa_aprobacion: number
+  total_diputados: number
+  por_administracion: PeriodoPartido[]
+  top_diputados: DiputadoPartidoItem[]
+  por_categoria: CategoriaPartido[]
 }
 
 export interface ProyectosPorMes {
@@ -219,6 +299,7 @@ export const api = {
       orden?: string
       categoria?: string
       diputado?: string
+      partido_id?: number
     }) => {
       const qs = new URLSearchParams()
       if (params.pagina)     qs.set('pagina',     String(params.pagina))
@@ -232,12 +313,26 @@ export const api = {
       if (params.orden)      qs.set('orden',      params.orden)
       if (params.categoria)  qs.set('categoria',  params.categoria)
       if (params.diputado)   qs.set('diputado',   params.diputado)
+      if (params.partido_id) qs.set('partido_id', String(params.partido_id))
       return apiFetch<ProyectosResponse>(`/proyectos?${qs}`)
     },
-    buscar: (q: string, pagina = 1, desde?: string, hasta?: string) => {
+    buscar: (
+      q: string,
+      pagina = 1,
+      desde?: string,
+      hasta?: string,
+      estado?: string,
+      orden?: string,
+      categoria?: string,
+      partido_id?: number
+    ) => {
       const qs = new URLSearchParams({ q, pagina: String(pagina) })
       if (desde) qs.set('desde', desde)
       if (hasta) qs.set('hasta', hasta)
+      if (estado) qs.set('estado', estado)
+      if (orden && orden !== 'reciente') qs.set('orden', orden)
+      if (categoria) qs.set('categoria', categoria)
+      if (partido_id) qs.set('partido_id', String(partido_id))
       return apiFetch<ProyectosResponse>(`/proyectos/buscar?${qs}`)
     },
     detalle: (num: number) => apiFetch<ProyectoDetalle>(`/proyectos/${num}`),
@@ -257,15 +352,22 @@ export const api = {
       ),
     lineaTiempo: () =>
       apiFetch<{ datos: { anio: number; leyes_aprobadas: number }[] }>('/metricas/linea-tiempo'),
-    diputados: (params: { desde?: string; hasta?: string; q?: string }) => {
+    diputados: (params: { desde?: string; hasta?: string; q?: string; partido_id?: number }) => {
       const qs = new URLSearchParams()
-      if (params.desde) qs.set('desde', params.desde)
-      if (params.hasta) qs.set('hasta', params.hasta)
-      if (params.q)     qs.set('q', params.q)
+      if (params.desde)      qs.set('desde', params.desde)
+      if (params.hasta)      qs.set('hasta', params.hasta)
+      if (params.q)          qs.set('q', params.q)
+      if (params.partido_id) qs.set('partido_id', String(params.partido_id))
       return apiFetch<{ datos: DiputadoRanking[]; total: number }>(`/metricas/diputados?${qs}`)
     },
     perfilDiputado: (nombre: string) =>
       apiFetch<PerfilDiputado>(`/metricas/diputados/${encodeURIComponent(nombre)}`),
+    metricasPartidos: (administracion: string) =>
+      apiFetch<MetricasPartidosResponse>(`/metricas/partidos?administracion=${encodeURIComponent(administracion)}`),
+    metricasPartidosResumen: () =>
+      apiFetch<MetricasPartidosResumenResponse>('/metricas/partidos/resumen'),
+    perfilPartido: (codigo: string) =>
+      apiFetch<PerfilPartido>(`/metricas/partidos/${encodeURIComponent(codigo)}/perfil`),
   },
 
   categorias: {
@@ -274,6 +376,16 @@ export const api = {
 
   periodos: {
     listar: () => apiFetch<{ datos: PeriodoLegislativo[] }>('/periodos'),
+  },
+
+  partidos: {
+    listar: (administracion?: string) => {
+      const qs = new URLSearchParams()
+      if (administracion) qs.set('administracion', administracion)
+      return apiFetch<{ datos: PartidoResumen[] }>(`/partidos?${qs}`)
+    },
+    historialDiputado: (nombreCompleto: string) =>
+      apiFetch<HistorialPartido[]>(`/diputados/${encodeURIComponent(nombreCompleto)}/partidos`),
   },
 }
 

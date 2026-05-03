@@ -37,6 +37,7 @@ export const es = {
     inicio: 'Inicio',
     proyectos: 'Proyectos',
     diputados: 'Diputados',
+    partidos: 'Partidos',
     estadisticas: 'Estadísticas',
     acerca: 'Acerca de',
     menuOpen: 'Abrir menú',
@@ -72,6 +73,15 @@ export const es = {
       labelMasActivoPrefix: 'proyectos liderados por el más activo',
       labelEficaciaFallback: 'mejor eficacia',
       labelEficaciaPrefix: 'de efectividad en 10 años del diputado más eficaz',
+    },
+    partidos: {
+      title: 'Partidos',
+      promise:
+        'Conocé el peso legislativo de cada partido: propuestas, leyes aprobadas y eficacia.',
+      cta: 'Ver partidos',
+      labelPartidosFallback: 'partidos con actividad legislativa',
+      labelMasActivoPrefix: 'propuestas del partido más activo',
+      labelMayorTasaPrefix: 'de tasa de aprobación del partido más eficaz',
     },
     estadisticas: {
       title: 'Estadísticas',
@@ -301,7 +311,7 @@ export const es = {
     propositoSubtitle: 'Democratizar el acceso a la información',
     propositoQuote: 'Facilitamos el acceso a la información pública que la Asamblea ya comparte, para que llegue a más personas.',
     propositoP1: 'La Asamblea Legislativa de Costa Rica mantiene un compromiso ejemplar con la transparencia al publicar toda su actividad a través del Sistema de Información Legislativa (SIL): expedientes, firmas de diputaciones, avance por comisiones y mucho más.',
-    propositoP2: 'Nuestro proyecto existe para amplificar ese esfuerzo. Tomamos esos mismos datos públicos y los presentamos de forma visual e intuitiva, para que cualquier persona —sin importar su formación— pueda explorar y comprender el trabajo legislativo del país.',
+    propositoP2: 'Nuestro proyecto existe para amplificar ese esfuerzo. Tomamos esos mismos datos públicos y los presentamos de forma visual e intuitiva, para que cualquier persona, independientemente de su formación, pueda explorar y comprender el trabajo legislativo del país.',
 
     compromisoTitle: 'Nuestro Compromiso',
     compromisoSubtitle: 'Informar con claridad y neutralidad',
@@ -487,6 +497,11 @@ export const es = {
     statActivoDesdeLabel: 'Activo desde',
     statActivoDesdeHelp: 'Año en que presentó su primer proyecto registrado.',
 
+    partidosTitle: 'Historial político',
+    partidosDesc: 'Partidos políticos con los que ha participado en la Asamblea.',
+    partidoActual: 'Partido actual / Último partido',
+    partidosAnteriores: 'Partidos anteriores',
+
     periodosTitle: 'En qué períodos legislativos trabajó',
     periodosDesc: 'Cómo se distribuyó su actividad en el tiempo. La barra verde muestra cuántos de sus proyectos llegaron a ser ley.',
     proyectoSingular: 'proyecto',
@@ -555,6 +570,59 @@ export const es = {
     verMasRestantes: (n: number) => `${n} restantes`,
     proyectoSingular: 'proyecto',
     proyectoPlural: 'proyectos',
+  },
+
+  partidosPage: {
+    heroEyebrow: 'Fuerzas políticas',
+    heroDescPrefix: 'Explorá la actividad legislativa de los partidos políticos de Costa Rica.',
+    searchPlaceholder: 'Buscar partido…',
+    filterPeriodo: 'Período',
+    cualquierPeriodo: 'Cualquier período',
+    limpiar: 'Limpiar',
+    cargando: 'Cargando…',
+    ordenadosPor: 'Ordenados por número de propuestas',
+    propuestasSingular: 'propuesta',
+    propuestasPlural: 'propuestas',
+    leyesSingular: 'ley aprobada',
+    leyesPlural: 'leyes aprobadas',
+    diputadosSingular: 'diputado histórico',
+    diputadosPlural: 'diputados históricos',
+    tasaAprobacion: 'tasa de aprobación',
+    sinResultadosTitle: 'Sin resultados',
+    sinResultadosDesc: 'No hay partidos con actividad en ese período.',
+    verPerfil: 'Ver perfil →',
+  },
+
+  partidoDetalle: {
+    backToList: 'Volver a partidos',
+    heroEyebrow: 'Partido político',
+    heroSub: 'Asamblea Legislativa de Costa Rica',
+
+    statPropuestasLabel: 'Propuestas totales',
+    statPropuestasHelp: 'Proyectos presentados por diputados del partido.',
+    statLeyesLabel: 'Leyes aprobadas',
+    statLeyesHelp: 'Cuántas de sus propuestas llegaron a ser ley.',
+    statEficaciaLabel: 'Eficacia',
+    statEficaciaHelp: 'De cada 100 propuestas, cuántas llegan a ser ley.',
+    statDiputadosLabel: 'Diputados históricos',
+    statDiputadosHelp: 'Total de legisladores registrados en el partido.',
+
+    administracionTitle: 'Actividad por período legislativo',
+    administracionDesc: 'Cómo se distribuyó la actividad del partido en cada administración.',
+    propuestaSingular: 'propuesta',
+    propuestaPlural: 'propuestas',
+    leySingular: 'ley',
+    leyPlural: 'leyes',
+    dipSingular: 'diputado',
+    dipPlural: 'diputados',
+
+    topDiputadosTitle: 'Diputados más activos del partido',
+    topDiputadosDesc: 'Por número de proyectos presentados mientras pertenecieron al partido.',
+
+    categoriasTitle: 'Temas más frecuentes',
+    categoriasDesc: 'Los temas que más impulsó este partido en la Asamblea.',
+
+    verProyectosPartido: 'Ver proyectos del partido',
   },
 
   proyectosPage: {

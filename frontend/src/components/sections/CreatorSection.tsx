@@ -47,11 +47,14 @@ export default function CreatorSection() {
               </div>
             </div>
 
-            <p className={styles.bio}>
-              {dict.creator.bio}
-              <br />
-              <span className={styles.bioSmall}>{dict.creator.bioSmall}</span>
-            </p>
+            <div className={styles.bioContainer}>
+              <p className={styles.bio}>
+                {dict.creator.bio}
+              </p>
+              <p className={`${styles.bio} ${styles.bioSmall}`}>
+                {dict.creator.bioSmall}
+              </p>
+            </div>
             <div className={styles.links}>
               <a href="mailto:omarmr14.02@gmail.com" className={styles.link}>
                 <IconMail /> <span>omarmr14.02@gmail.com</span>

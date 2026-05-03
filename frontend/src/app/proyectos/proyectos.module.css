@@ -138,6 +138,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   opacity: 0;
   transform: translateY(-12px);
+  overflow: visible; /* permite que los dropdowns sobresalgan */
 }
 
 /* Línea de acento superior — glow sutil que pulsa al revelarse. */
@@ -232,32 +233,110 @@
 }
 
 @media (max-width: 720px) {
-  .filtersInner {
-    flex-direction: column;
-    align-items: stretch;
-    flex-wrap: nowrap;
+  /* Ocultar la fila inline del desktop */
+  .filtersInner { display: none; }
+
+  /* Separador no aplica en móvil */
+  .filtersSep { display: none; }
+}
+
+/* ── Classes del patrón toggle móvil ──────────────────────────── */
+
+/* Por defecto ocultos — sólo visibles en móvil */
+.filtersMobileHeader { display: none; }
+.filtersMobilePanel  { display: none; }
+
+@media (max-width: 720px) {
+  /* Header compacto: label + botón toggle + limpiar */
+  .filtersMobileHeader {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 10px 16px;
+    max-width: var(--container-max);
+    margin: 0 auto;
   }
-  /* 2×2 grid: los 4 filtros se ven todos a la vez sin scroll. */
-  .selects {
+
+  /* Botón toggle "Filtros ▾" */
+  .filtersMobileToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.06);
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: border-color .2s, background .2s, color .2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filtersMobileToggle:hover,
+  .filtersMobileToggleOpen {
+    border-color: var(--accent);
+    background: rgba(6, 182, 212, 0.12);
+    color: var(--accent);
+  }
+
+  .filtersMobileToggleLabel { font-size: 13px; }
+
+  /* Badge con número de filtros activos */
+  .filtersBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* Botón "Limpiar" compacto en el header */
+  .filtersMobileClear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding: 6px 12px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 100px;
+    font-family: var(--body);
+    font-size: 12px;
+    color: rgba(239, 68, 68, 0.8);
+    background: rgba(239, 68, 68, 0.06);
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filtersMobileClear:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  /* Panel expandido en móvil: grid 2×2 */
+  .filtersMobilePanel {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    width: 100%;
-  }
-  .filtersSep { display: none; }
-  .toggleLey {
-    width: 100%;
-    justify-content: center;
-    min-height: 40px;
-  }
-  .clearBtn {
-    width: 100%;
-    justify-content: center;
-    min-height: 40px;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: visible; /* los dropdowns pueden sobresalir */
   }
 }
+
 
 .filtersLabel {
   display: flex;
@@ -534,10 +613,7 @@
   color: var(--ink);
   line-height: 1.55;
   margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  /* Sin clamp en desktop — mostramos el título completo */
   letter-spacing: -0.01em;
 }
 
@@ -719,11 +795,23 @@
 /* ── Pagination ── */
 .pagination {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 20px; /* Separación ampliada para mejor usabilidad en móvil */
   margin-top: 48px;
-  flex-wrap: wrap;
+}
+
+/* Fila de navegación: primero, anterior, contador, siguiente, último */
+.paginationNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .hideMobile { display: none !important; }
 }
 
 .pageBtn {
@@ -751,6 +839,20 @@
 .pageNums {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pageInfo {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+  padding: 0 2px;
 }
 
 .pageNum {
@@ -819,21 +921,31 @@
   }
 
   .cardTitle {
-    font-size: 15px;
+    font-size: 14.5px;
     letter-spacing: 0;
+    /* En móvil limitamos a 4 líneas para no ocupar demasiado espacio,
+       pero el título siempre se muestra más completo que en desktop */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .cardBody {
-    padding: 16px 16px 14px;
+    padding: 14px 14px 12px;
   }
 
   .metaTipo {
-    max-width: 130px;
+    max-width: 140px;
   }
+
+  /* Ocultar separadores y metadatos secundarios en móvil muy pequeño
+     para ganar espacio y que el título respire */
+  .metaSep { padding: 0 4px; }
 
   .cardArrow {
     opacity: 1;
-    padding: 0 12px 0 4px;
+    padding: 0 10px 0 4px;
   }
 
   .list {
@@ -841,7 +953,7 @@
   }
 
   .pagination {
-    gap: 6px;
+    gap: 20px;
     margin-top: 32px;
   }
 }

@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import type { DiputadoRanking } from '@/lib/api'
-import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
+import type { DiputadoRanking, PartidoResumen } from '@/lib/api'
+import { getPaletaPartido } from '@/lib/partidos'
+import { useLegislativePeriods, getPeriodos, getDefaultLegislativePeriodLabel } from '@/lib/periodos'
 import { formatDiputadoName, cleanText } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
 import styles from './diputados.module.css'
@@ -74,13 +75,16 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
   const initials = getInitials(d.nombre_completo)
   const hue = avatarHue(d.nombre_completo)
   const isTop3 = index < 3
+  const paleta = d.partido_codigo ? getPaletaPartido(d.partido_codigo) : null
 
   return (
     <Link href={`/diputados/${slug}`} className={styles.card}>
       <div className={styles.avatarWrap}>
         <div
           className={styles.avatar}
-          style={{ background: `linear-gradient(135deg, hsl(${hue} 55% 28%), hsl(${(hue + 40) % 360} 55% 18%))` }}
+          style={{ background: paleta
+            ? `linear-gradient(135deg, ${paleta.bg}, color-mix(in srgb, ${paleta.bg} 70%, #000))`
+            : `linear-gradient(135deg, hsl(${hue} 55% 28%), hsl(${(hue + 40) % 360} 55% 18%))` }}
           aria-hidden
         >
           {initials}
@@ -95,9 +99,14 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
           {/* Nombre del diputado — NO se traduce */}
           <span className={styles.cardSurname}>{formatDiputadoName(d.nombre_completo)}</span>
         </p>
+        {d.partido_nombre && paleta && (
+          <span className={styles.partidoBadge} style={{ background: paleta.soft, color: paleta.bg, borderColor: paleta.border }}>
+            {d.partido_nombre}
+          </span>
+        )}
         <div className={styles.barRow}>
           <div className={styles.bar}>
-            <div className={styles.barFill} style={{ width: `${pct}%` }} />
+            <div className={styles.barFill} style={{ width: `${pct}%`, background: paleta?.bg }} />
           </div>
         </div>
       </div>
@@ -127,23 +136,50 @@ function Skeleton() {
 export default function DiputadosPage() {
   const { dict } = useT()
   const [query, setQuery]     = useState('')
-  const [periodo, setPeriodo] = useState('6 meses')
+  const DEFAULT_PERIOD = getDefaultLegislativePeriodLabel()
+  const [periodo, setPeriodo] = useState(DEFAULT_PERIOD)
   const [orden, setOrden]     = useState('proyectos')
+  const [partido, setPartido] = useState('')
 
   const [data, setData]       = useState<DiputadoRanking[]>([])
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(10)
-  // Activa la animación de la barra de filtros sólo después de la primera
-  // carga, para que el sweep y el reveal sean visibles cuando el usuario
-  // ya está mirando el contenido.
-  const [filtersAnimated, setFiltersAnimated] = useState(false)
+  const [partidos, setPartidos] = useState<PartidoResumen[]>([])
+  // Los filtros se muestran inmediatamente, sin esperar la primera carga.
+  const [filtersAnimated, setFiltersAnimated] = useState(true)
+  // Panel de filtros colapsable en móvil
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const legislativePeriods = useLegislativePeriods()
 
-  const prevPeriodoRef = useRef(periodo)
+  // Cargar partidos disponibles según el período seleccionado (filtro inteligente)
   useEffect(() => {
-    const periodoChanged = prevPeriodoRef.current !== periodo
-    prevPeriodoRef.current = periodo
-    const delay = periodoChanged ? 0 : 350
+    let cancelled = false
+    const legPeriod = legislativePeriods.find(p => p.label === periodo)
+    const administracion = legPeriod ? periodo : undefined
+    queueMicrotask(async () => {
+      try {
+        const r = await api.partidos.listar(administracion)
+        if (!cancelled) {
+          setPartidos(r.datos)
+          // Si el partido seleccionado no existe en el nuevo período, lo limpiamos
+          if (partido && !r.datos.some(p => String(p.id) === partido)) {
+            setPartido('')
+          }
+        }
+      } catch { /* noop */ }
+    })
+    return () => { cancelled = true }
+  }, [periodo, legislativePeriods, partido])
+
+  const prevFiltersRef = useRef({ query, periodo, partido })
+  useEffect(() => {
+    const prev = prevFiltersRef.current
+    const onlyQueryChanged =
+      prev.query !== query &&
+      prev.periodo === periodo &&
+      prev.partido === partido
+    prevFiltersRef.current = { query, periodo, partido }
+    const delay = onlyQueryChanged ? 350 : 0
 
     let cancelled = false
     const timer = setTimeout(async () => {
@@ -155,9 +191,10 @@ export default function DiputadosPage() {
         const relPeriod = relPeriods.find(p => p.label === periodo)
         const desde = legPeriod?.desde || relPeriod?.desde()
         const hasta = legPeriod?.hasta
+        const partidoId = partido ? parseInt(partido, 10) : undefined
 
         const result = await api.metricas.diputados({
-          desde, hasta, q: query.trim() || undefined,
+          desde, hasta, q: query.trim() || undefined, partido_id: partidoId,
         })
         if (cancelled) return
         setData(result.datos)
@@ -173,21 +210,25 @@ export default function DiputadosPage() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [query, periodo, legislativePeriods])
-
-  useEffect(() => {
-    if (!loading && !filtersAnimated) {
-      const t = setTimeout(() => setFiltersAnimated(true), 120)
-      return () => clearTimeout(t)
-    }
-  }, [loading, filtersAnimated])
+  }, [query, periodo, partido, legislativePeriods])
 
   const onOrdenChange = (v: string) => { setOrden(v); setVisible(10) }
+  const onPeriodoChange = (v: string) => { setPeriodo(v); setPartido(''); setVisible(10) }
+  const onPartidoChange = (v: string) => { setPartido(v); setVisible(10) }
 
   const clearFilters = () => {
-    setQuery(''); setPeriodo('6 meses'); setOrden('proyectos'); setVisible(10)
+    setQuery(''); setPeriodo(DEFAULT_PERIOD); setOrden('proyectos'); setPartido(''); setVisible(10)
   }
-  const hasFilters = query || periodo !== '6 meses' || orden !== 'proyectos'
+  const hasFilters = query || periodo !== DEFAULT_PERIOD || orden !== 'proyectos' || partido
+  const activeFiltersCount = [periodo !== DEFAULT_PERIOD ? periodo : '', orden !== 'proyectos' ? orden : '', partido].filter(Boolean).length
+
+  const partidoOptions = useMemo(() => [
+    { value: '', label: 'Todos los partidos' },
+    ...partidos.map(p => {
+      const paleta = getPaletaPartido(p.codigo)
+      return { value: String(p.id), label: p.nombre, color: paleta.bg }
+    }),
+  ], [partidos])
 
   const max = data.length > 0 ? Math.max(...data.map(d => d.total_proyectos)) : 1
 
@@ -245,15 +286,82 @@ export default function DiputadosPage() {
       </section>
 
       <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
+        {/* ── Vista móvil: toggle compacto ── */}
+        <div className={styles.filtersMobileHeader}>
+          <span className={styles.filtersLabel}><IconFilter /> {dict.diputadosPage.filtersLabel}</span>
+          <button
+            className={`${styles.filtersMobileToggle} ${filtersOpen ? styles.filtersMobileToggleOpen : ''}`}
+            onClick={() => setFiltersOpen(v => !v)}
+            aria-expanded={filtersOpen}
+          >
+            {activeFiltersCount > 0 && (
+              <span className={styles.filtersBadge}>{activeFiltersCount}</span>
+            )}
+            <span>{filtersOpen ? 'Cerrar' : 'Filtros'}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: filtersOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          {hasFilters && (
+            <button className={styles.filtersMobileClear} onClick={clearFilters}>
+              <IconX /> {dict.diputadosPage.limpiar}
+            </button>
+          )}
+        </div>
+
+        {/* Panel expandido en móvil */}
+        {filtersOpen && (
+          <div className={styles.filtersMobilePanel}>
+            <FilterPill
+              value={periodo}
+              onChange={onPeriodoChange}
+              placeholder={dict.diputadosPage.cualquierPeriodo}
+              options={periodOptions}
+            />
+            {partidos.length > 0 && (
+              <FilterPill
+                value={partido}
+                onChange={onPartidoChange}
+                placeholder="Todos los partidos"
+                active={!!partido}
+                options={partidoOptions}
+              />
+            )}
+            <FilterPill
+              value={orden}
+              onChange={onOrdenChange}
+              placeholder={dict.diputadosPage.masProyectos}
+              active={orden !== 'proyectos'}
+              options={[
+                { value: 'proyectos', label: dict.diputadosPage.masProyectos },
+                { value: 'az', label: dict.diputadosPage.az },
+                { value: 'za', label: dict.diputadosPage.za },
+              ]}
+            />
+          </div>
+        )}
+
+        {/* ── Vista escritorio: fila inline ── */}
         <div className={styles.filtersInner}>
           <span className={styles.filtersLabel}><IconFilter /> {dict.diputadosPage.filtersLabel}</span>
 
           <FilterPill
             value={periodo}
-            onChange={setPeriodo}
+            onChange={onPeriodoChange}
             placeholder={dict.diputadosPage.cualquierPeriodo}
             options={periodOptions}
           />
+
+          {partidos.length > 0 && (
+            <FilterPill
+              value={partido}
+              onChange={onPartidoChange}
+              placeholder="Todos los partidos"
+              active={!!partido}
+              options={partidoOptions}
+            />
+          )}
 
           <FilterPill
             value={orden}
@@ -291,8 +399,8 @@ export default function DiputadosPage() {
             <div className={styles.activeChips}>
               <span className={styles.chip}>
                 {periodo || dict.diputadosPage.cualquierPeriodo}
-                {periodo !== '6 meses' && (
-                  <button onClick={() => setPeriodo('6 meses')} aria-label={dict.diputadosPage.volverA6Meses}><IconX /></button>
+                {periodo !== DEFAULT_PERIOD && (
+                  <button onClick={() => onPeriodoChange(DEFAULT_PERIOD)} aria-label={dict.diputadosPage.volverA6Meses}><IconX /></button>
                 )}
               </span>
 

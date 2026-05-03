@@ -118,6 +118,7 @@ def listar_proyectos(
     orden:      OrdenFiltro = Query("reciente"),
     categoria:  Optional[str] = Query(None, max_length=60),
     diputado:   Optional[str] = Query(None, max_length=120),
+    partido_id: Optional[int] = Query(None, ge=1, description="ID del partido político"),
 ):
     _validar_rango_fechas(desde, hasta)
 
@@ -174,6 +175,23 @@ def listar_proyectos(
             """
         )
         params.extend([termino_dip, termino_dip, termino_dip, termino_dip])
+
+    if partido_id:
+        condiciones.append(
+            """
+            EXISTS (
+                SELECT 1 FROM proponentes pr
+                JOIN historial_diputados h ON
+                    unaccent(LOWER(TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, ''))))
+                        = unaccent(LOWER(TRIM(h.apellidos || ' ' || h.nombre)))
+                    AND (h.fecha_desde IS NULL OR p.fecha_inicio >= h.fecha_desde)
+                    AND (h.fecha_hasta IS NULL OR p.fecha_inicio <= h.fecha_hasta)
+                WHERE pr.proyecto_id = p.id
+                  AND h.partido_id = %s
+            )
+            """
+        )
+        params.append(partido_id)
 
     where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
 
@@ -246,32 +264,45 @@ def buscar_proyectos(
     q:          str = Query(..., min_length=2, max_length=200),
     desde:      Optional[date] = Query(None),
     hasta:      Optional[date] = Query(None),
+    estado:     Optional[EstadoFiltro] = Query(None),
+    orden:      OrdenFiltro = Query("reciente"),
+    categoria:  Optional[str] = Query(None, max_length=60),
+    partido_id: Optional[int] = Query(None, ge=1),
     pagina:     int = Query(1, ge=1, le=10_000),
     por_pagina: int = Query(20, ge=1, le=100),
 ):
     _validar_rango_fechas(desde, hasta)
 
-    termino = f"%{_like_escape(q.strip())}%"
+    palabras = [w for w in q.strip().split() if len(w) > 0]
+    
+    condiciones = []
+    params = []
 
-    condiciones = [
-        """
+    for palabra in palabras:
+        termino = f"%{_like_escape(palabra)}%"
+        condiciones.append("""
         (
             unaccent(p.titulo) ILIKE unaccent(%s) ESCAPE '\\'
+            OR p.numero_expediente::text ILIKE %s ESCAPE '\\'
             OR EXISTS (
                 SELECT 1 FROM proponentes pr
                 WHERE pr.proyecto_id = p.id
-                  AND (unaccent(pr.apellidos) ILIKE unaccent(%s) ESCAPE '\\'
-                       OR unaccent(pr.nombre) ILIKE unaccent(%s) ESCAPE '\\')
+                  AND unaccent(CONCAT_WS(' ', pr.nombre, pr.apellidos)) ILIKE unaccent(%s) ESCAPE '\\'
             )
             OR EXISTS (
                 SELECT 1 FROM tramitacion tr
                 WHERE tr.proyecto_id = p.id
                   AND unaccent(tr.organo) ILIKE unaccent(%s) ESCAPE '\\'
             )
+            OR EXISTS (
+                SELECT 1 FROM proyecto_categorias pc
+                JOIN categorias c ON c.id = pc.categoria_id
+                WHERE pc.proyecto_id = p.id
+                  AND unaccent(c.nombre) ILIKE unaccent(%s) ESCAPE '\\'
+            )
         )
-        """
-    ]
-    params = [termino, termino, termino, termino]
+        """)
+        params.extend([termino, termino, termino, termino, termino])
 
     if desde:
         condiciones.append("p.fecha_inicio >= %s")
@@ -279,6 +310,37 @@ def buscar_proyectos(
     if hasta:
         condiciones.append("p.fecha_inicio <= %s")
         params.append(hasta)
+    if estado:
+        condiciones.append("p.estado_grupo = %s")
+        params.append(estado)
+    if categoria:
+        condiciones.append(
+            """
+            EXISTS (
+                SELECT 1 FROM proyecto_categorias pc
+                JOIN categorias c ON c.id = pc.categoria_id
+                WHERE pc.proyecto_id = p.id AND c.slug = %s
+            )
+            """
+        )
+        params.append(categoria)
+
+    if partido_id:
+        condiciones.append(
+            """
+            EXISTS (
+                SELECT 1 FROM proponentes pr
+                JOIN historial_diputados h ON
+                    unaccent(LOWER(TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, ''))))
+                        = unaccent(LOWER(TRIM(h.apellidos || ' ' || h.nombre)))
+                    AND (h.fecha_desde IS NULL OR p.fecha_inicio >= h.fecha_desde)
+                    AND (h.fecha_hasta IS NULL OR p.fecha_inicio <= h.fecha_hasta)
+                WHERE pr.proyecto_id = p.id
+                  AND h.partido_id = %s
+            )
+            """
+        )
+        params.append(partido_id)
 
     where_sql = "WHERE " + " AND ".join(condiciones)
     from_sql = "FROM proyectos p"
@@ -305,6 +367,14 @@ def buscar_proyectos(
     offset = (pagina - 1) * por_pagina
     params_query = params + [por_pagina, offset]
 
+    orden_sql = {
+        "reciente":   "p.fecha_inicio DESC NULLS LAST",
+        "antiguo":    "p.fecha_inicio ASC NULLS LAST",
+        "expediente": "p.numero_expediente DESC",
+        "titulo_az":  "p.titulo ASC NULLS LAST",
+        "titulo_za":  "p.titulo DESC NULLS LAST",
+    }[orden]
+
     sql = f"""
         SELECT
             p.id,
@@ -325,7 +395,7 @@ def buscar_proyectos(
         {join_sql}
         {where_sql}
         GROUP BY p.id
-        ORDER BY p.fecha_inicio DESC NULLS LAST
+        ORDER BY {orden_sql}
         LIMIT %s OFFSET %s
     """
 

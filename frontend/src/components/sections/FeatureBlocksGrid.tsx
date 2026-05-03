@@ -27,15 +27,38 @@ type EstadisticasData = {
   ultimoMesAnio: number | null
 }
 
+type PartidosData = {
+  totalPartidos: number | null
+  masActivoCount: number | null
+  masActivoNombre: string | null
+  mayorTasaPct: number | null
+  mayorTasaNombre: string | null
+}
+
 export type CardPayload =
   | { id: 'proyectos'; accent: string; href: string; data: ProyectosData }
   | { id: 'diputados'; accent: string; href: string; data: DiputadosData }
+  | { id: 'partidos'; accent: string; href: string; data: PartidosData }
   | { id: 'estadisticas'; accent: string; href: string; data: EstadisticasData }
 
 type DataItem = { value: string; label: ReactNode }
 
 function fmt(n: number | null, locale: string): string {
   return n == null ? '—' : n.toLocaleString(locale)
+}
+
+function formatTitle(text: string | null): string | null {
+  if (!text) return text
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map((word) => {
+      const smallWords = ['de', 'del', 'y', 'la', 'las', 'el', 'los', 'en']
+      if (smallWords.includes(word)) return word
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
+    .join(' ')
+    .replace(/^./, (match) => match.toUpperCase())
 }
 
 function Card({
@@ -147,6 +170,30 @@ export default function FeatureBlocksGrid({ cards }: Props) {
             label: topEficaciaNombre
               ? <span>{t.labelEficaciaPrefix} (<strong>{topEficaciaNombre}</strong>)</span>
               : t.labelEficaciaFallback,
+          },
+        ]
+        return { ...card, title: t.title, promise: t.promise, cta: t.cta, items }
+      }
+
+      if (card.id === 'partidos') {
+        const t = dict.featureBlocks.partidos
+        const { totalPartidos, masActivoCount, masActivoNombre, mayorTasaPct, mayorTasaNombre } = card.data
+        const items: DataItem[] = [
+          {
+            value: totalPartidos == null ? '—' : String(totalPartidos),
+            label: t.labelPartidosFallback,
+          },
+          {
+            value: masActivoCount == null ? '—' : masActivoCount.toLocaleString(locale),
+            label: masActivoNombre
+              ? <span>{t.labelMasActivoPrefix} (<strong>{formatTitle(masActivoNombre)}</strong>)</span>
+              : t.labelMasActivoPrefix,
+          },
+          {
+            value: mayorTasaPct == null ? '—' : `${mayorTasaPct}%`,
+            label: mayorTasaNombre
+              ? <span>{t.labelMayorTasaPrefix} (<strong>{formatTitle(mayorTasaNombre)}</strong>)</span>
+              : t.labelMayorTasaPrefix,
           },
         ]
         return { ...card, title: t.title, promise: t.promise, cta: t.cta, items }

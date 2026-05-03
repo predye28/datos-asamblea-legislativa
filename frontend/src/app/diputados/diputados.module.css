@@ -137,6 +137,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   opacity: 0;
   transform: translateY(-12px);
+  overflow: visible;
 }
 
 .filtersBar::before {
@@ -227,25 +228,97 @@
 }
 
 @media (max-width: 720px) {
-  .filtersInner {
+  /* Ocultar fila inline desktop */
+  .filtersInner { display: none; }
+  .filtersSep  { display: none; }
+}
+
+/* ── Mobile toggle pattern (igual que /proyectos) ── */
+.filtersMobileHeader { display: none; }
+.filtersMobilePanel  { display: none; }
+
+@media (max-width: 720px) {
+  .filtersMobileHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    max-width: var(--container-max);
+    margin: 0 auto;
+  }
+
+  .filtersMobileToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.06);
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: border-color .2s, background .2s, color .2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filtersMobileToggle:hover,
+  .filtersMobileToggleOpen {
+    border-color: var(--accent);
+    background: rgba(6, 182, 212, 0.12);
+    color: var(--accent);
+  }
+
+  .filtersBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .filtersMobileClear {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding: 6px 12px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 100px;
+    font-family: var(--body);
+    font-size: 12px;
+    color: rgba(239, 68, 68, 0.8);
+    background: rgba(239, 68, 68, 0.06);
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filtersMobileClear:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  /* Diputados sólo tiene 2 pills — van en una fila (1×2) */
+  .filtersMobilePanel {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     padding: 12px 16px;
-  }
-  /* El label "Filtros" abarca toda la fila arriba. */
-  .filtersLabel {
-    grid-column: 1 / -1;
-  }
-  /* Separador no aporta cuando los pills ya están en grid. */
-  .filtersSep {
-    display: none;
-  }
-  /* El botón "Limpiar" abarca toda la fila debajo de los pills. */
-  .filtersInner > button {
-    grid-column: 1 / -1;
-    width: 100%;
-    justify-content: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: visible;
   }
 }
 
@@ -493,9 +566,9 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
   transition: color 0.15s;
   margin-bottom: 10px;
   min-width: 0;
@@ -506,7 +579,10 @@
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.015em;
-  line-height: 1.1;
+  line-height: 1.2;
+  /* Sin truncar: el nombre del diputado siempre debe verse completo */
+  white-space: normal;
+  word-break: break-word;
 }
 .cardGiven {
   font-family: var(--body);
@@ -519,6 +595,23 @@
 
 .card:hover .cardName {
   color: #fff;
+}
+
+.partidoBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  margin-bottom: 5px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .barRow {
@@ -733,32 +826,39 @@
   }
 
   .card {
-    padding: 14px 14px;
-    gap: 12px;
+    padding: 12px 12px;
+    gap: 10px;
   }
 
   .cardArrow {
     opacity: 1;
   }
 
-  .cardSurname { font-size: 15px; }
-  .cardGiven { font-size: 12px; }
+  /* Nombre completo visible: font ligeramente menor pero nunca truncado */
+  .cardSurname { font-size: 14px; }
+  .cardGiven   { font-size: 12px; }
+
+  /* La barra de progreso puede ser más delgada en móvil */
+  .bar { height: 5px; }
 
   .avatar {
-    width: 44px;
-    height: 44px;
-    font-size: 15px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+    border-radius: 10px;
+    flex-shrink: 0;
   }
   .rankBadge {
-    min-width: 24px;
-    height: 20px;
-    font-size: 10px;
+    min-width: 22px;
+    height: 18px;
+    font-size: 9px;
   }
 
+  /* Contador más compacto para dejar más espacio al nombre */
   .cardCount {
-    padding: 0 4px 0 10px;
+    padding: 0 2px 0 8px;
+    min-width: 36px;
   }
-  .cardCount strong { font-size: 20px; }
-  .cardCount span { font-size: 9px; }
+  .cardCount strong { font-size: 18px; }
+  .cardCount span   { font-size: 8px; }
 }

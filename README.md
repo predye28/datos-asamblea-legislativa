@@ -1,97 +1,254 @@
-etapas:
+# Datos Asamblea Legislativa CR
 
-extracion de datos:
+> Portal de transparencia legislativa de Costa Rica — datos públicos, presentados de forma que cualquier ciudadano pueda entenderlos.
 
-Se utilizara Playwright
-pip install playwright
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql)](https://neon.tech)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-python extraer_proyectos.py
+---
 
+## ¿Qué es esto?
 
-sigueiente paso el sync engine
+La Asamblea Legislativa publica sus datos, pero de una forma que solo un abogado o un politólogo puede navegar. El ciudadano promedio no sabe que existe el SIL, y si lo visita, se va sin entender nada.
 
-pip install psycopg2-binary python-dotenv
+**El problema no es falta de transparencia, es falta de traducción.**
 
-psycopg2 es el driver que conecta Python con PostgreSQL. python-dotenv es para que las credenciales de la base de datos no queden hardcodeadas en el código.
+Este portal extrae los datos del Sistema de Información Legislativa (SIL), los almacena en una base de datos relacional y los presenta en una interfaz clara y accesible para cualquier persona.
 
-en la parte de bd se esta uitliando el servicio de neon con postgresql
+---
 
-para la parte del backend:
+## Funcionalidades
 
-FastAPI + Railway
+| Sección | Descripción |
+|---------|-------------|
+| **Proyectos** | Listado completo con búsqueda, filtros por año, tipo y estado |
+| **Diputados** | Ranking de actividad legislativa por período |
+| **Estadísticas** | Tasa de aprobación, proyectos por vencer, actividad mensual |
+| **Detalle** | Expediente completo con historial de trámites y proponentes |
 
-FastAPI porque ya tenés todo en Python, comparte las mismas dependencias (psycopg2, python-dotenv), genera documentación automática en /docs, y es muy rápido para APIs de este tipo.
-Railway porque conecta directo con GitHub, deploy automático en cada push, tiene tier gratuito generoso, y configurar la variable DATABASE_URL es trivial. Render también funciona igual de bien.
+---
 
-cd api
+## Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Internet                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                    ┌──────▼──────┐
+                    │    Nginx    │  Reverse proxy / SSL
+                    └──────┬──────┘
+              ┌────────────┼────────────┐
+              │            │            │
+       ┌──────▼──────┐  ┌──▼──────┐  ┌──▼──────────────┐
+       │  Frontend   │  │   API   │  │    Extractor    │
+       │  Next.js 16 │  │ FastAPI │  │   Playwright    │
+       │  React 19   │  │         │  │  (cron / manual)│
+       └─────────────┘  └────┬────┘  └────────┬────────┘
+                             │               │
+                      ┌──────▼───────────────▼──────┐
+                      │     PostgreSQL (Neon)        │
+                      │       ~21 000 proyectos      │
+                      └─────────────────────────────┘
+```
+
+**Flujo de datos:**
+1. El **extractor** scrapeea el SIL con Playwright y sincroniza los proyectos en PostgreSQL.
+2. La **API** expone esos datos vía REST.
+3. El **frontend** consume la API y renderiza la interfaz ciudadana.
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología | Por qué |
+|------|-----------|---------|
+| Frontend | Next.js 16 + React 19 | App Router, SSR, TypeScript nativo |
+| Estilos | CSS Modules + variables CSS | Sin dependencias extra, fácil de mantener |
+| Gráficas | Recharts 3 | Integración React nativa |
+| Backend | FastAPI 0.115 | Documentación `/docs` automática, stack Python |
+| Base de datos | PostgreSQL via Neon | Cloud managed, tier gratuito generoso |
+| Scraper | Playwright + psycopg2 | Headless Chromium, robusto para páginas con JS |
+| Deploy | Docker Compose | Un solo `docker compose up` en cualquier VPS |
+| Proxy | Nginx | Enrutamiento interno, SSL termination |
+
+---
+
+## Inicio rápido
+
+### Con Docker (recomendado)
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/tu-usuario/datos-asamblea-legislativa.git
+cd datos-asamblea-legislativa
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tu DATABASE_URL y el dominio (ver sección Variables de entorno)
+
+# 3. Levantar todos los servicios
+docker compose up -d
+
+# La app queda disponible en http://localhost
+```
+
+### Manual (desarrollo local)
+
+**Requisitos previos:** Node.js 20+, Python 3.11+, PostgreSQL (o cuenta en [Neon](https://neon.tech))
+
+#### 1. Base de datos
+
+Crea una base de datos PostgreSQL y habilita la extensión para búsqueda sin acentos:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS unaccent;
+```
+
+#### 2. Extractor (poblar la BD)
+
+```bash
+cd extractor_proyectos
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
-uvicorn main:app --reload
+playwright install chromium
 
+cp .env.example .env             # Agregar DATABASE_URL
 
+python fase1_scraper.py          # Extrae el listado de proyectos
+python fase2_paralelo.py         # Extrae el detalle de cada uno (paralelo)
+```
 
+> La primera corrida completa tarda varias horas. Para pruebas locales, usa `MAX_PAGINAS=2` en el `.env`.
 
-Por qué este portal importa
-La Asamblea Legislativa publica sus datos, pero los publica de una forma que solo un abogado o un politólogo puede navegar. El ciudadano promedio no sabe que existe el SIL, y si lo visita, se va sin entender nada. El problema no es falta de transparencia, es falta de traducción.
+#### 3. API
 
+```bash
+cd api
+python -m venv .venv
+source .venv/bin/activate
 
-metricas que tengo pensadas:
+pip install -r requirements.txt
+cp .env.example .env             # Agregar DATABASE_URL y CORS_ORIGINS
 
-1. Proyectos presentados vs. leyes aprobadas
-La mayoría de ticos no sabe que la tasa de aprobación legislativa es bajísima. Ver que de 500 proyectos solo 12 se convirtieron en ley genera una conversación importante: ¿por qué? ¿quiénes los bloquean? ¿cuáles son los que nunca avanzan?
-2. Proyectos próximos a vencer
-Cada proyecto tiene 4 años de vida. Si no se aprueba, muere. Mostrar esto crea urgencia real y periodística: "Este proyecto que beneficia a X personas muere en 30 días". Es el dato más accionable del portal.
-3. Quién propone más leyes (ranking de diputados)
-No como ranking político, sino como dato de actividad. El ciudadano puede ver si su diputado está trabajando o no. Es transparencia sin editorial.
-4. Dónde se atascan los proyectos (órganos)
-Muchos proyectos pasan años en la misma comisión. Mostrar qué comisiones tienen más proyectos acumulados revela dónde está el cuello de botella legislativo.
-5. Actividad por mes
-¿Hay más actividad antes de elecciones? ¿En ciertos meses? El ciudadano puede ver patrones que los medios no reportan.
-6. Buscador por tema o diputado
-Para que cualquier persona pueda preguntar: "¿qué ha hecho el diputado X?" o "¿hay algún proyecto sobre agua?"
+uvicorn main:app --reload --port 8000
+# Documentación interactiva: http://localhost:8000/docs
+```
 
+#### 4. Frontend
 
-frontend:
-
-cd asamblea-portal-frontend
+```bash
+cd frontend
 npm install
+
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1" > .env.local
+
 npm run dev
+# App en http://localhost:3000
+```
 
+---
 
-ahora para desplegarlo la idea es usar:
+## Variables de entorno
 
-para el frontend vercel:
-https://vercel.com/predyes-projects/datos-asamblea-legislativa/deployments
-link:
-https://datos-asamblea-legislativa-2mb2n1cnb-predyes-projects.vercel.app/
-y el backend render:
-https://dashboard.render.com/web/srv-d74ol094tr6s73cth550
+Copia `.env.example` → `.env` en la raíz y completa los valores:
 
+| Variable | Descripción | Valor en desarrollo |
+|----------|-------------|---------------------|
+| `DATABASE_URL` | Cadena de conexión PostgreSQL | `postgresql://user:pass@host/db?sslmode=require` |
+| `CORS_ORIGINS` | Orígenes permitidos para la API | `*` |
+| `NEXT_PUBLIC_API_URL` | URL de la API desde el browser | `http://localhost:8000/api/v1` |
+| `CI` | Activa modo headless del scraper | `true` (obligatorio en Docker) |
+| `MAX_PAGINAS` | Páginas a scrapear por corrida | `2` (dev) / omitir para correr todo |
 
-comprar dominio cloudflare
+> **Nunca subas el archivo `.env` real a git.** El `.gitignore` ya lo excluye.
 
+---
 
-cosas por mejoras:
+## Estructura del repositorio
 
-_______________________________________
-Radar de Comisiones Investigadoras — "¿Qué se está investigando?"
-Por qué es útil: Las 31 Comisiones Especiales Investigadoras son de alto interés ciudadano.
+```
+datos-asamblea-legislativa/
+├── api/                        # Backend FastAPI
+│   ├── main.py                 # Entrada, CORS, registro de routers
+│   ├── database.py             # Conexión y helpers SQL
+│   ├── models.py               # Schemas Pydantic de respuesta
+│   ├── routers/
+│   │   ├── proyectos.py        # GET /proyectos, /proyectos/:id
+│   │   ├── metricas.py         # Estadísticas ciudadanas
+│   │   ├── categorias.py       # Tipos de expediente disponibles
+│   │   └── periodos.py         # Períodos legislativos
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── extractor_proyectos/        # Scraper y sincronización de datos
+│   ├── fase1_scraper.py        # Extrae el listado paginado del SIL
+│   ├── fase2_paralelo.py       # Extrae el detalle de cada proyecto (paralelo)
+│   ├── sync_engine.py          # Lógica de upsert en PostgreSQL
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── frontend/                   # Aplicación Next.js
+│   ├── src/
+│   │   ├── app/                # Páginas (App Router)
+│   │   ├── components/         # Componentes reutilizables
+│   │   ├── i18n/               # Textos de la UI
+│   │   └── lib/                # Utils y cliente de API
+│   ├── Dockerfile
+│   └── package.json
+│
+├── nginx/
+│   └── nginx.conf              # Reverse proxy
+│
+├── docker-compose.yml          # Orquestación completa
+├── .env.example                # Plantilla de variables
+├── CONTRIBUTING.md             # Cómo contribuir al proyecto
+└── DESPLIEGUE.md               # Guía completa de despliegue en producción
+```
 
-Métricas propuestas:
+---
 
-Lista activa de Comisiones Investigadoras con su estado actual (en qué trámite están).
-Temas investigados (clasificados por categoría).
-Cuántas terminaron con informe vs. se disolvieron sin resultados.
-Datos disponibles: proyectos.tipo_expediente = "PROCEDIMIENTO COMISIONES ESPECIALES INVESTIGADORAS".
-_________________________________________________7. 🔮 Estado Real del Proyecto — "¿Está vivo o muerto?"
-Por qué es útil: Actualmente la app muestra "En trámite" para casi todo. Pero "en trámite" puede significar "activo en comisión" o "archivado hace 2 años".
+## API — Endpoints principales
 
-Métricas propuestas (nuevo campo calculado estado_calculado):
+La documentación interactiva completa está disponible en `/docs` (Swagger UI de FastAPI).
 
-CONVERTIDO EN LEY — tiene numero_ley
-ACTIVO EN PLENARIO — último trámite es en Plenario
-EN COMISIÓN — último trámite es en una comisión
-ARCHIVADO — último trámite es ARCHIVO DEL EXPEDIENTE
-POR VENCER — vence en menos de 90 días sin ser ley
-VENCIDO — la fecha de vencimiento_cuatrienal ya pasó
-Esto enriquecería massivamente la visualización de cada proyecto y la tabla de listado. 
-_________________________________________________
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/proyectos` | Listado paginado con filtros |
+| GET | `/api/v1/proyectos/:expediente` | Detalle completo de un proyecto |
+| GET | `/api/v1/metricas` | Resumen ciudadano completo |
+| GET | `/api/v1/metricas/proximos-vencer` | Proyectos por vencer en 90 días |
+| GET | `/api/v1/metricas/diputados` | Ranking de actividad por diputado |
+| GET | `/api/v1/metricas/linea-tiempo` | Leyes aprobadas por año |
+
+---
+
+## Fuente de datos
+
+Los datos provienen del **[Sistema de Información Legislativa (SIL)](https://www.asamblea.go.cr/SIL)** de la Asamblea Legislativa de Costa Rica, que es de acceso público. Este proyecto no modifica ni redistribuye los datos originales — los transforma en una forma más accesible para el ciudadano.
+
+---
+
+## Despliegue en producción
+
+Ver [`DESPLIEGUE.md`](DESPLIEGUE.md) para la guía completa que cubre:
+- Configuración de VPS (Hetzner / DigitalOcean)
+- SSL con Let's Encrypt
+- Actualizaciones manuales y automáticas (GitHub Actions)
+- Backups y seguridad
+
+---
+
+## Contribuir
+
+¡Las contribuciones son bienvenidas! Lee [`CONTRIBUTING.md`](CONTRIBUTING.md) para conocer el flujo de trabajo con ramas, convenciones de commits y cómo levantar el entorno local.
+
+---
+
+## Licencia
+
+MIT © Omar Madrigal — ver [`LICENSE`](LICENSE) para detalles.

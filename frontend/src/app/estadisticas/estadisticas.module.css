@@ -495,11 +495,13 @@
   background: linear-gradient(180deg, #221f1c 0%, #1c1b19 100%);
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
-  position: relative;
-  z-index: 10;
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 40;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   opacity: 0;
   transform: translateY(-12px);
+  overflow: visible; /* evita que se corte el dropdown en móvil */
 }
 
 .filtersBar::before {
@@ -705,9 +707,35 @@
 .peakCaption strong { color: var(--ink); font-style: normal; font-weight: 700; }
 
 @media (max-width: 720px) {
-  .rangoChips { width: 100%; justify-content: flex-start; }
   .filtersSep { display: none; }
 }
+
+@media (max-width: 640px) {
+  /* Filtro sticky: una sola fila compacta */
+  .filtersInner {
+    padding: 7px var(--container-pad);
+    gap: 8px;
+    flex-wrap: nowrap;
+    /* Sin overflow-x: auto para no recortar el dropdown */
+  }
+
+  /* Label «solo icono» en móvil */
+  .filtersLabel {
+    font-size: 0; /* oculta el texto */
+    gap: 0;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+  .filtersLabel svg {
+    font-size: initial;
+    width: 14px;
+    height: 14px;
+  }
+
+  .filtersSep { display: none; }
+  .filtersLabelSecondary { display: none; }
+}
+
 
 /* ── Period banner ────────────────────────────────────────── */
 .periodBanner {
@@ -1865,4 +1893,124 @@
   .sectionKickerLabel { font-size: 10.5px; letter-spacing: 0.16em; }
 
   .colofonQuote { font-size: 18px; padding: 0 16px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   Sección estadísticas por partido político
+   ══════════════════════════════════════════════════════════ */
+
+.partidosPieWrap {
+  /* removed background and border to avoid double box effect */
+  margin-top: 24px;
+}
+
+.partidosGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.partidosPanel {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.partidosPanelTitle {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.partidosPanelDesc {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-bottom: 20px;
+}
+
+.partidosBars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.partidoRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.partidoInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.partidoNameBadge {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 1px solid;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65%;
+}
+
+.partidoNums {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.partidoNums strong {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.partidoPct {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.partidoTasa {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.partidoBarTrack {
+  width: 100%;
+  height: 5px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.partidoBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+@media (max-width: 768px) {
+  .partidosGrid {
+    grid-template-columns: 1fr;
+  }
 }

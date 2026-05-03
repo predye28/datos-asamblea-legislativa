@@ -12,6 +12,28 @@ export const getPeriodos = () => {
   ]
 }
 
+/**
+ * Calcula el label del período legislativo actual basado en la lógica del
+ * backend: los diputados toman posesión el 1 de mayo cada 4 años
+ * (2006, 2010, 2014, 2018, 2022, 2026…).
+ *
+ * Devuelve un string del tipo "2022-2026" que coincide exactamente con
+ * los labels que genera la API de períodos, permitiendo preseleccionar
+ * el período vigente sin esperar a que cargue la respuesta de la API.
+ */
+export function getDefaultLegislativePeriodLabel(): string {
+  const d = new Date()
+  // Si aún no llegamos al 1 de mayo, el período arrancó el año anterior
+  const anio = (d.getMonth() + 1 > 5 || (d.getMonth() + 1 === 5 && d.getDate() >= 1))
+    ? d.getFullYear()
+    : d.getFullYear() - 1
+  // El período siempre empieza en un año cuya diferencia con 1994 es múltiplo de 4
+  const offset = (anio - 1994) % 4
+  const inicio = anio - offset
+  const fin = inicio + 4
+  return `${inicio}-${fin}`
+}
+
 // Cache a nivel de módulo: los períodos casi no cambian, así evitamos
 // refetch al navegar entre páginas dentro de la misma sesión.
 let _cache: PeriodoLegislativo[] | null = null

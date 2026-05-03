@@ -100,6 +100,37 @@
   margin-bottom: 8px;
 }
 
+.heroPartidoFlag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 4px 12px 4px 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.heroPartidoFlag:hover { background: rgba(255,255,255,0.1); }
+
+.heroFlagSwatch {
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.heroPartidoNombre {
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .heroSub {
   font-family: var(--body);
   font-size: 14px;
@@ -206,20 +237,128 @@
 
 .sectionTitle {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .sectionDesc {
   font-family: var(--body);
-  font-size: 13px;
-  color: var(--ink-faint);
+  font-size: 14.5px;
+  color: var(--ink-muted);
   line-height: 1.6;
-  margin-bottom: 20px;
-  font-style: italic;
+  margin-bottom: 24px;
+}
+
+/* ── Partidos ── */
+.partidosGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (min-width: 800px) {
+  .partidosGrid {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+  }
+  .partidoCardGroup {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.partidoCardGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.partidoCardLabel {
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.partidoCardList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.partidoCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
+}
+
+.partidoCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  border-color: color-mix(in srgb, var(--partido-color, var(--rule)) 50%, transparent);
+}
+
+.partidoCardCurrent {
+  border-left: 3px solid var(--partido-color, var(--accent));
+  background: linear-gradient(to right, color-mix(in srgb, var(--partido-color, var(--accent)) 8%, transparent), transparent 120px);
+}
+
+.partidoCardSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.partidoCardInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.partidoCardNombre {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.partidoCardAdm {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.partidoCard > svg {
+  color: var(--ink-faint);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s, transform 0.2s, color 0.2s;
+}
+
+.partidoCard:hover > svg {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--partido-color, var(--accent));
 }
 
 /* ── Period bars ── */
@@ -249,15 +388,66 @@
 .periodoInfo {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Grupo izquierdo: período + partidos fusionados */
+.periodoLabelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* Fila de partido(s) dentro del período */
+.periodoPartidos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.periodoPartidoItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 3px 10px 3px 5px;
+}
+
+.periodoFlagSwatch {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.periodoPartidoNombre {
+  font-family: var(--body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  line-height: 1;
+}
+
+.periodoPartidoAno {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding-left: 2px;
 }
 
 .periodoLabel {
   font-family: var(--body);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--ink);
+  letter-spacing: 0.01em;
 }
 
 .periodoNums {
@@ -269,19 +459,19 @@
 
 .periodoTotal {
   font-family: var(--label);
-  font-size: 11.5px;
-  color: var(--ink-faint);
+  font-size: 12.5px;
+  color: var(--ink-muted);
 }
 
 .periodoLeyes {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--positive);
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid rgba(34, 197, 94, 0.25);
   border-radius: 4px;
-  padding: 1px 7px;
+  padding: 2px 8px;
 }
 
 .gaugeTrack {
@@ -797,4 +987,15 @@
   .container { padding-top: 28px; gap: 32px; }
 
   .pcArrow { opacity: 1; }
+
+  /* Mejorar layout de períodos en móvil:
+     Cada fila apila el label arriba y los números abajo en lugar
+     de intentar meterlos en una sola línea que se corta. */
+  .periodoRow { padding: 14px 16px; gap: 8px; }
+  .periodoInfo { flex-direction: column; gap: 4px; align-items: flex-start; }
+  .periodoNums { gap: 8px; }
+  .periodoLabel { font-size: 14px; }
+  .periodoTotal { font-size: 12px; }
 }
+
+/* historial* — eliminado, fusionado en periodoRow */

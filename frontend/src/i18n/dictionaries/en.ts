@@ -36,6 +36,7 @@ export const en: Dictionary = {
     inicio: 'Home',
     proyectos: 'Bills',
     diputados: 'Legislators',
+    partidos: 'Parties',
     estadisticas: 'Statistics',
     acerca: 'About',
     menuOpen: 'Open menu',
@@ -71,6 +72,15 @@ export const en: Dictionary = {
       labelMasActivoPrefix: 'bills led by the most active legislator',
       labelEficaciaFallback: 'best effectiveness',
       labelEficaciaPrefix: 'effectiveness over 10 years from the most effective legislator',
+    },
+    partidos: {
+      title: 'Parties',
+      promise:
+        'Discover each party\'s legislative weight: proposals, approved laws, and effectiveness.',
+      cta: 'View parties',
+      labelPartidosFallback: 'parties with legislative activity',
+      labelMasActivoPrefix: 'proposals from the most active party',
+      labelMayorTasaPrefix: 'approval rate of the most effective party',
     },
     estadisticas: {
       title: 'Statistics',
@@ -300,7 +310,7 @@ export const en: Dictionary = {
     propositoSubtitle: 'Democratize access to information',
     propositoQuote: 'We make it easier to access the public information the Assembly already shares, so it reaches more people.',
     propositoP1: 'The Legislative Assembly of Costa Rica maintains an exemplary commitment to transparency by publishing all of its activity through the Legislative Information System (SIL): files, legislator signatures, progress through commissions, and much more.',
-    propositoP2: 'Our project exists to amplify that effort. We take the same public data and present it in a visual, intuitive way so anyone — regardless of their background — can explore and understand the country’s legislative work.',
+    propositoP2: 'Our project exists to amplify that effort. We take the same public data and present it in a visual, intuitive way so anyone, regardless of their background, can explore and understand the country’s legislative work.',
 
     compromisoTitle: 'Our Commitment',
     compromisoSubtitle: 'Inform with clarity and neutrality',
@@ -480,6 +490,11 @@ export const en: Dictionary = {
     statActivoDesdeLabel: 'Active since',
     statActivoDesdeHelp: 'Year of their first recorded bill.',
 
+    partidosTitle: 'Political history',
+    partidosDesc: 'Political parties they have participated with in the Assembly.',
+    partidoActual: 'Current / Latest party',
+    partidosAnteriores: 'Previous parties',
+
     periodosTitle: 'Which legislative terms they worked in',
     periodosDesc: 'How their activity was distributed over time. The green bar shows how many of their bills became law.',
     proyectoSingular: 'bill',
@@ -548,6 +563,59 @@ export const en: Dictionary = {
     verMasRestantes: (n: number) => `${n} remaining`,
     proyectoSingular: 'bill',
     proyectoPlural: 'bills',
+  },
+
+  partidosPage: {
+    heroEyebrow: 'Political parties',
+    heroDescPrefix: 'Explore the legislative activity of Costa Rica\'s political parties.',
+    searchPlaceholder: 'Search party…',
+    filterPeriodo: 'Term',
+    cualquierPeriodo: 'Any term',
+    limpiar: 'Clear',
+    cargando: 'Loading…',
+    ordenadosPor: 'Sorted by number of proposals',
+    propuestasSingular: 'proposal',
+    propuestasPlural: 'proposals',
+    leyesSingular: 'approved law',
+    leyesPlural: 'approved laws',
+    diputadosSingular: 'historical legislator',
+    diputadosPlural: 'historical legislators',
+    tasaAprobacion: 'approval rate',
+    sinResultadosTitle: 'No results',
+    sinResultadosDesc: 'No parties with activity in that term.',
+    verPerfil: 'View profile →',
+  },
+
+  partidoDetalle: {
+    backToList: 'Back to parties',
+    heroEyebrow: 'Political party',
+    heroSub: 'Legislative Assembly of Costa Rica',
+
+    statPropuestasLabel: 'Total proposals',
+    statPropuestasHelp: 'Bills submitted by legislators from this party.',
+    statLeyesLabel: 'Approved laws',
+    statLeyesHelp: 'How many of their proposals became law.',
+    statEficaciaLabel: 'Effectiveness',
+    statEficaciaHelp: 'Out of every 100 proposals, how many become law.',
+    statDiputadosLabel: 'Historical legislators',
+    statDiputadosHelp: 'Total legislators registered in the party.',
+
+    administracionTitle: 'Activity by legislative term',
+    administracionDesc: 'How the party\'s activity was distributed across each administration.',
+    propuestaSingular: 'proposal',
+    propuestaPlural: 'proposals',
+    leySingular: 'law',
+    leyPlural: 'laws',
+    dipSingular: 'legislator',
+    dipPlural: 'legislators',
+
+    topDiputadosTitle: 'Most active legislators in the party',
+    topDiputadosDesc: 'By number of bills submitted while belonging to the party.',
+
+    categoriasTitle: 'Most frequent topics',
+    categoriasDesc: 'The topics this party most often pushed in the Assembly.',
+
+    verProyectosPartido: 'View party bills',
   },
 
   proyectosPage: {

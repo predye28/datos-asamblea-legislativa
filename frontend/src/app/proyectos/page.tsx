@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, Suspense, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { ProyectoResumen, Categoria, Paginacion } from '@/lib/api'
+import type { ProyectoResumen, Categoria, Paginacion, PartidoResumen } from '@/lib/api'
+import { getPaletaPartido } from '@/lib/partidos'
 import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
 import { getPeriodos, useLegislativePeriods } from '@/lib/periodos'
 import { getEstadoFiltros } from '@/lib/estados'
@@ -169,6 +170,7 @@ function ProyectosContent() {
   const [periodo, setPeriodo]     = useState(() => searchParams.get('periodo') || '')
   const [orden, setOrden]         = useState(() => searchParams.get('orden') || 'reciente')
   const [estado, setEstado]       = useState(() => searchParams.get('estado') || '')
+  const [partido, setPartido]     = useState(() => searchParams.get('partido') || '')
   const [pagina, setPagina]       = useState(() => {
     const p = parseInt(searchParams.get('pagina') || '1', 10)
     return Number.isFinite(p) && p >= 1 ? p : 1
@@ -178,10 +180,11 @@ function ProyectosContent() {
   const [paginacion, setPaginacion] = useState<Paginacion | null>(null)
   const [loading, setLoading]       = useState(true)
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  // Se activa cuando termina la primera carga, para que la animación de la
-  // barra de filtros se ejecute justo cuando el usuario está mirando el
-  // contenido (no antes, mientras todavía hay skeleton).
-  const [filtersAnimated, setFiltersAnimated] = useState(false)
+  const [partidos, setPartidos]     = useState<PartidoResumen[]>([])
+  // Filtros visibles de inmediato, sin esperar la primera carga de datos.
+  const [filtersAnimated, setFiltersAnimated] = useState(true)
+  // Controla si el panel de filtros está expandido en móvil
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const legislativePeriods = useLegislativePeriods()
 
   useEffect(() => {
@@ -195,15 +198,23 @@ function ProyectosContent() {
     return () => { cancelled = true }
   }, [])
 
-  // Dispara la animación de la barra de filtros una sola vez, cuando termina
-  // la primera carga de proyectos. Un pequeño retardo asegura que el
-  // contenido ya esté visible antes del "reveal".
+  // Carga partidos solo cuando hay un período legislativo cuadrienal seleccionado
   useEffect(() => {
-    if (!loading && !filtersAnimated) {
-      const t = setTimeout(() => setFiltersAnimated(true), 120)
-      return () => clearTimeout(t)
+    const legPeriod = legislativePeriods.find(p => p.label === periodo)
+    if (!legPeriod) {
+      setPartidos([])
+      setPartido('')
+      return
     }
-  }, [loading, filtersAnimated])
+    let cancelled = false
+    queueMicrotask(async () => {
+      try {
+        const r = await api.partidos.listar(periodo)
+        if (!cancelled) setPartidos(r.datos)
+      } catch { /* noop */ }
+    })
+    return () => { cancelled = true }
+  }, [periodo, legislativePeriods])
 
   useEffect(() => {
     const qs = new URLSearchParams()
@@ -211,6 +222,7 @@ function ProyectosContent() {
     if (categoria)          qs.set('categoria', categoria)
     if (periodo)            qs.set('periodo', periodo)
     if (estado)             qs.set('estado', estado)
+    if (partido)            qs.set('partido', partido)
     if (orden !== 'reciente') qs.set('orden', orden)
     if (pagina > 1)         qs.set('pagina', String(pagina))
     const next = qs.toString()
@@ -218,9 +230,9 @@ function ProyectosContent() {
     if (next !== current) {
       router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
     }
-  }, [query, categoria, periodo, orden, estado, pagina, pathname, router, searchParams])
+  }, [query, categoria, periodo, orden, estado, partido, pagina, pathname, router, searchParams])
 
-  const prevFiltersRef = useRef({ query, categoria, periodo, orden, estado, pagina })
+  const prevFiltersRef = useRef({ query, categoria, periodo, orden, estado, partido, pagina })
   useEffect(() => {
     const prev = prevFiltersRef.current
     const onlyQueryChanged =
@@ -229,8 +241,9 @@ function ProyectosContent() {
       prev.periodo === periodo &&
       prev.orden === orden &&
       prev.estado === estado &&
+      prev.partido === partido &&
       prev.pagina === pagina
-    prevFiltersRef.current = { query, categoria, periodo, orden, estado, pagina }
+    prevFiltersRef.current = { query, categoria, periodo, orden, estado, partido, pagina }
 
     const delay = onlyQueryChanged ? 350 : 0
     let cancelled = false
@@ -243,11 +256,16 @@ function ProyectosContent() {
         const legPeriod = legislativePeriods.find(p => p.label === periodo)
 
         const trimmedQuery = query.trim()
+        const partidoId = partido ? parseInt(partido, 10) : undefined
         let result
         if (trimmedQuery.length >= 2) {
           result = await api.proyectos.buscar(
             trimmedQuery, pagina,
             legPeriod?.desde || desde, legPeriod?.hasta,
+            estado || undefined,
+            orden,
+            categoria || undefined,
+            partidoId
           )
         } else {
           result = await api.proyectos.list({
@@ -258,6 +276,7 @@ function ProyectosContent() {
             estado: estado || undefined,
             orden,
             categoria: categoria || undefined,
+            partido_id: partidoId,
           })
         }
         if (cancelled) return
@@ -273,20 +292,30 @@ function ProyectosContent() {
       }
     }, delay)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [query, categoria, periodo, orden, estado, pagina, legislativePeriods])
+  }, [query, categoria, periodo, orden, estado, partido, pagina, legislativePeriods])
 
   const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
   const onCategoriaChange = (v: string) => { setPagina(1); setCategoria(v) }
-  const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v) }
+  const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v); setPartido('') }
   const onOrdenChange = (v: string) => { setPagina(1); setOrden(v) }
   const onEstadoChange = (v: string) => { setPagina(1); setEstado(v) }
+  const onPartidoChange = (v: string) => { setPagina(1); setPartido(v) }
 
   const clearFilters = () => {
     setQuery(''); setCategoria(''); setPeriodo('')
-    setOrden('reciente'); setEstado(''); setPagina(1)
+    setOrden('reciente'); setEstado(''); setPartido(''); setPagina(1)
   }
 
-  const hasFilters = !!(query || categoria || periodo || estado || orden !== 'reciente')
+  const hasFilters = !!(query || categoria || periodo || estado || partido || orden !== 'reciente')
+  const activeFiltersCount = [categoria, periodo, estado, partido, orden !== 'reciente' ? orden : ''].filter(Boolean).length
+
+  const partidoOptions = useMemo(() => [
+    { value: '', label: 'Todos los partidos' },
+    ...partidos.map(p => {
+      const paleta = getPaletaPartido(p.codigo)
+      return { value: String(p.id), label: p.nombre, color: paleta.bg }
+    }),
+  ], [partidos])
 
   const totalStr = paginacion
     ? `${paginacion.total.toLocaleString(dict.common.locale)} ${paginacion.total !== 1 ? dict.proyectosPage.proyectoPlural : dict.proyectosPage.proyectoSingular}`
@@ -330,6 +359,87 @@ function ProyectosContent() {
       </section>
 
       <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
+        {/* ── Vista móvil: botón toggle + panel colapsable ── */}
+        <div className={styles.filtersMobileHeader}>
+          <span className={styles.filtersLabel}><IconFilter /> {dict.proyectosPage.filtersLabel}</span>
+          <button
+            className={`${styles.filtersMobileToggle} ${filtersOpen ? styles.filtersMobileToggleOpen : ''}`}
+            onClick={() => setFiltersOpen(v => !v)}
+            aria-expanded={filtersOpen}
+          >
+            {activeFiltersCount > 0 && (
+              <span className={styles.filtersBadge}>{activeFiltersCount}</span>
+            )}
+            <span className={styles.filtersMobileToggleLabel}>
+              {filtersOpen ? 'Cerrar' : 'Filtros'}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: filtersOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          {hasFilters && (
+            <button className={styles.filtersMobileClear} onClick={clearFilters}>
+              <IconX /> Limpiar
+            </button>
+          )}
+        </div>
+
+        {/* Panel colapsable en móvil */}
+        {filtersOpen && (
+          <div className={styles.filtersMobilePanel}>
+            <FilterPill
+              value={categoria}
+              onChange={v => { onCategoriaChange(v); }}
+              placeholder={dict.proyectosPage.todosTemas}
+              options={[
+                { value: '', label: dict.proyectosPage.todosTemas },
+                ...categorias.map(c => ({ value: c.slug, label: c.nombre })),
+              ]}
+            />
+            <FilterPill
+              value={periodo}
+              onChange={v => { onPeriodoChange(v); }}
+              placeholder={dict.proyectosPage.cualquierPeriodo}
+              options={[
+                { value: '', label: dict.proyectosPage.cualquierPeriodo },
+                ...getPeriodos().map(p => ({ value: p.label, label: p.label })),
+                ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
+              ]}
+            />
+            {partidos.length > 0 && (
+              <FilterPill
+                value={partido}
+                onChange={v => { onPartidoChange(v); }}
+                placeholder="Todos los partidos"
+                active={!!partido}
+                options={partidoOptions}
+              />
+            )}
+            <FilterPill
+              value={estado}
+              onChange={v => { onEstadoChange(v); }}
+              placeholder={dict.proyectosPage.todosEstados}
+              active={!!estado}
+              options={estadoFiltros}
+            />
+            <FilterPill
+              value={orden}
+              onChange={v => { onOrdenChange(v); }}
+              placeholder={dict.proyectosPage.masRecientes}
+              active={orden !== 'reciente'}
+              options={[
+                { value: 'reciente',   label: dict.proyectosPage.masRecientes },
+                { value: 'antiguo',    label: dict.proyectosPage.masAntiguos },
+                { value: 'expediente', label: dict.proyectosPage.numExpediente },
+                { value: 'titulo_az',  label: dict.proyectosPage.tituloAZ },
+                { value: 'titulo_za',  label: dict.proyectosPage.tituloZA },
+              ]}
+            />
+          </div>
+        )}
+
+        {/* ── Vista escritorio: fila inline ── */}
         <div className={styles.filtersInner}>
           <span className={styles.filtersLabel}><IconFilter /> {dict.proyectosPage.filtersLabel}</span>
 
@@ -353,6 +463,15 @@ function ProyectosContent() {
                 ...legislativePeriods.map(p => ({ value: p.label, label: p.label })),
               ]}
             />
+            {partidos.length > 0 && (
+              <FilterPill
+                value={partido}
+                onChange={onPartidoChange}
+                placeholder="Todos los partidos"
+                active={!!partido}
+                options={partidoOptions}
+              />
+            )}
             <FilterPill
               value={estado}
               onChange={onEstadoChange}
@@ -411,6 +530,16 @@ function ProyectosContent() {
                     <button onClick={() => onPeriodoChange('')} aria-label={dict.proyectosPage.quitarPeriodo}><IconX /></button>
                   </span>
                 )}
+                {partido && (() => {
+                  const p = partidos.find(pt => String(pt.id) === partido)
+                  const paleta = p ? getPaletaPartido(p.codigo) : null
+                  return (
+                    <span className={styles.chip} style={paleta ? { background: paleta.soft, borderColor: paleta.border, color: paleta.bg } : undefined}>
+                      {p?.nombre ?? 'Partido'}
+                      <button onClick={() => onPartidoChange('')} aria-label="Quitar partido"><IconX /></button>
+                    </span>
+                  )
+                })()}
                 {estado && (
                   <span className={styles.chip}>
                     {estadoFiltros.find(e => e.value === estado)?.label ?? estado}
@@ -448,22 +577,8 @@ function ProyectosContent() {
           )}
 
           {paginacion && paginacion.total_paginas > 1 && !loading && (
-            <div className={styles.pagination}>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={pagina <= 1}
-                onClick={() => { setPagina(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                aria-label={dict.proyectosPage.primeraPaginaAria}
-                title={dict.proyectosPage.primeraPaginaTitle}
-              >«</Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={pagina <= 1}
-                onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              >{dict.proyectosPage.paginaAnterior}</Button>
-
+            <nav className={styles.pagination} aria-label={dict.proyectosPage.paginacionAria ?? 'Paginación'}>
+              {/* Fila 1: números de página */}
               <div className={styles.pageNums}>
                 {Array.from({ length: Math.min(paginacion.total_paginas, 5) }, (_, i) => {
                   const totalPages = paginacion.total_paginas
@@ -487,22 +602,48 @@ function ProyectosContent() {
                 })}
               </div>
 
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={pagina >= paginacion.total_paginas}
-                onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-              >{dict.proyectosPage.paginaSiguiente}</Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={pagina >= paginacion.total_paginas}
-                onClick={() => { setPagina(paginacion.total_paginas); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                aria-label={dict.proyectosPage.ultimaPaginaAria}
-                title={dict.proyectosPage.ultimaPaginaTitle}
-              >»</Button>
-            </div>
+              {/* Fila 2: controles de navegación */}
+              <div className={styles.paginationNav}>
+                <Button
+                  className={styles.hideMobile}
+                  variant="secondary"
+                  size="sm"
+                  disabled={pagina <= 1}
+                  onClick={() => { setPagina(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  aria-label={dict.proyectosPage.primeraPaginaAria}
+                  title={dict.proyectosPage.primeraPaginaTitle}
+                >«</Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={pagina <= 1}
+                  onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                >{dict.proyectosPage.paginaAnterior}</Button>
+
+                <span className={styles.pageInfo}>{pagina} / {paginacion.total_paginas}</span>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={pagina >= paginacion.total_paginas}
+                  onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                >{dict.proyectosPage.paginaSiguiente}</Button>
+
+                <Button
+                  className={styles.hideMobile}
+                  variant="secondary"
+                  size="sm"
+                  disabled={pagina >= paginacion.total_paginas}
+                  onClick={() => { setPagina(paginacion.total_paginas); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  aria-label={dict.proyectosPage.ultimaPaginaAria}
+                  title={dict.proyectosPage.ultimaPaginaTitle}
+                >»</Button>
+              </div>
+            </nav>
           )}
+
+
 
         </div>
       </div>

@@ -26,6 +26,13 @@ from models import (
     OrganoActividad,
     ProyectosPorCategoria,
     DiputadoEficacia,
+    MetricasPartidosResponse,
+    MetricasPartidosResumenResponse,
+    EstadisticaPartido,
+    PerfilPartidoResponse,
+    DiputadoPartidoItem,
+    PeriodoPartido,
+    CategoriaPartido,
 )
 
 router = APIRouter()
@@ -480,13 +487,15 @@ def _like_escape(s: str) -> str:
 
 @router.get("/metricas/diputados", summary="Ranking y búsqueda completa de diputados")
 def diputados_ranking(
-    desde: Optional[date] = Query(None),
-    hasta: Optional[date] = Query(None),
-    q:     Optional[str]  = Query(None, max_length=120),
+    desde:      Optional[date] = Query(None),
+    hasta:      Optional[date] = Query(None),
+    q:          Optional[str]  = Query(None, max_length=120),
+    partido_id: Optional[int]  = Query(None, ge=1, description="Filtrar por ID de partido político"),
 ):
     """
     Lista de diputados ordenada por cantidad de proyectos.
     Si se proporciona `q`, ignora el rango de fechas.
+    Opcionalmente filtrable por partido_id.
     """
     _validar_rango_fechas(desde, hasta)
 
@@ -512,29 +521,75 @@ def diputados_ranking(
             condiciones.append("p.fecha_inicio <= %s")
             params.append(hasta)
 
+    # Filtro por partido: únicamente diputados que en algún momento del período
+    # pertenecieron al partido solicitado
+    partido_join = ""
+    if partido_id:
+        partido_join = """
+            JOIN historial_diputados hfilt ON
+                unaccent(LOWER(TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, ''))))
+                    = unaccent(LOWER(TRIM(hfilt.apellidos || ' ' || hfilt.nombre)))
+                AND hfilt.partido_id = %s
+        """
+        params_partido = [partido_id]
+    else:
+        params_partido = []
+
     where_clause = "WHERE " + " AND ".join(condiciones)
 
+    # Sub-query para obtener partido actual del diputado según el período
     query_str = f"""
         SELECT
             pr.apellidos,
             pr.nombre,
-            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos
+            COUNT(DISTINCT pr.proyecto_id) AS total_proyectos,
+            (
+                SELECT h2.partido_id
+                FROM historial_diputados h2
+                WHERE unaccent(LOWER(h2.apellidos || ' ' || h2.nombre))
+                    = unaccent(LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)))
+                ORDER BY h2.administracion DESC, h2.fecha_desde DESC NULLS LAST
+                LIMIT 1
+            ) AS partido_id,
+            (
+                SELECT pt.codigo
+                FROM historial_diputados h2
+                JOIN partidos pt ON pt.id = h2.partido_id
+                WHERE unaccent(LOWER(h2.apellidos || ' ' || h2.nombre))
+                    = unaccent(LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)))
+                ORDER BY h2.administracion DESC, h2.fecha_desde DESC NULLS LAST
+                LIMIT 1
+            ) AS partido_codigo,
+            (
+                SELECT pt.nombre
+                FROM historial_diputados h2
+                JOIN partidos pt ON pt.id = h2.partido_id
+                WHERE unaccent(LOWER(h2.apellidos || ' ' || h2.nombre))
+                    = unaccent(LOWER(CONCAT(pr.apellidos, ' ', pr.nombre)))
+                ORDER BY h2.administracion DESC, h2.fecha_desde DESC NULLS LAST
+                LIMIT 1
+            ) AS partido_nombre
         FROM proponentes pr
         JOIN proyectos p ON p.id = pr.proyecto_id
+        {partido_join}
         {where_clause}
         GROUP BY pr.apellidos, pr.nombre
         ORDER BY total_proyectos DESC
     """
-    
-    diputado_rows = fetchall(query_str, tuple(params))
-    
+
+    all_params = tuple(params_partido + params)
+    diputado_rows = fetchall(query_str, all_params)
+
     datos = [
-        DiputadoRanking(
-            apellidos=r["apellidos"] or "",
-            nombre=r["nombre"] or "",
-            nombre_completo=(f"{r['apellidos'] or ''} {r['nombre'] or ''}").strip(),
-            total_proyectos=r["total_proyectos"],
-        )
+        {
+            "apellidos":       r["apellidos"] or "",
+            "nombre":          r["nombre"] or "",
+            "nombre_completo": (f"{r['apellidos'] or ''} {r['nombre'] or ''}").strip(),
+            "total_proyectos": r["total_proyectos"],
+            "partido_id":      r.get("partido_id"),
+            "partido_codigo":  r.get("partido_codigo"),
+            "partido_nombre":  r.get("partido_nombre"),
+        }
         for r in diputado_rows
     ]
 
@@ -587,13 +642,9 @@ def perfil_diputado(nombre_completo: str):
     # ── 2. Proyectos por período legislativo ──────────────────────────
     por_periodo = fetchall(f"""
         SELECT
-            CASE
-                WHEN p.fecha_inicio BETWEEN '2022-05-01' AND '2026-04-30' THEN '2022-2026'
-                WHEN p.fecha_inicio BETWEEN '2018-05-01' AND '2022-04-30' THEN '2018-2022'
-                WHEN p.fecha_inicio BETWEEN '2014-05-01' AND '2018-04-30' THEN '2014-2018'
-                WHEN p.fecha_inicio BETWEEN '2010-05-01' AND '2014-04-30' THEN '2010-2014'
-                ELSE 'Otro'
-            END AS periodo,
+            (FLOOR((EXTRACT(YEAR FROM p.fecha_inicio - INTERVAL '4 months') - 1994) / 4) * 4 + 1994)::int::text
+            || '-' ||
+            (FLOOR((EXTRACT(YEAR FROM p.fecha_inicio - INTERVAL '4 months') - 1994) / 4) * 4 + 1998)::int::text AS periodo,
             COUNT(DISTINCT pr.proyecto_id) AS total,
             COUNT(DISTINCT CASE WHEN p.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes
         FROM proponentes pr
@@ -636,6 +687,21 @@ def perfil_diputado(nombre_completo: str):
         LIMIT 10
     """, search_params_general)
 
+    # ── 5. Historial de partidos ──────────────────────────────────────
+    historial_partidos = fetchall(f"""
+        SELECT
+            h.partido_id,
+            p.codigo AS partido_codigo,
+            p.nombre AS partido_nombre,
+            h.administracion,
+            h.fecha_desde,
+            h.fecha_hasta
+        FROM historial_diputados h
+        JOIN partidos p ON p.id = h.partido_id
+        WHERE unaccent(LOWER(h.apellidos || ' ' || h.nombre)) = unaccent(LOWER(%s))
+        ORDER BY h.administracion DESC, h.fecha_desde DESC NULLS LAST
+    """, (nombre_norm,))
+
     total = general.get("total_proyectos") or 0
     total_leyes = general.get("total_leyes") or 0
 
@@ -649,5 +715,361 @@ def perfil_diputado(nombre_completo: str):
         "por_periodo": [dict(r) for r in por_periodo],
         "temas": [dict(r) for r in temas],
         "ultimos_proyectos": [dict(r) for r in ultimos],
+        "historial_partidos": [dict(r) for r in historial_partidos],
     }
+
+
+# ══════════════════════════════════════════════════════════════════════
+# MÉTRICAS POR PARTIDO POLÍTICO
+# ══════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/metricas/partidos",
+    response_model=MetricasPartidosResponse,
+    summary="Estadísticas de propuestas y leyes aprobadas por partido político",
+)
+def metricas_partidos(
+    administracion: str = Query(
+        ...,
+        description="Administración legislativa requerida, ej. '2022-2026'",
+        max_length=20,
+    ),
+):
+    """
+    Para una administración legislativa específica, devuelve:
+    - Propuestas presentadas por partido
+    - Leyes aprobadas por partido
+    - Tasa de aprobación de cada partido
+    - Porcentaje de propuestas sobre el total del período
+
+    Solo considera proponentes que pueden ser resueltos a un partido a través
+    de historial_diputados. Agrupa bajo "Independiente" a diputados sin
+    afiliación a partido formal.
+    """
+    cache_key = f"metricas_partidos:{administracion}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    rows = fetchall(
+        """
+        WITH propuestas AS (
+            SELECT
+                CASE
+                    WHEN p.nombre ILIKE 'DIPUTAD%%INDEPENDIENTE%%' THEN -1
+                    ELSE p.id
+                END                                                                      AS partido_id,
+                CASE
+                    WHEN p.nombre ILIKE 'DIPUTAD%%INDEPENDIENTE%%' THEN 'IND'
+                    ELSE p.codigo
+                END                                                                      AS codigo,
+                CASE
+                    WHEN p.nombre ILIKE 'DIPUTAD%%INDEPENDIENTE%%' THEN 'Independiente'
+                    ELSE p.nombre
+                END                                                                      AS nombre,
+                COUNT(DISTINCT pr.proyecto_id)                                           AS total_propuestas,
+                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+            FROM proponentes pr
+            JOIN proyectos proy ON proy.id = pr.proyecto_id
+            JOIN historial_diputados h ON
+                unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+                AND h.administracion = %(adm)s
+                AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+                AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+            JOIN partidos p ON p.id = h.partido_id
+            WHERE proy.fecha_inicio IS NOT NULL
+            GROUP BY 1, 2, 3
+        ),
+        diputados_count AS (
+            SELECT
+                CASE
+                    WHEN p.nombre ILIKE 'DIPUTAD%%INDEPENDIENTE%%' THEN 'IND'
+                    ELSE p.codigo
+                END AS codigo,
+                COUNT(DISTINCT h.id) AS total_diputados
+            FROM historial_diputados h
+            JOIN partidos p ON p.id = h.partido_id
+            WHERE h.administracion = %(adm)s
+            GROUP BY 1
+        )
+        SELECT
+            pr.partido_id,
+            pr.codigo,
+            pr.nombre,
+            COALESCE(dc.total_diputados, 0) AS total_diputados,
+            pr.total_propuestas,
+            pr.leyes_aprobadas
+        FROM propuestas pr
+        LEFT JOIN diputados_count dc ON dc.codigo = pr.codigo
+        ORDER BY pr.total_propuestas DESC
+        """,
+        {"adm": administracion},
+    )
+
+    total_propuestas = sum(r["total_propuestas"] for r in rows)
+
+    por_partido = [
+        EstadisticaPartido(
+            partido_id=r["partido_id"],
+            codigo=r["codigo"],
+            nombre=r["nombre"],
+            total_diputados=r["total_diputados"],
+            total_propuestas=r["total_propuestas"],
+            leyes_aprobadas=r["leyes_aprobadas"],
+            tasa_aprobacion=round(
+                (r["leyes_aprobadas"] / r["total_propuestas"] * 100)
+                if r["total_propuestas"] else 0.0, 1
+            ),
+            pct_propuestas=round(
+                (r["total_propuestas"] / total_propuestas * 100)
+                if total_propuestas else 0.0, 1
+            ),
+        )
+        for r in rows
+    ]
+
+    resp = MetricasPartidosResponse(
+        administracion=administracion,
+        total_propuestas=total_propuestas,
+        por_partido=por_partido,
+    )
+    _cache_set(cache_key, resp)
+    return resp
+
+
+@router.get(
+    "/metricas/partidos/resumen",
+    response_model=MetricasPartidosResumenResponse,
+    summary="Estadísticas globales (todos los períodos) por partido",
+)
+def metricas_partidos_resumen():
+    """
+    Estadísticas de propuestas y leyes por partido, sin filtro de administración.
+    Usa las fechas de cada proyecto para resolver el partido correcto del proponente,
+    evitando doble-conteo entre períodos.
+    """
+    cache_key = "metricas_partidos_resumen"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    rows = fetchall("""
+        WITH propuestas AS (
+            SELECT
+                p.id    AS partido_id,
+                p.codigo,
+                p.nombre,
+                COUNT(DISTINCT pr.proyecto_id)                                           AS total_propuestas,
+                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+            FROM proponentes pr
+            JOIN proyectos proy ON proy.id = pr.proyecto_id
+            JOIN historial_diputados h ON
+                unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+                AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+                AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+            JOIN partidos p ON p.id = h.partido_id
+            WHERE proy.fecha_inicio IS NOT NULL
+              AND p.nombre NOT ILIKE 'DIPUTAD%%INDEPENDIENTE%%'
+            GROUP BY p.id, p.codigo, p.nombre
+        ),
+        diputados_count AS (
+            SELECT partido_id, COUNT(DISTINCT TRIM(apellidos || ' ' || nombre)) AS total_diputados
+            FROM historial_diputados
+            GROUP BY partido_id
+        )
+        SELECT pr.partido_id, pr.codigo, pr.nombre,
+               COALESCE(d.total_diputados, 0) AS total_diputados,
+               pr.total_propuestas, pr.leyes_aprobadas
+        FROM propuestas pr
+        LEFT JOIN diputados_count d ON d.partido_id = pr.partido_id
+        WHERE pr.total_propuestas > 0
+        ORDER BY pr.total_propuestas DESC
+    """)
+
+    total_propuestas = sum(r["total_propuestas"] for r in rows)
+
+    por_partido = [
+        EstadisticaPartido(
+            partido_id=r["partido_id"],
+            codigo=r["codigo"],
+            nombre=r["nombre"],
+            total_diputados=r["total_diputados"],
+            total_propuestas=r["total_propuestas"],
+            leyes_aprobadas=r["leyes_aprobadas"],
+            tasa_aprobacion=round(
+                (r["leyes_aprobadas"] / r["total_propuestas"] * 100)
+                if r["total_propuestas"] else 0.0, 1
+            ),
+            pct_propuestas=round(
+                (r["total_propuestas"] / total_propuestas * 100)
+                if total_propuestas else 0.0, 1
+            ),
+        )
+        for r in rows
+    ]
+
+    resp = MetricasPartidosResumenResponse(
+        total_propuestas=total_propuestas,
+        por_partido=por_partido,
+    )
+    _cache_set(cache_key, resp)
+    return resp
+
+
+@router.get(
+    "/metricas/partidos/{codigo}/perfil",
+    response_model=PerfilPartidoResponse,
+    summary="Perfil detallado de un partido político",
+)
+def perfil_partido(codigo: str):
+    """
+    Perfil completo de un partido: métricas globales, desglose por administración,
+    top diputados y temas más frecuentes.
+    """
+    cache_key = f"perfil_partido:{codigo.upper()}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    info = fetchone(
+        "SELECT id, codigo, nombre FROM partidos WHERE UPPER(codigo) = UPPER(%s)",
+        (codigo,),
+    )
+    if not info:
+        raise HTTPException(status_code=404, detail="Partido no encontrado")
+
+    partido_id = info["id"]
+
+    # ── Stats globales ─────────────────────────────────────────────────
+    stats = fetchone("""
+        SELECT
+            COUNT(DISTINCT pr.proyecto_id)                                               AS total_propuestas,
+            COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas,
+            COUNT(DISTINCT TRIM(h.apellidos || ' ' || h.nombre))                          AS total_diputados
+        FROM proponentes pr
+        JOIN proyectos proy ON proy.id = pr.proyecto_id
+        JOIN historial_diputados h ON
+            unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+            AND h.partido_id = %s
+            AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+            AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+        WHERE proy.fecha_inicio IS NOT NULL
+    """, (partido_id,)) or {}
+
+    # ── Por administración ─────────────────────────────────────────────
+    por_adm_rows = fetchall("""
+        SELECT
+            h.administracion,
+            COUNT(DISTINCT pr.proyecto_id)                                               AS total_propuestas,
+            COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas,
+            COUNT(DISTINCT TRIM(h.apellidos || ' ' || h.nombre))                          AS total_diputados
+        FROM proponentes pr
+        JOIN proyectos proy ON proy.id = pr.proyecto_id
+        JOIN historial_diputados h ON
+            unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+            AND h.partido_id = %s
+            AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+            AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+        WHERE proy.fecha_inicio IS NOT NULL
+        GROUP BY h.administracion
+        ORDER BY h.administracion DESC
+    """, (partido_id,))
+
+    # ── Top diputados ──────────────────────────────────────────────────
+    top_dip_rows = fetchall("""
+        SELECT
+            TRIM(h.apellidos || ' ' || h.nombre)                                         AS nombre_completo,
+            h.apellidos,
+            h.nombre,
+            COUNT(DISTINCT pr.proyecto_id)                                               AS total_proyectos,
+            COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+        FROM proponentes pr
+        JOIN proyectos proy ON proy.id = pr.proyecto_id
+        JOIN historial_diputados h ON
+            unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+            AND h.partido_id = %s
+            AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+            AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+        WHERE proy.fecha_inicio IS NOT NULL
+        GROUP BY nombre_completo, h.apellidos, h.nombre
+        ORDER BY total_proyectos DESC
+        LIMIT 10
+    """, (partido_id,))
+
+    # ── Por categoría ──────────────────────────────────────────────────
+    por_cat_rows = fetchall("""
+        SELECT
+            c.nombre AS categoria,
+            c.slug,
+            COUNT(DISTINCT pr.proyecto_id)                                               AS total,
+            COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+        FROM proponentes pr
+        JOIN proyectos proy ON proy.id = pr.proyecto_id
+        JOIN historial_diputados h ON
+            unaccent(LOWER(pr.nombre)) = unaccent(LOWER(h.apellidos || ' ' || h.nombre))
+            AND h.partido_id = %s
+            AND (h.fecha_desde IS NULL OR proy.fecha_inicio >= h.fecha_desde)
+            AND (h.fecha_hasta IS NULL OR proy.fecha_inicio <= h.fecha_hasta)
+        JOIN proyecto_categorias pc ON pc.proyecto_id = proy.id
+        JOIN categorias c ON c.id = pc.categoria_id
+        WHERE proy.fecha_inicio IS NOT NULL
+        GROUP BY c.nombre, c.slug
+        ORDER BY total DESC
+        LIMIT 10
+    """, (partido_id,))
+
+    total = stats.get("total_propuestas") or 0
+    leyes = stats.get("leyes_aprobadas") or 0
+
+    resp = PerfilPartidoResponse(
+        partido_id=partido_id,
+        codigo=info["codigo"],
+        nombre=info["nombre"],
+        total_propuestas=total,
+        total_leyes=leyes,
+        tasa_aprobacion=round((leyes / total * 100), 1) if total else 0.0,
+        total_diputados=stats.get("total_diputados") or 0,
+        por_administracion=[
+            PeriodoPartido(
+                administracion=r["administracion"],
+                total_propuestas=r["total_propuestas"],
+                leyes_aprobadas=r["leyes_aprobadas"],
+                tasa_aprobacion=round(
+                    (r["leyes_aprobadas"] / r["total_propuestas"] * 100)
+                    if r["total_propuestas"] else 0.0, 1
+                ),
+                total_diputados=r["total_diputados"],
+            )
+            for r in por_adm_rows
+        ],
+        top_diputados=[
+            DiputadoPartidoItem(
+                nombre_completo=r["nombre_completo"],
+                apellidos=r["apellidos"] or "",
+                nombre=r["nombre"] or "",
+                total_proyectos=r["total_proyectos"],
+                leyes_aprobadas=r["leyes_aprobadas"],
+                tasa_aprobacion=round(
+                    (r["leyes_aprobadas"] / r["total_proyectos"] * 100)
+                    if r["total_proyectos"] else 0.0, 1
+                ),
+            )
+            for r in top_dip_rows
+        ],
+        por_categoria=[
+            CategoriaPartido(
+                categoria=r["categoria"],
+                slug=r["slug"],
+                total=r["total"],
+                leyes_aprobadas=r["leyes_aprobadas"],
+                tasa_aprobacion=round(
+                    (r["leyes_aprobadas"] / r["total"] * 100)
+                    if r["total"] else 0.0, 1
+                ),
+            )
+            for r in por_cat_rows
+        ],
+    )
+    _cache_set(cache_key, resp)
+    return resp
 
