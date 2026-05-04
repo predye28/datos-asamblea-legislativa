@@ -658,6 +658,7 @@ export const en: Dictionary = {
     proponentePlural: 'proponents',
     tramiteSingular: 'procedure',
     tramitePlural: 'procedures',
+    paginacionAria: 'Pagination',
   },
 }
 

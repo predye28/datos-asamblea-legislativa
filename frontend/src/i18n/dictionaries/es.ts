@@ -665,6 +665,7 @@ export const es = {
     proponentePlural: 'proponentes',
     tramiteSingular: 'trámite',
     tramitePlural: 'trámites',
+    paginacionAria: 'Paginación',
   },
 }
 
