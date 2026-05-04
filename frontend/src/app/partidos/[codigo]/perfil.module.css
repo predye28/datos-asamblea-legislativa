@@ -3,7 +3,7 @@
   background: var(--paper);
 }
 
-/* ── Back bar ── */
+/* ── Back ── */
 .backBar {
   max-width: var(--container-max);
   margin: 0 auto;
@@ -27,7 +27,7 @@
 /* ── Hero ── */
 .hero {
   position: relative;
-  padding: 32px 0 48px;
+  padding: 40px 0 52px;
   border-bottom: 1px solid var(--rule);
   overflow: hidden;
 }
@@ -35,7 +35,7 @@
 .heroDots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--hero-color, #10B981) 25%, transparent) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--hero-color, #06B6D4) 25%, transparent) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
   -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
@@ -50,52 +50,85 @@
   padding: 0 40px;
   display: flex;
   align-items: center;
-  gap: 28px;
+  justify-content: space-between;
+  gap: 32px;
 }
 
-.avatar {
-  width: 88px;
-  height: 88px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 24px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--label);
-  font-size: 18px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.95);
-  flex-shrink: 0;
-  letter-spacing: 0.05em;
+.heroText {
+  flex: 1;
+  min-width: 0;
 }
-
-.heroText { flex: 1; min-width: 0; }
 
 .heroEyebrow {
   display: inline-block;
   font-family: var(--label);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 10px;
+  color: var(--accent);
+  margin-bottom: 12px;
 }
 
 .heroName {
   font-family: var(--serif);
-  font-size: clamp(22px, 3.5vw, 36px);
-  font-weight: 800;
+  font-size: clamp(24px, 3.5vw, 42px);
+  font-weight: 900;
+  color: var(--ink);
   line-height: 1.1;
   letter-spacing: -0.025em;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .heroSub {
   font-family: var(--body);
   font-size: 13px;
   color: var(--ink-faint);
+  margin-bottom: 14px;
+}
+
+/* Info chips — debajo del heroSub */
+.heroChips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heroChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--label);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+/* Bandera grande — extremo derecho del hero */
+.heroFlag {
+  flex-shrink: 0;
+  width: 156px;
+  height: 68px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.heroFlagCode {
+  font-family: var(--label);
+  font-size: 26px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Container ── */
@@ -105,25 +138,25 @@
   padding: 40px 40px 80px;
 }
 
-/* ── Stat grid ── */
+/* ── KPI Grid ── */
 .statGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 48px;
+  gap: 14px;
+  margin-bottom: 52px;
 }
 
 .statCard {
-  background: var(--paper-warm);
+  background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.statCardLey { border-top: 3px solid #22c55e; }
+.statCardLey    { border-top: 3px solid #4ade80; }
 .statCardAccent { border-top: 3px solid var(--accent); }
 
 .statLabel {
@@ -137,15 +170,15 @@
 
 .statNum {
   font-family: var(--serif);
-  font-size: clamp(22px, 3vw, 32px);
+  font-size: clamp(24px, 3vw, 34px);
   font-weight: 900;
   color: var(--ink);
   letter-spacing: -0.03em;
   line-height: 1;
-  margin: 4px 0 2px;
+  margin: 6px 0 4px;
 }
 
-.statNumLey  { color: #22c55e; }
+.statNumLey    { color: #4ade80; }
 .statNumAccent { color: var(--accent); }
 
 .statHelp {
@@ -157,12 +190,16 @@
 
 /* ── Section ── */
 .section {
-  margin-bottom: 48px;
+  margin-bottom: 52px;
+}
+
+.sectionHead {
+  margin-bottom: 20px;
 }
 
 .sectionTitle {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -173,44 +210,68 @@
   font-family: var(--body);
   font-size: 13px;
   color: var(--ink-muted);
-  margin-bottom: 20px;
   line-height: 1.55;
 }
 
-/* ── Por administración ── */
-.admBars {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+/* ── Actividad por período legislativo ── */
+.admGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
 
-.admRow {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--rule);
+.admCard {
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 18px 20px 16px;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.admCard:hover { border-color: rgba(255,255,255,0.12); }
+
+.admCardPeak {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.12);
+}
+.admCardPeak:hover { border-color: rgba(6, 182, 212, 0.45); }
+
+.admCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
 }
-.admRow:last-child { border-bottom: none; }
 
-.admInfo {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.admLabelGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.admLabel {
+.admPeriodo {
   font-family: var(--mono);
   font-size: 13px;
   font-weight: 700;
   color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.admHeaderRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admPeakBadge {
+  font-family: var(--label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 999px;
+  padding: 2px 7px;
 }
 
 .admDips {
@@ -219,103 +280,151 @@
   color: var(--ink-faint);
 }
 
-.admNums {
+.admCardStats {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  align-items: flex-end;
+  gap: 16px;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-.admTotal {
-  font-family: var(--body);
-  font-size: 13px;
-  font-weight: 600;
+.admStatBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admStatBlockEfic {
+  margin-left: auto;
+  align-items: flex-end;
+}
+
+.admStatNum {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
   color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.admLeyes {
-  font-family: var(--body);
-  font-size: 12px;
-  color: #22c55e;
-  font-weight: 700;
+.admStatNumGreen {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
+  color: #4ade80;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.admTasa {
-  font-family: var(--mono);
-  font-size: 12px;
+.admStatNumAccent {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
   color: var(--accent);
-  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.gaugeTrack {
-  position: relative;
+.admStatNumMuted {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.admStatLabel {
+  font-family: var(--label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.admBar {
   width: 100%;
-  height: 6px;
-  background: rgba(0,0,0,0.07);
-  border-radius: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
   overflow: hidden;
 }
 
-.gaugeFill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 3px;
-  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
-  opacity: 0.85;
+.admBarFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.gaugeLey {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 3px;
-  background: #22c55e;
-  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
-}
-
-/* ── Top diputados ── */
-.dipList {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+/* ── Diputados más activos ── */
+.dipGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
 
 .dipCard {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--rule);
+  flex-direction: column;
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: background 0.15s;
+  transition: border-color 0.18s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
 }
-.dipCard:last-child { border-bottom: none; }
-.dipCard:hover { background: var(--paper-warm); }
+.dipCard:hover {
+  border-color: rgba(255,255,255,0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
 .dipCard:hover .dipArrow { opacity: 1; transform: translateX(2px); }
 
-.dipRank {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-faint);
-  min-width: 18px;
-  text-align: right;
+.dipCardInner {
+  padding: 16px 16px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.dipAvatarWrap {
+  position: relative;
   flex-shrink: 0;
 }
 
 .dipAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--serif);
-  font-size: 14px;
-  font-weight: 800;
-  flex-shrink: 0;
+  font-family: var(--label);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.dipRankBadge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--rule);
+  background: var(--paper-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink-faint);
 }
 
 .dipBody {
@@ -323,47 +432,92 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+  padding-top: 2px;
 }
 
 .dipName {
   font-family: var(--body);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--ink);
-  white-space: nowrap;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .dipMeta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--body);
-  font-size: 11.5px;
-  color: var(--ink-faint);
+  gap: 5px;
+  flex-wrap: wrap;
 }
 
-.dipLeyes {
-  color: #22c55e;
-  font-weight: 700;
+.dipMetaSep {
+  color: var(--rule);
+  font-size: 11px;
 }
 
-.dipTasa {
+.dipMetaItem {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.dipMetaVal {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.dipMetaValGreen {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #4ade80;
+  letter-spacing: -0.01em;
+}
+
+.dipMetaValAccent {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
   color: var(--accent);
-  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.dipMetaLabel {
+  font-family: var(--body);
+  font-size: 10px;
+  color: var(--ink-muted);
 }
 
 .dipArrow {
   color: var(--ink-faint);
-  opacity: 0.4;
+  opacity: 0.35;
   transition: opacity 0.15s, transform 0.15s;
   display: flex;
   flex-shrink: 0;
+  align-self: center;
 }
 
-/* ── Por categoría ── */
+.dipBar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dipBarFill {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.6;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Temas más frecuentes ── */
 .catGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -371,24 +525,61 @@
 }
 
 .catCard {
-  background: var(--paper-warm);
+  display: flex;
+  align-items: stretch;
+  background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 10px;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
+  transition: border-color 0.18s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+}
+.catCard:hover {
+  border-color: rgba(255,255,255,0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.catCard:hover .catArrow { opacity: 1; transform: translateX(2px); }
+
+/* Barra izquierda de acento */
+.catAccent {
+  width: 3px;
+  flex-shrink: 0;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+/* Cuerpo central */
+.catMain {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.catCard:hover { border-color: var(--ink-faint); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-
-.catHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   gap: 8px;
+  padding: 14px 12px 14px 14px;
+}
+
+.catTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.catRank {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  flex-shrink: 0;
 }
 
 .catNombre {
@@ -396,23 +587,17 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--ink);
-  white-space: nowrap;
+  line-height: 1.3;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.catPct {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-faint);
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .catBar {
   width: 100%;
-  height: 4px;
-  background: rgba(0,0,0,0.07);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -420,27 +605,91 @@
 .catBarFill {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
-  opacity: 0.8;
+  background: var(--accent);
+  opacity: 0.55;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .catMeta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--body);
-  font-size: 11.5px;
-  color: var(--ink-faint);
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-.catLeyes {
-  color: #22c55e;
-  font-weight: 700;
+.catMetaSep {
+  color: var(--rule);
+  font-size: 11px;
+}
+
+.catMetaItem {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.catMetaVal {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.catMetaValGreen {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: #4ade80;
+  letter-spacing: -0.01em;
+}
+
+.catMetaValAccent {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.catMetaLabel {
+  font-family: var(--body);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+/* Bloque derecho: porcentaje + flecha */
+.catRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 14px 12px 10px;
+  border-left: 1px dashed var(--rule);
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.catPct {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.catArrow {
+  color: var(--ink-faint);
+  opacity: 0.35;
+  transition: opacity 0.15s, transform 0.15s;
+  display: flex;
 }
 
 /* ── Footer link ── */
 .footerLink {
-  margin-top: 16px;
+  margin-top: 8px;
   display: flex;
   justify-content: center;
 }
@@ -454,7 +703,7 @@
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
-  padding: 10px 20px;
+  padding: 10px 22px;
   border: 1.5px solid var(--accent);
   border-radius: 999px;
   transition: background 0.15s, color 0.15s;
@@ -462,17 +711,48 @@
 .verProyectosBtn:hover { background: var(--accent); color: #fff; }
 
 /* ── Responsive ── */
+@media (max-width: 960px) {
+  .admGrid { grid-template-columns: repeat(2, 1fr); }
+  .dipGrid  { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 860px) {
   .statGrid { grid-template-columns: repeat(2, 1fr); }
-  .catGrid  { grid-template-columns: 1fr; }
+  .heroInner { padding: 0 20px; }
+  .backBar, .container { padding-left: 20px; padding-right: 20px; }
 }
 
 @media (max-width: 640px) {
-  .backBar,
-  .container { padding-left: 20px; padding-right: 20px; }
-  .heroInner { padding: 0 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
-  .hero { padding: 24px 0 36px; }
+  .hero { padding: 28px 0 40px; }
+
+  .heroInner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .heroFlag {
+    width: 120px;
+    height: 52px;
+  }
+
+  .heroFlagCode { font-size: 20px; }
+
+  .heroName { font-size: 26px; }
+
+  .heroChips { gap: 6px; }
+  .heroChip { font-size: 10px; padding: 3px 8px; }
+
   .statGrid { grid-template-columns: 1fr 1fr; }
-  .avatar { width: 64px; height: 64px; font-size: 14px; border-radius: 16px; }
-  .heroName { font-size: 22px; }
+
+  .admGrid { grid-template-columns: 1fr; }
+  .dipGrid  { grid-template-columns: 1fr; }
+  .catGrid  { grid-template-columns: 1fr; }
+
+  .admStatNum,
+  .admStatNumGreen,
+  .admStatNumAccent { font-size: 20px; }
+
+  .dipCardInner { padding: 14px 14px 12px; }
+  .dipAvatar { width: 44px; height: 44px; font-size: 15px; }
 }

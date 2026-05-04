@@ -188,6 +188,8 @@ export interface PerfilPartido {
   total_leyes: number
   tasa_aprobacion: number
   total_diputados: number
+  primer_anio?: number
+  provincia_principal?: string
   por_administracion: PeriodoPartido[]
   top_diputados: DiputadoPartidoItem[]
   por_categoria: CategoriaPartido[]

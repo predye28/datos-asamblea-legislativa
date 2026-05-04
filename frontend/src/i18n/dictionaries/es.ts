@@ -578,6 +578,7 @@ export const es = {
     searchPlaceholder: 'Buscar partido…',
     filterPeriodo: 'Período',
     cualquierPeriodo: 'Cualquier período',
+    separadorLegislativos: 'Períodos legislativos',
     limpiar: 'Limpiar',
     cargando: 'Cargando…',
     ordenadosPor: 'Ordenados por número de propuestas',

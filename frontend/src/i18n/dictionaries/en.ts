@@ -571,6 +571,7 @@ export const en: Dictionary = {
     searchPlaceholder: 'Search party…',
     filterPeriodo: 'Term',
     cualquierPeriodo: 'Any term',
+    separadorLegislativos: 'Legislative terms',
     limpiar: 'Clear',
     cargando: 'Loading…',
     ordenadosPor: 'Sorted by number of proposals',

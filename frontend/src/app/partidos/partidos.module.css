@@ -15,7 +15,7 @@
 .heroDots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(16, 185, 129, 0.18) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(circle, rgba(6, 182, 212, 0.18) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
   -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
@@ -37,7 +37,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #10B981;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
@@ -59,161 +59,229 @@
   line-height: 1.65;
 }
 
-/* ── Filters bar ── */
+/* ── Filters bar — idéntico a estadísticas ── */
 .filtersBar {
+  background: linear-gradient(180deg, #221f1c 0%, #1c1b19 100%);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: var(--nav-h);
   z-index: 40;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  opacity: 0;
+  transform: translateY(-12px);
+  overflow: visible;
+}
+
+.filtersBar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(6, 182, 212, 0.55) 35%,
+    rgba(245, 158, 11, 0.7) 50%,
+    rgba(6, 182, 212, 0.55) 65%,
+    transparent 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.filtersBar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.filtersInner > * {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+}
+
+.filtersBarReady {
+  animation: filtersBarReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.filtersBarReady::before {
+  animation: filtersTopGlow 2.6s ease-in-out 0.6s forwards;
+}
+.filtersBarReady::after {
+  animation: filtersBarSweep 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+}
+.filtersBarReady .filtersInner > * {
+  animation: filtersChildIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.filtersBarReady .filtersInner > *:nth-child(1) { animation-delay: 0.20s; }
+.filtersBarReady .filtersInner > *:nth-child(2) { animation-delay: 0.28s; }
+.filtersBarReady .filtersInner > *:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes filtersBarReveal {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes filtersBarSweep {
+  0%   { transform: scaleX(0); opacity: 0; }
+  40%  { opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes filtersChildIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes filtersTopGlow {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  100% { opacity: 0.55; }
 }
 
 .filtersInner {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 10px 40px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.filtersLeft {
+  padding: 12px 40px;
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.filtersRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
 }
 
-.filtersIcon {
-  color: var(--ink-faint);
-  display: flex;
-}
-
 .filtersLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--label);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-muted);
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-right: 4px;
+  text-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
 }
 
-.select {
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1.5px solid var(--rule);
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 13px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s;
+.filtersLabel svg {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.4));
 }
-.select:focus { border-color: #10B981; }
 
-/* ── Main container ── */
+/* ── Main + container — igual que proyectos y diputados ── */
+.main {
+  padding: 40px 0 80px;
+}
+
 .container {
-  max-width: 900px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 40px 80px;
+  padding: 0 40px;
 }
 
-/* ── List ── */
+/* ── List — igual que diputados ── */
 .list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 10px;
 }
 
-/* ── Party card ── */
+/* ── Party card — igual que diputados con acento de proyectos ── */
 .card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--rule);
+  background: var(--paper-card);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: background 0.15s;
-  border-radius: 4px;
+  transition: border-color 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
-.card:last-child { border-bottom: none; }
-.card:hover { background: var(--paper-warm); }
-.card:hover .cardArrow { opacity: 1; transform: translateX(2px); }
 
-.cardRank {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-faint);
-  min-width: 22px;
-  text-align: right;
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.card:hover .cardArrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Barra de acento izquierda — color neutro */
+.cardAccent {
+  width: 4px;
+  align-self: stretch;
   flex-shrink: 0;
+  background: var(--rule);
 }
 
-.cardSwatch {
-  width: 14px;
-  height: 40px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
+/* Cuerpo central */
 .cardBody {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  padding: 18px 16px 18px 16px;
 }
 
-.cardTop {
+.cardNameRow {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Número de ranking — badge con borde */
+.cardRank {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.5px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.cardFlag {
+  width: 52px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
 .cardName {
   font-family: var(--body);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.25;
+  color: var(--ink);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.cardCount {
-  flex-shrink: 0;
-  font-family: var(--serif);
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-}
-
-.cardCountLabel {
-  font-family: var(--body);
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--ink-faint);
+  min-width: 0;
 }
 
 .cardBar {
   width: 100%;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.07);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -221,61 +289,107 @@
 .cardBarFill {
   height: 100%;
   border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.5;
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cardMeta {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.cardMetaLeyes {
-  font-family: var(--body);
-  font-size: 12px;
-  color: var(--ink-muted);
-}
-.cardMetaLeyes strong {
-  font-family: var(--serif);
+.cardMetaSep {
+  color: var(--rule);
   font-size: 13px;
-  font-weight: 800;
-  color: #22c55e;
-  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.cardMetaTasa {
-  font-family: var(--body);
-  font-size: 12px;
-  color: var(--ink-muted);
+/* Cada stat: valor encima, etiqueta debajo — alineados verticalmente */
+.cardMetaItem {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
-.cardMetaTasa strong {
+
+.cardMetaVal {
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #4ade80;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.cardMetaValAccent {
+  font-family: var(--serif);
+  font-size: 15px;
   font-weight: 800;
   color: var(--accent);
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.cardMetaDip {
+.cardMetaValMuted {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.cardMetaLabel {
   font-family: var(--body);
   font-size: 12px;
-  color: var(--ink-faint);
-}
-.cardMetaDip strong {
-  font-weight: 700;
   color: var(--ink-muted);
+  line-height: 1;
 }
 
+/* Bloque de conteo — igual que diputados */
+.cardCount {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 8px 0 16px;
+  border-left: 1px dashed var(--rule);
+  min-width: 96px;
+}
+
+.cardCountNum {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.cardCountLabel {
+  font-family: var(--label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+/* Flecha */
 .cardArrow {
   color: var(--ink-faint);
-  opacity: 0.4;
+  opacity: 0.35;
   transition: opacity 0.15s, transform 0.15s;
   display: flex;
   flex-shrink: 0;
+  padding-right: 18px;
+  padding-left: 6px;
 }
 
-/* ── States ── */
+/* ── Estados ── */
 .loading,
 .empty {
   text-align: center;
@@ -298,7 +412,7 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 640px) {
+@media (max-width: 860px) {
   .heroInner,
   .filtersInner,
   .container {
@@ -307,10 +421,35 @@
   }
 
   .hero { padding: 40px 0 36px; }
+}
+
+@media (max-width: 640px) {
+  .filtersBar { top: var(--nav-h-mobile); }
+
+  /* Label: solo icono */
+  .filtersLabel {
+    font-size: 0;
+    gap: 0;
+    margin-right: 0;
+  }
+  .filtersLabel svg { font-size: initial; }
+
+  .list { gap: 8px; }
+
+  .card { border-radius: 8px; }
+
+  .cardBody { padding: 14px 10px 14px 8px; }
 
   .cardName { font-size: 13px; }
 
-  .cardMeta { gap: 10px; }
+  .cardMeta { gap: 5px; }
 
-  .filtersBar { top: var(--nav-h-mobile); }
+  .cardCount {
+    min-width: 64px;
+    padding: 0 4px 0 10px;
+  }
+
+  .cardCountNum { font-size: 20px; }
+
+  .cardArrow { padding-right: 12px; }
 }

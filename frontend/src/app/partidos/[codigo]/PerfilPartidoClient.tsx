@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { PerfilPartido } from '@/lib/api'
-import { formatQuantity, cleanText } from '@/lib/utils'
+import { formatName, formatDiputadoName, cleanText } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
 import { getPaletaPartido } from '@/lib/partidos'
 import styles from './perfil.module.css'
@@ -23,110 +23,172 @@ function IconChevron() {
   )
 }
 
+function IconCalendar() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function IconMapPin() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20 10c0 6-8 13-8 13s-8-7-8-13a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+}
+
+function IconLayers() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
+    </svg>
+  )
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+const MEDAL = ['#F6AD55', '#A0AEC0', '#CD853F']
+
 interface Props {
   perfil: PerfilPartido
   codigoRaw: string
 }
 
-export default function PerfilPartidoClient({ perfil, codigoRaw }: Props) {
+export default function PerfilPartidoClient({ perfil }: Props) {
   const { dict } = useT()
   const t = dict.partidoDetalle
   const paleta = getPaletaPartido(perfil.codigo)
 
   const maxAdm = Math.max(...perfil.por_administracion.map(a => a.total_propuestas), 1)
+  const maxDip = Math.max(...perfil.top_diputados.map(d => d.total_proyectos), 1)
   const totalCats = perfil.por_categoria.reduce((s, c) => s + c.total, 0) || 1
+  const maxCat = Math.max(...perfil.por_categoria.map(c => c.total), 1)
 
   return (
     <div className={styles.page}>
+      {/* Back */}
       <div className={styles.backBar}>
         <Link href="/partidos" className={styles.backBtn}>
           <IconArrowLeft /> {t.backToList}
         </Link>
       </div>
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden style={{ '--hero-color': paleta.bg } as React.CSSProperties} />
         <div className={styles.heroInner}>
-          <div
-            className={styles.avatar}
-            style={{ background: `linear-gradient(135deg, ${paleta.bg}, color-mix(in srgb, ${paleta.bg} 70%, #000))` }}
-          >
-            {perfil.codigo}
-          </div>
           <div className={styles.heroText}>
             <span className={styles.heroEyebrow}>{t.heroEyebrow}</span>
-            <h1 className={styles.heroName} style={{ color: paleta.bg }}>{perfil.nombre}</h1>
+            <h1 className={styles.heroName}>{formatName(perfil.nombre)}</h1>
             <p className={styles.heroSub}>{t.heroSub}</p>
+            <div className={styles.heroChips}>
+              {perfil.primer_anio && (
+                <span className={styles.heroChip}>
+                  <IconCalendar />
+                  Desde {perfil.primer_anio}
+                </span>
+              )}
+              {perfil.por_administracion.length > 0 && (
+                <span className={styles.heroChip}>
+                  <IconLayers />
+                  {perfil.por_administracion.length} {perfil.por_administracion.length === 1 ? 'período' : 'períodos'}
+                </span>
+              )}
+              {perfil.provincia_principal && (
+                <span className={styles.heroChip}>
+                  <IconMapPin />
+                  {perfil.provincia_principal}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Bandera grande en el extremo derecho */}
+          <div className={styles.heroFlag} style={{ background: paleta.bg }}>
+            <span className={styles.heroFlagCode}>{perfil.codigo}</span>
           </div>
         </div>
       </section>
 
       <div className={styles.container}>
-        {/* Stat grid */}
+
+        {/* ── KPIs ── */}
         <div className={styles.statGrid}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>{t.statPropuestasLabel}</span>
-            <span className={styles.statNum}>{perfil.total_propuestas.toLocaleString('es-CR')}</span>
+            <strong className={styles.statNum}>{perfil.total_propuestas.toLocaleString('es-CR')}</strong>
             <span className={styles.statHelp}>{t.statPropuestasHelp}</span>
           </div>
           <div className={`${styles.statCard} ${styles.statCardLey}`}>
             <span className={styles.statLabel}>{t.statLeyesLabel}</span>
-            <span className={`${styles.statNum} ${styles.statNumLey}`}>{perfil.total_leyes.toLocaleString('es-CR')}</span>
+            <strong className={`${styles.statNum} ${styles.statNumLey}`}>{perfil.total_leyes.toLocaleString('es-CR')}</strong>
             <span className={styles.statHelp}>{t.statLeyesHelp}</span>
           </div>
-          <div className={`${styles.statCard} ${perfil.tasa_aprobacion >= 10 ? styles.statCardAccent : ''}`}>
+          <div className={`${styles.statCard} ${styles.statCardAccent}`}>
             <span className={styles.statLabel}>{t.statEficaciaLabel}</span>
-            <span className={`${styles.statNum} ${perfil.tasa_aprobacion >= 10 ? styles.statNumAccent : ''}`}>
-              {perfil.tasa_aprobacion}%
-            </span>
+            <strong className={`${styles.statNum} ${styles.statNumAccent}`}>{perfil.tasa_aprobacion}%</strong>
             <span className={styles.statHelp}>{t.statEficaciaHelp}</span>
           </div>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>{t.statDiputadosLabel}</span>
-            <span className={styles.statNum}>{perfil.total_diputados}</span>
+            <strong className={styles.statNum}>{perfil.total_diputados}</strong>
             <span className={styles.statHelp}>{t.statDiputadosHelp}</span>
           </div>
         </div>
 
-        {/* Por administración */}
+        {/* ── Actividad por período legislativo ── */}
         {perfil.por_administracion.length > 0 && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t.administracionTitle}</h2>
-            <p className={styles.sectionDesc}>{t.administracionDesc}</p>
-            <div className={styles.admBars}>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t.administracionTitle}</h2>
+              <p className={styles.sectionDesc}>{t.administracionDesc}</p>
+            </div>
+            <div className={styles.admGrid}>
               {perfil.por_administracion.map(a => {
                 const pct = Math.round((a.total_propuestas / maxAdm) * 100)
-                const leyPct = Math.round((a.leyes_aprobadas / maxAdm) * 100)
+                const isPeak = a.total_propuestas === maxAdm && maxAdm > 0
+                const eficiencia = a.total_diputados > 0
+                  ? Math.round(a.total_propuestas / a.total_diputados)
+                  : 0
                 return (
-                  <div key={a.administracion} className={styles.admRow}>
-                    <div className={styles.admInfo}>
-                      <div className={styles.admLabelGroup}>
-                        <span className={styles.admLabel}>{a.administracion}</span>
+                  <div
+                    key={a.administracion}
+                    className={`${styles.admCard} ${isPeak ? styles.admCardPeak : ''}`}
+                  >
+                    <div className={styles.admCardHeader}>
+                      <span className={styles.admPeriodo}>{a.administracion}</span>
+                      <div className={styles.admHeaderRight}>
+                        {isPeak && <span className={styles.admPeakBadge}>Más activo</span>}
                         <span className={styles.admDips}>
                           {a.total_diputados} {a.total_diputados === 1 ? t.dipSingular : t.dipPlural}
                         </span>
                       </div>
-                      <div className={styles.admNums}>
-                        <span className={styles.admTotal}>
-                          {formatQuantity(a.total_propuestas, t.propuestaSingular, t.propuestaPlural)}
-                        </span>
-                        {a.leyes_aprobadas > 0 && (
-                          <span className={styles.admLeyes}>
-                            {a.leyes_aprobadas} {a.leyes_aprobadas === 1 ? t.leySingular : t.leyPlural}
-                          </span>
-                        )}
-                        <span className={styles.admTasa}>{a.tasa_aprobacion}%</span>
-                      </div>
                     </div>
-                    <div className={styles.gaugeTrack}>
-                      <div
-                        className={styles.gaugeFill}
-                        style={{ width: `${pct}%`, background: paleta.bg }}
-                      />
-                      {leyPct > 0 && (
-                        <div className={styles.gaugeLey} style={{ width: `${leyPct}%` }} />
+                    <div className={styles.admCardStats}>
+                      <div className={styles.admStatBlock}>
+                        <strong className={styles.admStatNum}>{a.total_propuestas}</strong>
+                        <span className={styles.admStatLabel}>{cap(t.propuestaPlural)}</span>
+                      </div>
+                      {a.leyes_aprobadas > 0 && (
+                        <div className={styles.admStatBlock}>
+                          <strong className={styles.admStatNumGreen}>{a.leyes_aprobadas}</strong>
+                          <span className={styles.admStatLabel}>{cap(t.leyPlural)}</span>
+                        </div>
                       )}
+                      <div className={styles.admStatBlock}>
+                        <strong className={styles.admStatNumAccent}>{a.tasa_aprobacion}%</strong>
+                        <span className={styles.admStatLabel}>Tasa</span>
+                      </div>
+                      {eficiencia > 0 && (
+                        <div className={`${styles.admStatBlock} ${styles.admStatBlockEfic}`}>
+                          <strong className={styles.admStatNumMuted}>{eficiencia}</strong>
+                          <span className={styles.admStatLabel}>Proy/dip</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.admBar}>
+                      <div className={styles.admBarFill} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )
@@ -135,38 +197,59 @@ export default function PerfilPartidoClient({ perfil, codigoRaw }: Props) {
           </section>
         )}
 
-        {/* Top diputados */}
+        {/* ── Diputados más activos ── */}
         {perfil.top_diputados.length > 0 && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t.topDiputadosTitle}</h2>
-            <p className={styles.sectionDesc}>{t.topDiputadosDesc}</p>
-            <div className={styles.dipList}>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t.topDiputadosTitle}</h2>
+              <p className={styles.sectionDesc}>{t.topDiputadosDesc}</p>
+            </div>
+            <div className={styles.dipGrid}>
               {perfil.top_diputados.map((d, i) => {
                 const slug = encodeURIComponent(d.nombre_completo)
+                const medalColor = i < 3 ? MEDAL[i] : undefined
+                const barW = Math.round((d.total_proyectos / maxDip) * 100)
                 return (
-                  <Link
-                    key={d.nombre_completo}
-                    href={`/diputados/${slug}`}
-                    className={styles.dipCard}
-                  >
-                    <span className={styles.dipRank}>{i + 1}</span>
-                    <div
-                      className={styles.dipAvatar}
-                      style={{ background: paleta.soft, color: paleta.bg }}
-                    >
-                      {d.apellidos?.[0] ?? d.nombre?.[0] ?? '·'}
-                    </div>
-                    <div className={styles.dipBody}>
-                      <span className={styles.dipName}>{d.nombre_completo}</span>
-                      <div className={styles.dipMeta}>
-                        <span>{d.total_proyectos} proyectos</span>
-                        {d.leyes_aprobadas > 0 && (
-                          <span className={styles.dipLeyes}>{d.leyes_aprobadas} leyes</span>
-                        )}
-                        <span className={styles.dipTasa}>{d.tasa_aprobacion}%</span>
+                  <Link key={d.nombre_completo} href={`/diputados/${slug}`} className={styles.dipCard}>
+                    <div className={styles.dipCardInner}>
+                      <div className={styles.dipAvatarWrap}>
+                        <div className={styles.dipAvatar} style={{ background: paleta.soft, color: paleta.bg }}>
+                          {(d.apellidos?.[0] ?? d.nombre?.[0] ?? '·').toUpperCase()}
+                        </div>
+                        <span
+                          className={styles.dipRankBadge}
+                          style={medalColor ? { color: medalColor, borderColor: medalColor } : undefined}
+                        >
+                          {i + 1}
+                        </span>
                       </div>
+                      <div className={styles.dipBody}>
+                        <span className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</span>
+                        <div className={styles.dipMeta}>
+                          <span className={styles.dipMetaItem}>
+                            <strong className={styles.dipMetaVal}>{d.total_proyectos}</strong>
+                            <span className={styles.dipMetaLabel}>proy.</span>
+                          </span>
+                          {d.leyes_aprobadas > 0 && (
+                            <>
+                              <span className={styles.dipMetaSep}>/</span>
+                              <span className={styles.dipMetaItem}>
+                                <strong className={styles.dipMetaValGreen}>{d.leyes_aprobadas}</strong>
+                                <span className={styles.dipMetaLabel}>leyes</span>
+                              </span>
+                            </>
+                          )}
+                          <span className={styles.dipMetaSep}>/</span>
+                          <span className={styles.dipMetaItem}>
+                            <strong className={styles.dipMetaValAccent}>{d.tasa_aprobacion}%</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <span className={styles.dipArrow}><IconChevron /></span>
                     </div>
-                    <span className={styles.dipArrow}><IconChevron /></span>
+                    <div className={styles.dipBar}>
+                      <div className={styles.dipBarFill} style={{ width: `${barW}%` }} />
+                    </div>
                   </Link>
                 )
               })}
@@ -174,35 +257,55 @@ export default function PerfilPartidoClient({ perfil, codigoRaw }: Props) {
           </section>
         )}
 
-        {/* Por categoría */}
+        {/* ── Temas más frecuentes ── */}
         {perfil.por_categoria.length > 0 && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t.categoriasTitle}</h2>
-            <p className={styles.sectionDesc}>{t.categoriasDesc}</p>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t.categoriasTitle}</h2>
+              <p className={styles.sectionDesc}>{t.categoriasDesc}</p>
+            </div>
             <div className={styles.catGrid}>
-              {perfil.por_categoria.map(c => {
-                const pct = Math.round((c.total / totalCats) * 100)
+              {perfil.por_categoria.map((c, i) => {
+                const pct = Math.round((c.total / maxCat) * 100)
                 return (
-                  <Link
-                    key={c.slug}
-                    href={`/proyectos?categoria=${c.slug}`}
-                    className={styles.catCard}
-                  >
-                    <div className={styles.catHeader}>
-                      <span className={styles.catNombre}>{cleanText(c.categoria)}</span>
+                  <Link key={c.slug} href={`/proyectos?categoria=${c.slug}`} className={styles.catCard}>
+                    <span className={styles.catAccent} />
+                    <div className={styles.catMain}>
+                      <div className={styles.catTop}>
+                        <span className={styles.catRank}>{i + 1}</span>
+                        <span className={styles.catNombre}>{cap(cleanText(c.categoria))}</span>
+                      </div>
+                      <div className={styles.catBar}>
+                        <div className={styles.catBarFill} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className={styles.catMeta}>
+                        <span className={styles.catMetaItem}>
+                          <strong className={styles.catMetaVal}>{c.total}</strong>
+                          <span className={styles.catMetaLabel}>proyectos</span>
+                        </span>
+                        {c.leyes_aprobadas > 0 && (
+                          <>
+                            <span className={styles.catMetaSep}>/</span>
+                            <span className={styles.catMetaItem}>
+                              <strong className={styles.catMetaValGreen}>{c.leyes_aprobadas}</strong>
+                              <span className={styles.catMetaLabel}>leyes</span>
+                            </span>
+                          </>
+                        )}
+                        {c.tasa_aprobacion > 0 && (
+                          <>
+                            <span className={styles.catMetaSep}>/</span>
+                            <span className={styles.catMetaItem}>
+                              <strong className={styles.catMetaValAccent}>{c.tasa_aprobacion}%</strong>
+                              <span className={styles.catMetaLabel}>tasa</span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.catRight}>
                       <span className={styles.catPct}>{pct}%</span>
-                    </div>
-                    <div className={styles.catBar}>
-                      <div
-                        className={styles.catBarFill}
-                        style={{ width: `${pct}%`, background: paleta.bg }}
-                      />
-                    </div>
-                    <div className={styles.catMeta}>
-                      <span>{c.total} proyectos</span>
-                      {c.leyes_aprobadas > 0 && (
-                        <span className={styles.catLeyes}>{c.leyes_aprobadas} leyes</span>
-                      )}
+                      <span className={styles.catArrow}><IconChevron /></span>
                     </div>
                   </Link>
                 )
@@ -211,12 +314,9 @@ export default function PerfilPartidoClient({ perfil, codigoRaw }: Props) {
           </section>
         )}
 
-        {/* Link to proyectos */}
+        {/* Footer */}
         <div className={styles.footerLink}>
-          <Link
-            href={`/proyectos`}
-            className={styles.verProyectosBtn}
-          >
+          <Link href="/proyectos" className={styles.verProyectosBtn}>
             {t.verProyectosPartido} <IconChevron />
           </Link>
         </div>

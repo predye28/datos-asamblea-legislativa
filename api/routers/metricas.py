@@ -996,6 +996,22 @@ def perfil_partido(codigo: str):
         LIMIT 10
     """, (partido_id,))
 
+    # ── Primer año en la asamblea ──────────────────────────────────────
+    extra = fetchone("""
+        SELECT
+            EXTRACT(YEAR FROM MIN(fecha_desde))::int AS primer_anio,
+            (
+                SELECT provincia
+                FROM historial_diputados
+                WHERE partido_id = %s AND provincia IS NOT NULL
+                GROUP BY provincia
+                ORDER BY COUNT(*) DESC
+                LIMIT 1
+            ) AS provincia_principal
+        FROM historial_diputados
+        WHERE partido_id = %s AND fecha_desde IS NOT NULL
+    """, (partido_id, partido_id)) or {}
+
     # ── Por categoría ──────────────────────────────────────────────────
     por_cat_rows = fetchall("""
         SELECT
@@ -1029,6 +1045,8 @@ def perfil_partido(codigo: str):
         total_leyes=leyes,
         tasa_aprobacion=round((leyes / total * 100), 1) if total else 0.0,
         total_diputados=stats.get("total_diputados") or 0,
+        primer_anio=extra.get("primer_anio"),
+        provincia_principal=extra.get("provincia_principal"),
         por_administracion=[
             PeriodoPartido(
                 administracion=r["administracion"],

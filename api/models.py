@@ -234,16 +234,18 @@ class CategoriaPartido(BaseModel):
 
 
 class PerfilPartidoResponse(BaseModel):
-    partido_id:       int
-    codigo:           str
-    nombre:           str
-    total_propuestas: int
-    total_leyes:      int
-    tasa_aprobacion:  float
-    total_diputados:  int
-    por_administracion: list[PeriodoPartido]
-    top_diputados:    list[DiputadoPartidoItem]
-    por_categoria:    list[CategoriaPartido]
+    partido_id:          int
+    codigo:              str
+    nombre:              str
+    total_propuestas:    int
+    total_leyes:         int
+    tasa_aprobacion:     float
+    total_diputados:     int
+    primer_anio:         Optional[int]       = None
+    provincia_principal: Optional[str]       = None
+    por_administracion:  list[PeriodoPartido]
+    top_diputados:       list[DiputadoPartidoItem]
+    por_categoria:       list[CategoriaPartido]
 
 
 class MetricasPartidosResumenResponse(BaseModel):
