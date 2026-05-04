@@ -1,11 +1,12 @@
 @keyframes sectionSlideDown {
-  from {
-    transform: translateY(-720px);
-  }
-
-  to {
-    transform: translateY(0);
-  }
+  /* Espera en posición inicial */
+  0%   { transform: translateY(-100vh); }
+  /* Intenta bajar — pequeño nudge hacia abajo */
+  18%  { transform: translateY(calc(-100vh + 22px)); }
+  /* No pudo — rebota hacia arriba */
+  28%  { transform: translateY(calc(-100vh - 10px)); }
+  /* Ahora sí baja completamente */
+  100% { transform: translateY(0); }
 }
 
 @keyframes principleIn {
@@ -35,16 +36,11 @@
 .section {
   position: relative;
   z-index: 1;
-  /* Estado inicial: fuera de pantalla hacia arriba. La animación se dispara
-     al entrar al viewport (clase .sectionIn agregada por IntersectionObserver),
-     así es visible tanto en desktop como en celular. */
-  transform: translateY(-720px);
+  transform: translateY(-100vh);
 }
 
 .sectionIn {
-  /* Pausa breve al entrar al viewport para que el usuario alcance a ver
-     la sección antes de que baje. */
-  animation: sectionSlideDown 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+  animation: sectionSlideDown 3.2s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
 }
 
 /* Wave SVGs — subtle premium dividers */

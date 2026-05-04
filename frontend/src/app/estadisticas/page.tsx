@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { MetricasResponse, ProximoVencer, MetricasPartidosResponse } from '@/lib/api'
@@ -100,10 +101,11 @@ export default function EstadisticasPage() {
     'personalizado': t.rangoPersonalizado,
   }
 
+  const searchParams = useSearchParams()
   const [rangoRapido, setRangoRapido] = useState<RangoRapido>('')
   const [customDesde, setCustomDesde] = useState('')
   const [customHasta, setCustomHasta] = useState('')
-  const [periodo, setPeriodo] = useState('')
+  const [periodo, setPeriodo] = useState(() => searchParams.get('periodo') || '2022-2026')
   const [data, setData] = useState<MetricasResponse | null>(null)
   const [globalData, setGlobalData] = useState<MetricasResponse | null>(null)
   const [timeline, setTimeline] = useState<{ anio: number; leyes_aprobadas: number }[]>([])

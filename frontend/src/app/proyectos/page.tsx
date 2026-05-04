@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { ProyectoResumen, Categoria, Paginacion, PartidoResumen } from '@/lib/api'
 import { getPaletaPartido } from '@/lib/partidos'
-import { formatTitle, formatDate, formatQuantity } from '@/lib/utils'
+import { formatTitle, formatDate, formatQuantity, formatName } from '@/lib/utils'
 import { getPeriodos, useLegislativePeriods } from '@/lib/periodos'
 import { getEstadoFiltros } from '@/lib/estados'
 import { useT } from '@/i18n/LanguageProvider'
@@ -198,23 +198,17 @@ function ProyectosContent() {
     return () => { cancelled = true }
   }, [])
 
-  // Carga partidos solo cuando hay un período legislativo cuadrienal seleccionado
+  // Carga todos los partidos al montar
   useEffect(() => {
-    const legPeriod = legislativePeriods.find(p => p.label === periodo)
-    if (!legPeriod) {
-      setPartidos([])
-      setPartido('')
-      return
-    }
     let cancelled = false
     queueMicrotask(async () => {
       try {
-        const r = await api.partidos.listar(periodo)
+        const r = await api.partidos.listar()
         if (!cancelled) setPartidos(r.datos)
       } catch { /* noop */ }
     })
     return () => { cancelled = true }
-  }, [periodo, legislativePeriods])
+  }, [])
 
   useEffect(() => {
     const qs = new URLSearchParams()
@@ -313,7 +307,7 @@ function ProyectosContent() {
     { value: '', label: 'Todos los partidos' },
     ...partidos.map(p => {
       const paleta = getPaletaPartido(p.codigo)
-      return { value: String(p.id), label: p.nombre, color: paleta.bg }
+      return { value: String(p.id), label: formatName(p.nombre), color: paleta.bg }
     }),
   ], [partidos])
 

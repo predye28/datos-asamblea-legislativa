@@ -27,9 +27,9 @@
 /* ── Hero ── */
 .hero {
   position: relative;
-  padding: 40px 0 52px;
-  border-bottom: 1px solid var(--rule);
+  padding: 44px 0 56px;
   overflow: hidden;
+  border-bottom: 1px solid var(--rule);
 }
 
 .heroDots {
@@ -41,6 +41,7 @@
   -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 25%, black 75%);
   pointer-events: none;
 }
+
 
 .heroInner {
   position: relative;
@@ -72,63 +73,109 @@
 
 .heroName {
   font-family: var(--serif);
-  font-size: clamp(24px, 3.5vw, 42px);
+  font-size: clamp(26px, 4vw, 48px);
   font-weight: 900;
   color: var(--ink);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
   margin-bottom: 10px;
 }
 
 .heroSub {
   font-family: var(--body);
-  font-size: 13px;
-  color: var(--ink-faint);
-  margin-bottom: 14px;
+  font-size: 15px;
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.55;
 }
 
-/* Info chips — debajo del heroSub */
-.heroChips {
+.heroFacts {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
-.heroChip {
+.heroFact {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-family: var(--label);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  gap: 7px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ink-muted);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 4px 10px;
 }
 
-/* Bandera grande — extremo derecho del hero */
-.heroFlag {
+.heroFact svg {
+  color: var(--ink-faint);
   flex-shrink: 0;
-  width: 156px;
-  height: 68px;
-  border-radius: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.heroFactSep {
+  color: var(--rule);
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  padding: 0 2px;
+}
+
+/* Columna derecha del hero: flag identidad */
+.heroRight {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  z-index: 1;
+}
+
+.heroFlag {
+  position: relative;
+  overflow: visible;
+  width: 180px;
+  height: 84px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.heroFlag::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 20px;
+  background: var(--hero-flag-color, transparent);
+  filter: blur(18px);
+  opacity: 0.35;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .heroFlagCode {
   font-family: var(--label);
-  font-size: 26px;
+  font-size: 34px;
   font-weight: 900;
   color: rgba(255, 255, 255, 0.95);
   letter-spacing: 0.06em;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Línea decorativa en el color del partido al pie del hero */
+.heroAccentLine {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ── Container ── */
@@ -143,21 +190,33 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 52px;
+  margin-bottom: 56px;
 }
 
 .statCard {
   background: var(--paper-card);
   border: 1px solid var(--rule);
   border-radius: 12px;
-  padding: 20px;
+  padding: 22px 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
+  overflow: hidden;
 }
 
 .statCardLey    { border-top: 3px solid #4ade80; }
 .statCardAccent { border-top: 3px solid var(--accent); }
+.statCardParty  { border-top: 3px solid var(--party-color, var(--ink-faint)); }
+
+.statIcon {
+  color: var(--ink-faint);
+  margin-bottom: 4px;
+  display: flex;
+}
+
+.statIconGreen  { color: #4ade80; }
+.statIconAccent { color: var(--accent); }
 
 .statLabel {
   font-family: var(--label);
@@ -170,7 +229,7 @@
 
 .statNum {
   font-family: var(--serif);
-  font-size: clamp(24px, 3vw, 34px);
+  font-size: clamp(26px, 3vw, 36px);
   font-weight: 900;
   color: var(--ink);
   letter-spacing: -0.03em;
@@ -190,75 +249,92 @@
 
 /* ── Section ── */
 .section {
-  margin-bottom: 52px;
+  margin-bottom: 56px;
 }
 
+/* Cabecera de sección con barra de acento en el color del partido */
 .sectionHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
   margin-bottom: 20px;
+}
+
+.sectionAccent {
+  width: 3px;
+  min-height: 50px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.85;
 }
 
 .sectionTitle {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--ink);
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
+  letter-spacing: -0.025em;
+  margin-bottom: 5px;
 }
 
 .sectionDesc {
   font-family: var(--body);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-muted);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
-/* ── Actividad por período legislativo ── */
-.admGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.admCard {
-  background: var(--paper-card);
+/* ── Actividad por período — filas horizontales ── */
+.admList {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 18px 20px 16px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.admRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-card);
+  transition: background 0.15s;
+}
+.admRow:last-child { border-bottom: none; }
+.admRow:hover { background: rgba(255, 255, 255, 0.025); }
+
+.admRowPeak {
+  background: rgba(6, 182, 212, 0.035);
+  border-left: 3px solid var(--accent);
+  padding-left: 19px;
+}
+.admRowPeak:hover { background: rgba(6, 182, 212, 0.055); }
+
+.admRowLeft {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.admCard:hover { border-color: rgba(255,255,255,0.12); }
-
-.admCardPeak {
-  border-color: rgba(6, 182, 212, 0.3);
-  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.12);
-}
-.admCardPeak:hover { border-color: rgba(6, 182, 212, 0.45); }
-
-.admCardHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.admPeriodo {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: 0.01em;
-}
-
-.admHeaderRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
+  width: 128px;
+}
+
+.admRowPeriodo {
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: normal;
+  line-height: 1.1;
+}
+
+.admRowSub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .admPeakBadge {
@@ -274,247 +350,295 @@
   padding: 2px 7px;
 }
 
-.admDips {
+.admRowDips {
   font-family: var(--body);
-  font-size: 11px;
-  color: var(--ink-faint);
+  font-size: 12px;
+  color: var(--ink-muted);
 }
 
-.admCardStats {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
+.admRowCenter {
+  flex: 1;
+  min-width: 0;
 }
 
-.admStatBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.admStatBlockEfic {
-  margin-left: auto;
-  align-items: flex-end;
-}
-
-.admStatNum {
-  font-family: var(--serif);
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.admStatNumGreen {
-  font-family: var(--serif);
-  font-size: 24px;
-  font-weight: 900;
-  color: #4ade80;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.admStatNumAccent {
-  font-family: var(--serif);
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.admStatNumMuted {
-  font-family: var(--serif);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink-faint);
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.admStatLabel {
-  font-family: var(--label);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.admBar {
+.admRowBar {
   width: 100%;
-  height: 3px;
+  height: 8px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.admBarFill {
+.admRowBarFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 4px;
   background: var(--accent);
-  opacity: 0.55;
-  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.7;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── Diputados más activos ── */
-.dipGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+.admRowRight {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+  min-width: 240px;
 }
 
-.dipCard {
+.admRowStat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.admRowStat + .admRowStat {
+  padding-left: 24px;
+  border-left: 1px solid var(--rule);
+}
+.admRowStat strong {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: normal;
+  line-height: 1;
+}
+.admRowStat span {
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+/* ── Botones de navegación en filas de actividad ── */
+.admRowActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 16px 0 12px;
+}
+
+.admRowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  padding: 5px 11px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.admRowBtn svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.admRowBtn:hover {
+  color: var(--accent);
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.07);
+}
+
+.admRowBtn:hover svg {
+  opacity: 1;
+}
+
+/* ── Diputados — lista rankeada ── */
+.dipList {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.dipRow {
+  position: relative;
+  display: flex;
+  align-items: center;
   background: var(--paper-card);
   border: 1px solid var(--rule);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
   transition: border-color 0.18s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
 }
-.dipCard:hover {
-  border-color: rgba(255,255,255,0.1);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+.dipRow:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
 }
-.dipCard:hover .dipArrow { opacity: 1; transform: translateX(2px); }
+.dipRow:hover .dipRowArrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
 
-.dipCardInner {
-  padding: 16px 16px 14px;
+/* Primer lugar: borde ligeramente más prominente */
+.dipRowFeatured {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.dipRowFeatured .dipRowRank {
+  font-size: 30px;
+}
+.dipRowFeatured .dipRowName {
+  font-size: 15px;
+  -webkit-line-clamp: 2;
+}
+
+.dipRowLeft {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex: 1;
-}
-
-.dipAvatarWrap {
-  position: relative;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  align-self: stretch;
   flex-shrink: 0;
 }
 
-.dipAvatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+.dipRowRank {
+  position: relative;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+}
+
+.dipRowDivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--rule);
+  flex-shrink: 0;
+  margin: 12px 0;
+}
+
+.dipRowAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--label);
   font-size: 18px;
   font-weight: 900;
+  flex-shrink: 0;
+  margin: 0 12px 0 16px;
 }
 
-.dipRankBadge {
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1.5px solid var(--rule);
-  background: var(--paper-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--ink-faint);
-}
-
-.dipBody {
+.dipRowBody {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 2px;
+  gap: 5px;
+  padding: 16px 0;
 }
 
-.dipName {
+.dipRowName {
   font-family: var(--body);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.35;
+  white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.dipMeta {
+.dipRowBar {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dipRowBarFill {
+  height: 100%;
+  border-radius: 2px;
+  opacity: 0.55;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dipRowMeta {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.dipMetaSep {
-  color: var(--rule);
-  font-size: 11px;
-}
-
-.dipMetaItem {
+.dipRowMetaItem {
   display: flex;
   align-items: baseline;
-  gap: 3px;
+  gap: 4px;
 }
-
-.dipMetaVal {
-  font-family: var(--serif);
-  font-size: 13px;
+.dipRowMetaItem strong {
+  font-family: var(--body);
+  font-size: 14px;
   font-weight: 800;
   color: var(--ink);
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
 }
-
-.dipMetaValGreen {
-  font-family: var(--serif);
-  font-size: 13px;
-  font-weight: 800;
-  color: #4ade80;
-  letter-spacing: -0.01em;
-}
-
-.dipMetaValAccent {
-  font-family: var(--serif);
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: -0.01em;
-}
-
-.dipMetaLabel {
+.dipRowMetaLabel {
   font-family: var(--body);
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--ink-muted);
 }
 
-.dipArrow {
+.dipRowMetaSep {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.dipRowCount {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 8px 0 14px;
+  border-left: 1px dashed var(--rule);
+  min-width: 92px;
+}
+
+.dipRowCountNum {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.dipRowCountLabel {
+  font-family: var(--label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 3px;
+}
+
+.dipRowArrow {
   color: var(--ink-faint);
   opacity: 0.35;
   transition: opacity 0.15s, transform 0.15s;
   display: flex;
   flex-shrink: 0;
-  align-self: center;
-}
-
-.dipBar {
-  height: 3px;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.dipBarFill {
-  height: 100%;
-  background: var(--accent);
-  opacity: 0.6;
-  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-right: 16px;
+  padding-left: 6px;
 }
 
 /* ── Temas más frecuentes ── */
@@ -536,21 +660,18 @@
   transition: border-color 0.18s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
 }
 .catCard:hover {
-  border-color: rgba(255,255,255,0.1);
+  border-color: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 .catCard:hover .catArrow { opacity: 1; transform: translateX(2px); }
 
-/* Barra izquierda de acento */
 .catAccent {
-  width: 3px;
+  width: 4px;
   flex-shrink: 0;
-  background: var(--accent);
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
-/* Cuerpo central */
 .catMain {
   flex: 1;
   min-width: 0;
@@ -568,45 +689,42 @@
 }
 
 .catRank {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1.5px solid var(--rule);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 900;
   color: var(--ink-faint);
+  letter-spacing: -0.02em;
+  line-height: 1;
   flex-shrink: 0;
+  min-width: 20px;
 }
 
 .catNombre {
   font-family: var(--body);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
   line-height: 1.3;
   min-width: 0;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .catBar {
   width: 100%;
-  height: 3px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .catBarFill {
   height: 100%;
-  border-radius: 2px;
-  background: var(--accent);
-  opacity: 0.55;
+  border-radius: 3px;
+  opacity: 0.75;
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -630,7 +748,7 @@
 
 .catMetaVal {
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -638,7 +756,7 @@
 
 .catMetaValGreen {
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #4ade80;
   letter-spacing: -0.01em;
@@ -646,7 +764,7 @@
 
 .catMetaValAccent {
   font-family: var(--serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--accent);
   letter-spacing: -0.01em;
@@ -654,29 +772,44 @@
 
 .catMetaLabel {
   font-family: var(--body);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink-muted);
 }
 
-/* Bloque derecho: porcentaje + flecha */
 .catRight {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   gap: 4px;
-  padding: 12px 14px 12px 10px;
+  padding: 12px 14px 12px 12px;
   border-left: 1px dashed var(--rule);
   flex-shrink: 0;
-  min-width: 52px;
+}
+
+.catPctRow {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
 }
 
 .catPct {
-  font-family: var(--serif);
+  font-family: var(--body);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--ink);
-  letter-spacing: -0.02em;
+  letter-spacing: normal;
+  line-height: 1;
+}
+
+.catPctLabel {
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  letter-spacing: normal;
+  text-transform: none;
   line-height: 1;
 }
 
@@ -711,9 +844,11 @@
 .verProyectosBtn:hover { background: var(--accent); color: #fff; }
 
 /* ── Responsive ── */
-@media (max-width: 960px) {
-  .admGrid { grid-template-columns: repeat(2, 1fr); }
-  .dipGrid  { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1024px) {
+  .admRowLeft { width: 110px; }
+  .admRowRight { gap: 16px; min-width: 200px; }
+  .admRowStat strong { font-size: 16px; }
+  .admRowStat + .admRowStat { padding-left: 16px; }
 }
 
 @media (max-width: 860px) {
@@ -723,7 +858,7 @@
 }
 
 @media (max-width: 640px) {
-  .hero { padding: 28px 0 40px; }
+  .hero { padding: 28px 0 44px; }
 
   .heroInner {
     flex-direction: column;
@@ -731,28 +866,64 @@
     gap: 20px;
   }
 
-  .heroFlag {
-    width: 120px;
-    height: 52px;
+  .heroWatermark { font-size: 80px; }
+
+  .heroRight {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
   }
 
-  .heroFlagCode { font-size: 20px; }
+  .heroFlag {
+    width: 140px;
+    height: 64px;
+    border-radius: 14px;
+  }
+  .heroFlagCode { font-size: 26px; }
 
   .heroName { font-size: 26px; }
-
   .heroChips { gap: 6px; }
   .heroChip { font-size: 10px; padding: 3px 8px; }
 
   .statGrid { grid-template-columns: 1fr 1fr; }
 
-  .admGrid { grid-template-columns: 1fr; }
-  .dipGrid  { grid-template-columns: 1fr; }
-  .catGrid  { grid-template-columns: 1fr; }
+  /* Activity rows: apiladas en mobile */
+  .admRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .admRowPeak { padding-left: 13px; }
+  .admRowLeft {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .admRowCenter { width: 100%; }
+  .admRowRight { gap: 12px; min-width: auto; }
+  .admRowStat + .admRowStat { padding-left: 0; border-left: none; }
+  .admRowStat strong { font-size: 15px; }
+  .admRowActions { display: none; }
 
-  .admStatNum,
-  .admStatNumGreen,
-  .admStatNumAccent { font-size: 20px; }
+  /* Deputy list mobile */
+  .dipRowLeft { width: 46px; }
+  .dipRowRank { font-size: 20px; }
+  .dipRowAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    font-size: 15px;
+    margin: 0 8px 0 10px;
+  }
+  .dipRowName { font-size: 13px; -webkit-line-clamp: 2; }
+  .dipRowCount { min-width: 70px; padding: 0 6px 0 10px; }
+  .dipRowCountNum { font-size: 20px; }
+  .dipRowArrow { padding-right: 10px; }
+  .dipRowFeatured .dipRowRank { font-size: 22px; }
+  .dipRowFeatured .dipRowName { font-size: 13px; }
 
-  .dipCardInner { padding: 14px 14px 12px; }
-  .dipAvatar { width: 44px; height: 44px; font-size: 15px; }
+  .catGrid { grid-template-columns: 1fr; }
+  .catNombre { font-size: 14px; }
 }

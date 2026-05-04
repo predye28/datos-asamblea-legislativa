@@ -36,8 +36,6 @@ function IconX() {
   )
 }
 
-const MEDAL_COLORS = ['#F6AD55', '#A0AEC0', '#CD853F']
-
 // Primera letra en mayúscula, resto igual
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -56,28 +54,32 @@ function PartidoCard({
   const t = dict.partidosPage
   const paleta = getPaletaPartido(partido.codigo)
   const barW = maxPropuestas > 0 ? (partido.total_propuestas / maxPropuestas) * 100 : 0
-  const medalColor = index < 3 ? MEDAL_COLORS[index] : undefined
 
   return (
     <Link href={`/partidos/${partido.codigo}`} className={styles.card}>
-      {/* Barra de acento izquierda */}
-      <span className={styles.cardAccent} />
+
+      {/* Columna izquierda: número de ranking */}
+      <div className={styles.cardLeft}>
+        <span className={styles.cardRank}>
+          {String(index + 1).padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* Línea divisoria vertical */}
+      <span className={styles.cardDivider} />
 
       {/* Cuerpo principal */}
       <div className={styles.cardBody}>
         <div className={styles.cardNameRow}>
           <span
-            className={styles.cardRank}
-            style={medalColor ? { color: medalColor, borderColor: medalColor } : undefined}
-          >
-            {index + 1}
-          </span>
-          <span className={styles.cardName}>{formatName(partido.nombre)}</span>
-          <span
             className={styles.cardFlag}
             style={{ background: paleta.bg }}
-            title={partido.codigo}
+            title={partido.nombre}
           />
+          <span className={styles.cardName}>{formatName(partido.nombre)}</span>
+          <span className={styles.cardCode} style={{ color: paleta.bg, borderColor: `${paleta.bg}55` }}>
+            {partido.codigo}
+          </span>
         </div>
         <div className={styles.cardBar}>
           <div

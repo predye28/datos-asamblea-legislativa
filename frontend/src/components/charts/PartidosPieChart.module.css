@@ -157,9 +157,14 @@
 /* ── Main grid ── */
 .grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 28px;
+  grid-template-columns: minmax(0, 460px) 1fr;
+  gap: 32px;
   align-items: start;
+}
+
+.chartArea,
+.ranking {
+  min-width: 0;
 }
 
 /* ── Chart area ── */
@@ -210,58 +215,52 @@
   margin-top: 2px;
 }
 
-/* ── Legend rotativa ── */
+/* ── Leyenda estática ── */
 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 14px;
   background: rgba(255,255,255,0.03);
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  transition: background 0.15s;
 }
+.legendItem:hover { background: rgba(255,255,255,0.07); }
 
 .legendDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
-.legendText {
-  position: relative;
+.legendCode {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+
+.legendPct {
+  font-family: var(--mono);
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink-muted);
-  min-width: 36px;
-  height: 16px;
-  display: inline-block;
-}
-
-.legendMain {
-  position: absolute;
-  top: 0;
-  left: 0;
   white-space: nowrap;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.labelVisible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.labelHidden {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
 }
 
 /* ── Ranking list ── */
@@ -409,9 +408,9 @@
 .valAccent { color: var(--accent) !important; }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .grid {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 300px 1fr;
     gap: 20px;
   }
   .insights { grid-template-columns: 1fr; }
@@ -451,8 +450,11 @@
   .insightStatDivider { height: 20px; }
 
   /* Chart */
-  .chartArea { max-width: 340px; margin: 0 auto; }
+  .chartArea { max-width: 380px; margin: 0 auto; }
   .grid { grid-template-columns: 1fr; gap: 16px; }
+  .legendItem { padding: 7px 10px; }
+  .legendCode { font-size: 12px; }
+  .legendPct { font-size: 12px; }
 
   /* Ranking: más compacto */
   .rankRow { padding: 10px 0; gap: 7px; }

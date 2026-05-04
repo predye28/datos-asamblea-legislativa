@@ -26,8 +26,8 @@
   margin: 0;
   line-height: 1.1;
   opacity: 0;
-  transform: translateY(12px);
-  animation: eyebrowIn 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  transform: translateY(-18px);
+  animation: eyebrowIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
 }
 
 @keyframes eyebrowIn {
@@ -54,16 +54,16 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(-28px);
   /* Transición por propiedad: entry animation con stagger, hover SIN delay */
   transition:
-    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.15s ease,
     box-shadow 0.15s ease;
   transition-delay:
-    calc(300ms + var(--i, 0) * 220ms),
-    calc(300ms + var(--i, 0) * 220ms),
+    calc(200ms + var(--i, 0) * 180ms),
+    calc(200ms + var(--i, 0) * 180ms),
     0ms,
     0ms;
   will-change: opacity, transform;

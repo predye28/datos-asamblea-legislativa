@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   Chart as ChartJS,
@@ -16,6 +16,42 @@ import styles from './PartidosPieChart.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
+// Plugin inline que dibuja siglas + % dentro de cada segmento del donut
+const arcLabelsPlugin = {
+  id: 'arcLabels',
+  afterDatasetDraw(chart: ChartJS) {
+    const ctx = chart.ctx
+    const meta = chart.getDatasetMeta(0)
+    if (!meta?.data) return
+    const dataset = chart.data.datasets[0]
+    const totalVal = (dataset.data as number[]).reduce((s, v) => s + (v as number), 0)
+    meta.data.forEach((arc, index) => {
+      const value = dataset.data[index] as number
+      if (!value) return
+      const pct = totalVal > 0 ? (value / totalVal) * 100 : 0
+      if (pct < 5) return
+      const pos = (arc as ArcElement).getCenterPoint(false)
+      const label = (chart.data.labels?.[index] as string | undefined) ?? ''
+      // Tomar las primeras siglas: primeras 3-4 letras si corto, o primera palabra
+      const sigla = label.split(' ').length > 1
+        ? label.split(' ').map(w => w[0]).join('').slice(0, 4).toUpperCase()
+        : label.slice(0, 4).toUpperCase()
+      ctx.save()
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.shadowColor = 'rgba(0,0,0,0.7)'
+      ctx.shadowBlur = 4
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 13px monospace'
+      ctx.fillText(sigla, pos.x, pos.y - 9)
+      ctx.font = '700 12px sans-serif'
+      ctx.fillStyle = 'rgba(255,255,255,0.90)'
+      ctx.fillText(`${pct.toFixed(1)}%`, pos.x, pos.y + 8)
+      ctx.restore()
+    })
+  },
+}
+
 type Vista = 'propuestas' | 'leyes'
 
 interface Props {
@@ -28,16 +64,6 @@ const TOP_N = 9
 
 export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
   const [vista, setVista] = useState<Vista>('propuestas')
-  // rotating label: 0 = siglas, 1 = porcentaje
-  const [labelMode, setLabelMode] = useState<0 | 1>(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setLabelMode(m => (m === 0 ? 1 : 0))
-    }, 2500)
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
 
   const sorted =
     vista === 'propuestas'
@@ -87,8 +113,9 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
 
   // Chart.js config
   const paletas = chartData.map(d => getPaletaPartido(d.codigo))
+  // Usamos el código como label para que el plugin lo muestre en el arco
   const chartJsData = {
-    labels: chartData.map(d => d.fullName),
+    labels: chartData.map(d => d.codigo),
     datasets: [{
       data: chartData.map(d => d.value),
       backgroundColor: paletas.map(p => p.bg + 'dd'),
@@ -103,7 +130,7 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
   const chartOptions: import('chart.js').ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: true,
-    cutout: '58%',
+    cutout: '50%',
     animation: { animateRotate: true, animateScale: false, duration: 600 },
     plugins: {
       legend: { display: false },
@@ -118,7 +145,7 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
         callbacks: {
           title: (items) => {
             const d = chartData[items[0].dataIndex]
-            return formatTitle(d.fullName)
+            return d ? formatTitle(d.fullName) : ''
           },
           label: (item) => {
             const d = chartData[item.dataIndex]
@@ -230,8 +257,8 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
         {/* Donut Chart.js */}
         <div className={styles.chartArea}>
           <div className={styles.chartWrapper}>
-            <Doughnut data={chartJsData} options={chartOptions} />
-            {/* Rotating center label */}
+            <Doughnut data={chartJsData} options={chartOptions} plugins={[arcLabelsPlugin]} />
+            {/* Center label */}
             <div className={styles.center}>
               <div className={styles.centerNum}>{total.toLocaleString('es-CR')}</div>
               <div className={styles.centerLabel}>
@@ -241,22 +268,16 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
             </div>
           </div>
 
-          {/* Legend rotativa: siglas o % */}
+          {/* Leyenda estática: color + código + % */}
           <div className={styles.legend}>
-            {chartData.slice(0, 6).map((d) => {
+            {chartData.map((d) => {
               const paleta = getPaletaPartido(d.codigo)
               const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0'
               return (
                 <div key={d.codigo} className={styles.legendItem}>
                   <span className={styles.legendDot} style={{ background: paleta.bg }} />
-                  <span className={styles.legendText}>
-                    <span className={`${styles.legendMain} ${labelMode === 0 ? styles.labelVisible : styles.labelHidden}`}>
-                      {d.codigo}
-                    </span>
-                    <span className={`${styles.legendMain} ${labelMode === 1 ? styles.labelVisible : styles.labelHidden}`}>
-                      {pct}%
-                    </span>
-                  </span>
+                  <span className={styles.legendCode}>{d.codigo}</span>
+                  <span className={styles.legendPct}>{pct}%</span>
                 </div>
               )
             })}
