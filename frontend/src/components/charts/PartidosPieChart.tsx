@@ -10,7 +10,7 @@ import {
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import type { EstadisticaPartido } from '@/lib/api'
-import { getPaletaPartido } from '@/lib/partidos'
+import { getPaletaPartido, getBanderaUrl, getSiglasPopulares } from '@/lib/partidos'
 import { formatTitle } from '@/lib/utils'
 import styles from './PartidosPieChart.module.css'
 
@@ -115,7 +115,7 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
   const paletas = chartData.map(d => getPaletaPartido(d.codigo))
   // Usamos el código como label para que el plugin lo muestre en el arco
   const chartJsData = {
-    labels: chartData.map(d => d.codigo),
+    labels: chartData.map(d => getSiglasPopulares(d.codigo)),
     datasets: [{
       data: chartData.map(d => d.value),
       backgroundColor: paletas.map(p => p.bg + 'dd'),
@@ -224,7 +224,10 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
             return (
               <Link key={p.partido_id} href={`/partidos/${p.codigo}`} className={styles.rankRow} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <span className={styles.rankNum}>{i + 1}</span>
-                <span className={styles.flagSwatch} style={{ background: paleta.bg }} />
+                {getBanderaUrl(p.codigo)
+                  ? <img src={getBanderaUrl(p.codigo)!} alt="" className={styles.flagBandera} aria-hidden />
+                  : <span className={styles.flagSwatch} style={{ background: paleta.bg }} />
+                }
                 <div className={styles.rankBody}>
                   <div className={styles.rankTop}>
                     <span className={styles.rankName}>

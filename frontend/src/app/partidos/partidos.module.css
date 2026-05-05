@@ -216,6 +216,23 @@
   transform: translateX(2px);
 }
 
+/* ── Results row ── */
+.resultsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.resultsCount {
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 /* Columna izquierda con el número */
 .cardLeft {
   display: flex;
@@ -281,6 +298,18 @@
   border-radius: 8px;
   flex-shrink: 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.cardFlagImg {
+  width: 84px;
+  height: 54px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: #fff;
+  padding: 4px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
 }
 
 .cardCode {
@@ -456,6 +485,10 @@
   }
 
   .hero { padding: 40px 0 36px; }
+
+  .main {
+    padding: 24px 0 60px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -490,6 +523,7 @@
 
   /* Flag: pequeño, redondo */
   .cardFlag { width: 22px; height: 22px; border-radius: 50%; }
+  .cardFlagImg { width: 60px; height: 38px; border-radius: 8px; padding: 3px; }
 
   /* Nombre: wrappea en hasta 2 líneas */
   .cardName {

@@ -28,23 +28,23 @@ const PALETAS: Record<string, PartidoPaleta> = {
   // ── Acción Ciudadana (amarillo) ──────────────────────────────────────
   AC: { bg: '#f5a623', text: '#2d1800', soft: '#fef7e8', border: '#f5a623' },
 
-  // ── Progreso Social Democrático (naranja) ───────────────────────────
-  PSD: { bg: '#e05c1a', text: '#fff', soft: '#fdeee6', border: '#e05c1a' },
+  // ── Progreso Social Democrático (azul/verde) ────────────────────────
+  PSD: { bg: '#040F9F', text: '#fff', soft: '#e6e7f5', border: '#040F9F' },
 
-  // ── Frente Amplio (rojo) ────────────────────────────────────────────
-  PFA: { bg: '#c0392b', text: '#fff', soft: '#fbeae9', border: '#c0392b' },
+  // ── Frente Amplio (amarillo) ─────────────────────────────────────────
+  PFA: { bg: '#FFD600', text: '#1a1100', soft: '#fffbe6', border: '#FFD600' },
 
   // ── Nueva República (azul oscuro) ───────────────────────────────────
   NR: { bg: '#1b2f6e', text: '#fff', soft: '#e8ecf7', border: '#1b2f6e' },
 
-  // ── Restauración Nacional (rojo oscuro) ─────────────────────────────
-  RN: { bg: '#8b0000', text: '#fff', soft: '#f5e6e6', border: '#8b0000' },
+  // ── Restauración Nacional (azul y amarillo) ──────────────────────────
+  RN: { bg: '#0056B3', text: '#fff', soft: '#e6eff7', border: '#0056B3' },
 
-  // ── Liberal Progresista (violeta) ───────────────────────────────────
-  LP: { bg: '#6b2fa0', text: '#fff', soft: '#f2eaf9', border: '#6b2fa0' },
+  // ── Liberal Progresista (naranja) ────────────────────────────────────
+  LP: { bg: '#F37021', text: '#fff', soft: '#fef0e8', border: '#F37021' },
 
-  // ── Movimiento Libertario (amarillo-naranja) ─────────────────────────
-  ML: { bg: '#f7b731', text: '#1a1100', soft: '#fef9e8', border: '#f7b731' },
+  // ── Movimiento Libertario (rojo) ─────────────────────────────────────
+  ML: { bg: '#D60228', text: '#fff', soft: '#fbe6ea', border: '#D60228' },
 
   // ── Republicano Social Cristiano (azul celeste) ──────────────────────
   RSC: { bg: '#2980b9', text: '#fff', soft: '#e8f4fb', border: '#2980b9' },
@@ -112,4 +112,48 @@ export function getPaletaPartido(codigo: string): PartidoPaleta {
  */
 export function getColoresGrafico(codigos: string[]): string[] {
   return codigos.map(c => getPaletaPartido(c).bg)
+}
+
+const CODIGOS_CON_BANDERA = new Set([
+  'AC', 'ADC', 'ASE', 'FD', 'IN', 'LN', 'LP', 'ML',
+  'NR', 'PFA', 'PSD', 'PU', 'RC', 'RN', 'RSC', 'UN', 'USC',
+])
+
+export function getBanderaUrl(codigo: string): string | null {
+  if (!codigo) return null
+  if (CODIGOS_CON_BANDERA.has(codigo.toUpperCase())) {
+    return `/partidos/banderas/${codigo.toLowerCase()}.jpg`
+  }
+  return null
+}
+
+/** Diccionario de mapeo de códigos oficiales a siglas populares */
+export const SIGLAS_POPULARES: Record<string, string> = {
+  'LN': 'PLN',
+  'USC': 'PUSC',
+  'AC': 'PAC',
+  'PSD': 'PPSD',
+  'PFA': 'FA',
+  'NR': 'PNR',
+  'RN': 'PRN',
+  'LP': 'PLP',
+  'ML': 'PML',
+  'RSC': 'PRSC',
+  'IN': 'PIN',
+  'ASE': 'PASE',
+  'RC': 'PRC',
+  'FD': 'PFD',
+  'UN': 'PUN'
+}
+
+/**
+ * Retorna la sigla popular de un partido dado su código oficial.
+ * Si no tiene una sigla popular mapeada, retorna el código original.
+ */
+export function getSiglasPopulares(codigo: string): string {
+  if (!codigo) return ''
+  const upper = codigo.toUpperCase()
+  // Si empieza con DI, es un diputado independiente
+  if (upper.startsWith('DI')) return 'IND'
+  return SIGLAS_POPULARES[upper] || upper
 }

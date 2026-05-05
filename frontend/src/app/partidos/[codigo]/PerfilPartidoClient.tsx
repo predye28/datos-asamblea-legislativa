@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { PerfilPartido } from '@/lib/api'
 import { formatName, formatDiputadoName, cleanText } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
-import { getPaletaPartido } from '@/lib/partidos'
+import { getPaletaPartido, getBanderaUrl, getSiglasPopulares } from '@/lib/partidos'
+import { DiputadoAvatar } from '@/components/ui/DiputadoAvatar'
 import styles from './perfil.module.css'
 
 function IconArrowLeft() {
@@ -109,6 +110,7 @@ export default function PerfilPartidoClient({ perfil }: Props) {
   const { dict } = useT()
   const t = dict.partidoDetalle
   const paleta = getPaletaPartido(perfil.codigo)
+  const banderaUrl = getBanderaUrl(perfil.codigo)
   const router = useRouter()
 
   const maxAdm = Math.max(...perfil.por_administracion.map(a => a.total_propuestas), 1)
@@ -156,9 +158,13 @@ export default function PerfilPartidoClient({ perfil }: Props) {
           <div className={styles.heroRight}>
             <div
               className={styles.heroFlag}
-              style={{ background: paleta.bg, '--hero-flag-color': paleta.bg } as React.CSSProperties}
+              style={{ background: banderaUrl ? '#fff' : paleta.bg, '--hero-flag-color': paleta.bg } as React.CSSProperties}
             >
-              <span className={styles.heroFlagCode}>{perfil.codigo}</span>
+              {banderaUrl ? (
+                <img src={banderaUrl} alt={perfil.nombre} className={styles.heroFlagImg} />
+              ) : (
+                <span className={styles.heroFlagCode}>{getSiglasPopulares(perfil.codigo)}</span>
+              )}
             </div>
           </div>
         </div>
@@ -304,9 +310,12 @@ export default function PerfilPartidoClient({ perfil }: Props) {
                     <span className={styles.dipRowDivider} />
 
                     {/* Avatar */}
-                    <div className={styles.dipRowAvatar} style={{ background: paleta.soft, color: paleta.bg }}>
-                      {(d.apellidos?.[0] ?? d.nombre?.[0] ?? '·').toUpperCase()}
-                    </div>
+                    <DiputadoAvatar
+                      nombreCompleto={d.nombre_completo}
+                      size="sm"
+                      partyColor={paleta.bg}
+                      className={styles.dipRowAvatar}
+                    />
 
                     {/* Body */}
                     <div className={styles.dipRowBody}>

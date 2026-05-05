@@ -585,6 +585,8 @@ export const en: Dictionary = {
     sinResultadosTitle: 'No results',
     sinResultadosDesc: 'No parties with activity in that term.',
     verPerfil: 'View profile →',
+    partidoSingular: 'party',
+    partidoPlural: 'parties',
   },
 
   partidoDetalle: {

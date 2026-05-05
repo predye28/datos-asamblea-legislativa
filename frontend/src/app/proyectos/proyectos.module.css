@@ -921,6 +921,10 @@
     font-size: 14px;
   }
 
+  .main {
+    padding: 24px 0 60px;
+  }
+
   .searchInput {
     font-size: 14px;
     padding: 13px 44px 13px 46px;

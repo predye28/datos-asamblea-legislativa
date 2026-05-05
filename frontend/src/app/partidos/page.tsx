@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { EstadisticaPartido } from '@/lib/api'
-import { getPaletaPartido } from '@/lib/partidos'
+import { getPaletaPartido, getBanderaUrl, getSiglasPopulares } from '@/lib/partidos'
 import { useLegislativePeriods } from '@/lib/periodos'
 import { useT } from '@/i18n/LanguageProvider'
 import { formatName } from '@/lib/utils'
@@ -53,6 +53,7 @@ function PartidoCard({
   const { dict } = useT()
   const t = dict.partidosPage
   const paleta = getPaletaPartido(partido.codigo)
+  const banderaUrl = getBanderaUrl(partido.codigo)
   const barW = maxPropuestas > 0 ? (partido.total_propuestas / maxPropuestas) * 100 : 0
 
   return (
@@ -75,14 +76,14 @@ function PartidoCard({
       {/* Cuerpo principal */}
       <div className={styles.cardBody}>
         <div className={styles.cardNameRow}>
-          <span
-            className={styles.cardFlag}
-            style={{ background: paleta.bg }}
-            title={partido.nombre}
-          />
+          {banderaUrl ? (
+            <img src={banderaUrl} alt="" className={styles.cardFlagImg} aria-hidden />
+          ) : (
+            <span className={styles.cardFlag} style={{ background: paleta.bg }} title={partido.nombre} />
+          )}
           <span className={styles.cardName}>{formatName(partido.nombre)}</span>
           <span className={styles.cardCode} style={{ color: paleta.bg, borderColor: `${paleta.bg}55` }}>
-            {partido.codigo}
+            {getSiglasPopulares(partido.codigo)}
           </span>
         </div>
         <div className={styles.cardBar}>
@@ -209,6 +210,15 @@ export default function PartidosPage() {
       {/* Main content */}
       <div className={styles.main}>
         <div className={styles.container}>
+
+          {!loading && datos && datos.length > 0 && (
+            <div className={styles.resultsRow}>
+              <p className={styles.resultsCount}>
+                {datos.length.toLocaleString(dict.common.locale)} {datos.length !== 1 ? t.partidoPlural : t.partidoSingular}
+              </p>
+            </div>
+          )}
+
           {loading ? (
             <div className={styles.loading}>{t.cargando}</div>
           ) : !datos || datos.length === 0 ? (

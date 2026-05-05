@@ -5,7 +5,8 @@ import type { PerfilDiputado, HistorialPartido } from '@/lib/api'
 import { formatTitle, formatDate, formatQuantity, formatDiputadoName, cleanText } from '@/lib/utils'
 import { EstadoChip } from '@/components/ui/EstadoChip'
 import { useT } from '@/i18n/LanguageProvider'
-import { getPaletaPartido } from '@/lib/partidos'
+import { getPaletaPartido, getBanderaUrl } from '@/lib/partidos'
+import { DiputadoAvatar } from '@/components/ui/DiputadoAvatar'
 import styles from './perfil.module.css'
 
 function avatarHue(seed: string) {
@@ -28,10 +29,6 @@ function IconChevron() {
       <path d="m9 18 6-6-6-6"/>
     </svg>
   )
-}
-
-function getInitials(name: string) {
-  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }
 
 interface Props {
@@ -76,14 +73,12 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
       <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
         <div className={styles.heroInner}>
-          <div
-            className={styles.avatar}
-            style={{ background: paleta
-              ? `linear-gradient(135deg, ${paleta.bg}, color-mix(in srgb, ${paleta.bg} 70%, #000))`
-              : `linear-gradient(135deg, hsl(${hue} 55% 32%), hsl(${(hue + 40) % 360} 55% 20%))` }}
-          >
-            {getInitials(apellidosRaw)}
-          </div>
+          <DiputadoAvatar
+            nombreCompleto={apellidosRaw}
+            size="lg"
+            partyColor={paleta?.bg}
+            hue={hue}
+          />
           <div className={styles.heroText}>
             <span className={styles.heroEyebrow}>{t.heroEyebrow}</span>
             {/* Nombre del diputado — NO se traduce */}
@@ -150,7 +145,10 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
                     className={`${styles.partidoCard} ${styles.partidoCardCurrent}`}
                     style={{ '--partido-color': paleta!.bg } as React.CSSProperties}
                   >
-                    <div className={styles.partidoCardSwatch} style={{ background: paleta!.bg }} />
+                    {getBanderaUrl(partidoActual!.partido_codigo)
+                      ? <img src={getBanderaUrl(partidoActual!.partido_codigo)!} alt="" className={styles.partidoCardBandera} aria-hidden />
+                      : <div className={styles.partidoCardSwatch} style={{ background: paleta!.bg }} />
+                    }
                     <div className={styles.partidoCardInfo}>
                       <span className={styles.partidoCardNombre}>{formatTitle(partidoActual!.partido_nombre)}</span>
                       <span className={styles.partidoCardAdm}>{partidoActual!.administracion}</span>
@@ -173,7 +171,10 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
                           className={styles.partidoCard}
                           style={{ '--partido-color': p.bg } as React.CSSProperties}
                         >
-                          <div className={styles.partidoCardSwatch} style={{ background: p.bg }} />
+                          {getBanderaUrl(h.partido_codigo)
+                            ? <img src={getBanderaUrl(h.partido_codigo)!} alt="" className={styles.partidoCardBandera} aria-hidden />
+                            : <div className={styles.partidoCardSwatch} style={{ background: p.bg }} />
+                          }
                           <div className={styles.partidoCardInfo}>
                             <span className={styles.partidoCardNombre}>{formatTitle(h.partido_nombre)}</span>
                             <span className={styles.partidoCardAdm}>{h.administracion}</span>
@@ -210,7 +211,10 @@ export default function PerfilClient({ perfil, apellidosRaw }: Props) {
                               const pp = getPaletaPartido(h.partido_codigo)
                               return (
                                 <span key={i} className={styles.periodoPartidoItem}>
-                                  <span className={styles.periodoFlagSwatch} style={{ background: pp.bg }} />
+                                  {getBanderaUrl(h.partido_codigo)
+                                  ? <img src={getBanderaUrl(h.partido_codigo)!} alt="" className={styles.periodoFlagBandera} aria-hidden />
+                                  : <span className={styles.periodoFlagSwatch} style={{ background: pp.bg }} />
+                                }
                                   <span className={styles.periodoPartidoNombre}>
                                     {h.partido_nombre}
                                   </span>

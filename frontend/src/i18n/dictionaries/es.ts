@@ -592,6 +592,8 @@ export const es = {
     sinResultadosTitle: 'Sin resultados',
     sinResultadosDesc: 'No hay partidos con actividad en ese período.',
     verPerfil: 'Ver perfil →',
+    partidoSingular: 'partido',
+    partidoPlural: 'partidos',
   },
 
   partidoDetalle: {

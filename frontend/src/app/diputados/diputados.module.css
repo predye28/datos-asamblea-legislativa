@@ -606,7 +606,9 @@
 }
 
 .partidoBadge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   font-weight: 600;
   font-family: var(--mono);
@@ -618,8 +620,18 @@
   margin-bottom: 5px;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.partidoBandera {
+  width: 36px;
+  height: 23px;
+  object-fit: contain;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: #fff;
+  padding: 1px;
+  box-sizing: border-box;
 }
 
 .barRow {
@@ -830,7 +842,7 @@
   }
 
   .main {
-    padding: 28px 0 60px;
+    padding: 24px 0 60px;
   }
 
   .card {

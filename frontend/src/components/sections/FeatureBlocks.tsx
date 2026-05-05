@@ -46,7 +46,7 @@ function buildPayloads(
     },
     {
       id: 'partidos',
-      accent: '#10B981',
+      accent: '#14B8A6',
       href: '/partidos',
       data: {
         totalPartidos: partidos?.por_partido?.length ?? null,

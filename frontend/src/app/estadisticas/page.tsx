@@ -316,6 +316,13 @@ export default function EstadisticasPage() {
     setCustomHasta('')
   }
 
+  let _sec = 1
+  const secPartidos = isLegislativePeriod && metricasPartidos && metricasPartidos.por_partido.length > 0 ? String(_sec++).padStart(2, '0') : ''
+  const secTemas = categorias.length > 0 ? String(_sec++).padStart(2, '0') : ''
+  const secDiputados = topDip.length > 0 || topEfic.length > 0 ? String(_sec++).padStart(2, '0') : ''
+  const secRitmo = mensualStats && porMes.length >= 3 ? String(_sec++).padStart(2, '0') : ''
+  const secPulso = timelineStats ? String(_sec++).padStart(2, '0') : ''
+
   return (
     <div className={styles.page}>
 
@@ -376,7 +383,7 @@ export default function EstadisticasPage() {
             {isLegislativePeriod && metricasPartidos && metricasPartidos.por_partido.length > 0 && (
               <>
                 <SectionIntro
-                  num="01"
+                  num={secPartidos}
                   kicker="Partidos políticos"
                   title="Actividad legislativa por partido"
                   deck={`De ${fmtN(metricasPartidos.total_propuestas, dict.common.locale)} propuestas registradas en este período, así se distribuyen entre los partidos con representación en la Asamblea.`}
@@ -396,7 +403,7 @@ export default function EstadisticasPage() {
             {categorias.length > 0 && (
               <>
                 <SectionIntro
-                  num="01"
+                  num={secTemas}
                   kicker={t.section01Kicker}
                   title={t.section01Title}
                   deck={t.section01Deck}
@@ -450,7 +457,7 @@ export default function EstadisticasPage() {
             {(topDip.length > 0 || topEfic.length > 0) && (
               <>
                 <SectionIntro
-                  num="02"
+                  num={secDiputados}
                   kicker={t.section02Kicker}
                   title={t.section02Title}
                   deck={
@@ -658,7 +665,7 @@ export default function EstadisticasPage() {
             {mensualStats && porMes.length >= 3 && (
               <>
                 <SectionIntro
-                  num="03"
+                  num={secRitmo}
                   kicker={t.section03Kicker}
                   title={t.section03Title}
                   deck={t.section03Deck}
@@ -684,7 +691,7 @@ export default function EstadisticasPage() {
             {timelineStats && (
               <>
                 <SectionIntro
-                  num="04"
+                  num={secPulso}
                   kicker={t.section04Kicker}
                   title={t.section04Title(timelineStats.totalAnios)}
                   deck={t.section04Deck(timelineStats.desde, timelineStats.hasta)}

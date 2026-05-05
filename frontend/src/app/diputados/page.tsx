@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { DiputadoRanking, PartidoResumen } from '@/lib/api'
-import { getPaletaPartido } from '@/lib/partidos'
+import { getPaletaPartido, getBanderaUrl } from '@/lib/partidos'
 import { useLegislativePeriods, getPeriodos, getDefaultLegislativePeriodLabel } from '@/lib/periodos'
-import { formatDiputadoName, cleanText } from '@/lib/utils'
+import { formatDiputadoName } from '@/lib/utils'
+import { DiputadoAvatar } from '@/components/ui/DiputadoAvatar'
 import { useT } from '@/i18n/LanguageProvider'
 import styles from './diputados.module.css'
 import FilterPill from '@/components/ui/FilterPill'
@@ -51,17 +52,6 @@ function rankClass(i: number) {
   return styles.rankPlain
 }
 
-function getInitials(nombreCompleto: string) {
-  const words = cleanText(nombreCompleto).toLowerCase().split(/\s+/).filter(w => w.length > 0)
-  if (words.length === 0) return '·'
-  const reordered = words.length === 3
-    ? [words[2], words[0]]
-    : words.length === 4
-    ? [words[2], words[0]]
-    : [words[0], words[1]]
-  return reordered.filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '·'
-}
-
 function avatarHue(seed: string) {
   let h = 0
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360
@@ -72,23 +62,20 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
   const { dict } = useT()
   const pct = max > 0 ? (d.total_proyectos / max) * 100 : 0
   const slug = encodeURIComponent(d.nombre_completo)
-  const initials = getInitials(d.nombre_completo)
   const hue = avatarHue(d.nombre_completo)
   const isTop3 = index < 3
   const paleta = d.partido_codigo ? getPaletaPartido(d.partido_codigo) : null
+  const banderaUrl = d.partido_codigo ? getBanderaUrl(d.partido_codigo) : null
 
   return (
     <Link href={`/diputados/${slug}`} className={styles.card}>
       <div className={styles.avatarWrap}>
-        <div
-          className={styles.avatar}
-          style={{ background: paleta
-            ? `linear-gradient(135deg, ${paleta.bg}, color-mix(in srgb, ${paleta.bg} 70%, #000))`
-            : `linear-gradient(135deg, hsl(${hue} 55% 28%), hsl(${(hue + 40) % 360} 55% 18%))` }}
-          aria-hidden
-        >
-          {initials}
-        </div>
+        <DiputadoAvatar
+          nombreCompleto={d.nombre_completo}
+          size="md"
+          partyColor={paleta?.bg}
+          hue={hue}
+        />
         <div className={`${styles.rankBadge} ${rankClass(index)}`}>
           {isTop3 ? (index === 0 ? '1º' : index === 1 ? '2º' : '3º') : `#${index + 1}`}
         </div>
@@ -101,6 +88,7 @@ function DiputadoCard({ d, index, max }: { d: DiputadoRanking; index: number; ma
         </p>
         {d.partido_nombre && paleta && (
           <span className={styles.partidoBadge} style={{ background: paleta.soft, color: paleta.bg, borderColor: paleta.border }}>
+            {banderaUrl && <img src={banderaUrl} alt="" className={styles.partidoBandera} aria-hidden />}
             {d.partido_nombre}
           </span>
         )}
