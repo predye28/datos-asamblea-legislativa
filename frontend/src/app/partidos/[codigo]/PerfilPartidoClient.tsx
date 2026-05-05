@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { PerfilPartido } from '@/lib/api'
 import { formatName, formatDiputadoName, cleanText } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
@@ -108,6 +109,7 @@ export default function PerfilPartidoClient({ perfil }: Props) {
   const { dict } = useT()
   const t = dict.partidoDetalle
   const paleta = getPaletaPartido(perfil.codigo)
+  const router = useRouter()
 
   const maxAdm = Math.max(...perfil.por_administracion.map(a => a.total_propuestas), 1)
   const maxDip = Math.max(...perfil.top_diputados.map(d => d.total_proyectos), 1)
@@ -219,6 +221,10 @@ export default function PerfilPartidoClient({ perfil }: Props) {
                   <div
                     key={a.administracion}
                     className={`${styles.admRow} ${isPeak ? styles.admRowPeak : ''}`}
+                    onClick={() => router.push(`/proyectos?partido=${perfil.partido_id}&periodo=${encodeURIComponent(a.administracion)}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') router.push(`/proyectos?partido=${perfil.partido_id}&periodo=${encodeURIComponent(a.administracion)}`) }}
                   >
                     <div className={styles.admRowLeft}>
                       <span className={styles.admRowPeriodo}>{a.administracion}</span>
@@ -251,16 +257,16 @@ export default function PerfilPartidoClient({ perfil }: Props) {
                         <span>Aprobación</span>
                       </div>
                     </div>
-                    <div className={styles.admRowActions}>
+                    <div className={styles.admRowActions} onClick={e => e.stopPropagation()}>
                       <Link
                         href={`/proyectos?partido=${perfil.partido_id}&periodo=${encodeURIComponent(a.administracion)}`}
-                        className={styles.admRowBtn}
+                        className={`${styles.admRowBtn} ${styles.admRowBtnPrimary}`}
                       >
                         <IconExternalLink /> Ver proyectos
                       </Link>
                       <Link
                         href={`/estadisticas?periodo=${encodeURIComponent(a.administracion)}`}
-                        className={styles.admRowBtn}
+                        className={`${styles.admRowBtn} ${styles.admRowBtnStats}`}
                       >
                         <IconBarChart /> Ver estadísticas
                       </Link>

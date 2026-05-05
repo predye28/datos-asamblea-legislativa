@@ -233,10 +233,8 @@
 }
 
 @media (max-width: 720px) {
-  /* Ocultar la fila inline del desktop */
+  /* Ocultar fila inline desktop — el toggle móvil toma el control */
   .filtersInner { display: none; }
-
-  /* Separador no aplica en móvil */
   .filtersSep { display: none; }
 }
 
@@ -255,6 +253,14 @@
     padding: 10px 16px;
     max-width: var(--container-max);
     margin: 0 auto;
+  }
+
+  /* Ícono celeste del toggle */
+  .filtersMobileIcon {
+    display: flex;
+    color: var(--accent);
+    filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.45));
+    flex-shrink: 0;
   }
 
   /* Botón toggle "Filtros ▾" */

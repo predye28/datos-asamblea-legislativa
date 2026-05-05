@@ -394,7 +394,7 @@ export const es = {
     heroTitle: 'Estadísticas',
     heroDesc: 'Una mirada a los temas, los diputados y el ritmo del trabajo legislativo en Costa Rica.',
 
-    filtroPeriodoLabel: 'Período legislativo',
+    filtroPeriodoLabel: 'Período',
     todosPeriodos: 'Todos los períodos',
     separadorLegislativos: '── Períodos legislativos ──',
     limpiar: 'Limpiar',

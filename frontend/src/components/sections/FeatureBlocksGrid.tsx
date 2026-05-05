@@ -123,6 +123,13 @@ export default function FeatureBlocksGrid({ cards }: Props) {
       return
     }
 
+    // Si ya es visible al montar, animar de inmediato
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setInView(true)
+      return
+    }
+
     const obs = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -133,7 +140,7 @@ export default function FeatureBlocksGrid({ cards }: Props) {
           }
         }
       },
-      { threshold: 0.15 },
+      { threshold: 0, rootMargin: '0px 0px 400px 0px' },
     )
     obs.observe(el)
     return () => obs.disconnect()

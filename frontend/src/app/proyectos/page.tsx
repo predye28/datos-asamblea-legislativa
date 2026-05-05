@@ -355,12 +355,12 @@ function ProyectosContent() {
       <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
         {/* ── Vista móvil: botón toggle + panel colapsable ── */}
         <div className={styles.filtersMobileHeader}>
-          <span className={styles.filtersLabel}><IconFilter /> {dict.proyectosPage.filtersLabel}</span>
           <button
             className={`${styles.filtersMobileToggle} ${filtersOpen ? styles.filtersMobileToggleOpen : ''}`}
             onClick={() => setFiltersOpen(v => !v)}
             aria-expanded={filtersOpen}
           >
+            <span className={styles.filtersMobileIcon}><IconFilter /></span>
             {activeFiltersCount > 0 && (
               <span className={styles.filtersBadge}>{activeFiltersCount}</span>
             )}
@@ -435,7 +435,7 @@ function ProyectosContent() {
 
         {/* ── Vista escritorio: fila inline ── */}
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> {dict.proyectosPage.filtersLabel}</span>
+          <span className={styles.filtersLabel}><IconFilter /></span>
 
           <div className={styles.selects}>
             <FilterPill

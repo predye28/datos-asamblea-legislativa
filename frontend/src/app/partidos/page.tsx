@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { EstadisticaPartido } from '@/lib/api'
@@ -56,7 +56,11 @@ function PartidoCard({
   const barW = maxPropuestas > 0 ? (partido.total_propuestas / maxPropuestas) * 100 : 0
 
   return (
-    <Link href={`/partidos/${partido.codigo}`} className={styles.card}>
+    <Link
+      href={`/partidos/${partido.codigo}`}
+      className={styles.card}
+      style={{ '--party-color': paleta.bg } as CSSProperties}
+    >
 
       {/* Columna izquierda: número de ranking */}
       <div className={styles.cardLeft}>
@@ -88,21 +92,22 @@ function PartidoCard({
           />
         </div>
         <div className={styles.cardMeta}>
-          <span className={styles.cardMetaItem}>
+          {/* Leyes — verde, en desktop sale primero, en móvil va a la derecha */}
+          <span className={`${styles.cardMetaItem} ${styles.cardMetaLeyes}`}>
             <strong className={styles.cardMetaVal}>{partido.leyes_aprobadas}</strong>
             <span className={styles.cardMetaLabel}>
               {cap(partido.leyes_aprobadas === 1 ? t.leyesSingular : t.leyesPlural)}
             </span>
           </span>
-          <span className={styles.cardMetaSep} aria-hidden>/</span>
-          <span className={styles.cardMetaItem}>
+          <span className={`${styles.cardMetaSep} ${styles.cardMetaTasaSep}`} aria-hidden>/</span>
+          <span className={`${styles.cardMetaItem} ${styles.cardMetaTasa}`}>
             <strong className={styles.cardMetaValAccent}>{partido.tasa_aprobacion}%</strong>
             <span className={styles.cardMetaLabel}>{cap(t.tasaAprobacion)}</span>
           </span>
           {partido.total_diputados > 0 && (
             <>
-              <span className={styles.cardMetaSep} aria-hidden>/</span>
-              <span className={styles.cardMetaItem}>
+              <span className={`${styles.cardMetaSep} ${styles.cardMetaDipSep}`} aria-hidden>/</span>
+              <span className={`${styles.cardMetaItem} ${styles.cardMetaDip}`}>
                 <strong className={styles.cardMetaValMuted}>{partido.total_diputados}</strong>
                 <span className={styles.cardMetaLabel}>
                   {cap(partido.total_diputados === 1 ? t.diputadosSingular : t.diputadosPlural)}
@@ -110,6 +115,13 @@ function PartidoCard({
               </span>
             </>
           )}
+          {/* Propuestas — solo visible en móvil */}
+          <span className={`${styles.cardMetaItem} ${styles.cardMetaProp}`}>
+            <strong className={styles.cardMetaValMuted}>{partido.total_propuestas.toLocaleString('es-CR')}</strong>
+            <span className={styles.cardMetaLabel}>
+              {cap(partido.total_propuestas === 1 ? t.propuestasSingular : t.propuestasPlural)}
+            </span>
+          </span>
         </div>
       </div>
 

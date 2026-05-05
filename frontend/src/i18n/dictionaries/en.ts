@@ -387,7 +387,7 @@ export const en: Dictionary = {
     heroTitle: 'Statistics',
     heroDesc: 'A look at the topics, the legislators, and the pace of legislative work in Costa Rica.',
 
-    filtroPeriodoLabel: 'Legislative term',
+    filtroPeriodoLabel: 'Term',
     todosPeriodos: 'All terms',
     separadorLegislativos: '── Legislative terms ──',
     limpiar: 'Clear',

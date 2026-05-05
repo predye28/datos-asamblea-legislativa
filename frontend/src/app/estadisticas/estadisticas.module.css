@@ -719,17 +719,14 @@
     /* Sin overflow-x: auto para no recortar el dropdown */
   }
 
-  /* Label «solo icono» en móvil */
   .filtersLabel {
-    font-size: 0; /* oculta el texto */
-    gap: 0;
+    font-size: 11px;
     margin-right: 0;
     flex-shrink: 0;
   }
   .filtersLabel svg {
-    font-size: initial;
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
   .filtersSep { display: none; }

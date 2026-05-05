@@ -288,12 +288,12 @@ export default function DiputadosPage() {
       <div className={`${styles.filtersBar} ${filtersAnimated ? styles.filtersBarReady : ''}`}>
         {/* ── Vista móvil: toggle compacto ── */}
         <div className={styles.filtersMobileHeader}>
-          <span className={styles.filtersLabel}><IconFilter /> {dict.diputadosPage.filtersLabel}</span>
           <button
             className={`${styles.filtersMobileToggle} ${filtersOpen ? styles.filtersMobileToggleOpen : ''}`}
             onClick={() => setFiltersOpen(v => !v)}
             aria-expanded={filtersOpen}
           >
+            <span className={styles.filtersMobileIcon}><IconFilter /></span>
             {activeFiltersCount > 0 && (
               <span className={styles.filtersBadge}>{activeFiltersCount}</span>
             )}
@@ -344,7 +344,7 @@ export default function DiputadosPage() {
 
         {/* ── Vista escritorio: fila inline ── */}
         <div className={styles.filtersInner}>
-          <span className={styles.filtersLabel}><IconFilter /> {dict.diputadosPage.filtersLabel}</span>
+          <span className={styles.filtersLabel}><IconFilter /></span>
 
           <FilterPill
             value={periodo}

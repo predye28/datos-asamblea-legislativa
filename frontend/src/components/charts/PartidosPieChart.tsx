@@ -131,7 +131,12 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
     responsive: true,
     maintainAspectRatio: true,
     cutout: '50%',
-    animation: { animateRotate: true, animateScale: false, duration: 600 },
+    animation: {
+      animateRotate: true,
+      animateScale: false,
+      duration: 1100,
+      easing: 'easeOutQuart',
+    } as import('chart.js').ChartOptions<'doughnut'>['animation'],
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -191,67 +196,7 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
         </div>
       </div>
 
-      {/* Insights */}
-      {(datos[0] || topByApproval) && (
-        <div className={styles.insights}>
-          {datos[0] && (() => {
-            const paleta = getPaletaPartido(datos[0].codigo)
-            const moreActive = datos[0]
-            return (
-              <div className={styles.insightCard} style={{ borderLeftColor: paleta.bg }}>
-                <div className={styles.insightBody}>
-                  <div className={styles.insightKicker}>Partido más activo</div>
-                  <div className={styles.insightName} style={{ color: paleta.bg }}>
-                    {formatTitle(moreActive.nombre.length > 36 ? moreActive.nombre.slice(0, 34) + '…' : moreActive.nombre)}
-                  </div>
-                  <div className={styles.insightStats}>
-                    <div className={styles.insightStat}>
-                      <strong>{moreActive.total_propuestas}</strong>
-                      <span>proyectos presentados</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e' }}>{moreActive.leyes_aprobadas}</strong>
-                      <span>leyes aprobadas</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: 'var(--accent)' }}>{moreActive.tasa_aprobacion}%</strong>
-                      <span>de eficacia</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-          {topByApproval && (() => {
-            const paleta = getPaletaPartido(topByApproval.codigo)
-            return (
-              <div className={styles.insightCard} style={{ borderLeftColor: '#22c55e' }}>
-                <div className={styles.insightBody}>
-                  <div className={styles.insightKicker}>Mayor tasa de aprobación</div>
-                  <div className={styles.insightName} style={{ color: paleta.bg }}>
-                    {formatTitle(topByApproval.nombre.length > 36 ? topByApproval.nombre.slice(0, 34) + '…' : topByApproval.nombre)}
-                  </div>
-                  <div className={styles.insightStats}>
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e', fontSize: '22px' }}>{topByApproval.tasa_aprobacion}%</strong>
-                      <span>de sus propuestas se aprobaron</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e' }}>{topByApproval.leyes_aprobadas}</strong>
-                      <span>leyes de {topByApproval.total_propuestas} propuestas</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </div>
-      )}
-
-      {/* Main: donut left + ranking right */}
+      {/* Main: donut izquierda + ranking derecha */}
       <div className={styles.grid}>
 
         {/* Donut Chart.js */}
@@ -266,21 +211,6 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
               </div>
               <div className={styles.centerPeriodo}>{periodo}</div>
             </div>
-          </div>
-
-          {/* Leyenda estática: color + código + % */}
-          <div className={styles.legend}>
-            {chartData.map((d) => {
-              const paleta = getPaletaPartido(d.codigo)
-              const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : '0'
-              return (
-                <div key={d.codigo} className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ background: paleta.bg }} />
-                  <span className={styles.legendCode}>{d.codigo}</span>
-                  <span className={styles.legendPct}>{pct}%</span>
-                </div>
-              )
-            })}
           </div>
         </div>
 
@@ -350,6 +280,66 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
           })}
         </div>
       </div>
+
+      {/* Insights: Partido más activo + Mayor tasa — debajo del ranking */}
+      {(datos[0] || topByApproval) && (
+        <div className={styles.insights}>
+          {datos[0] && (() => {
+            const paleta = getPaletaPartido(datos[0].codigo)
+            const moreActive = datos[0]
+            return (
+              <div className={styles.insightCard} style={{ borderLeftColor: paleta.bg }}>
+                <div className={styles.insightBody}>
+                  <div className={styles.insightKicker}>Partido más activo</div>
+                  <div className={styles.insightName} style={{ color: paleta.bg }}>
+                    {formatTitle(moreActive.nombre.length > 36 ? moreActive.nombre.slice(0, 34) + '…' : moreActive.nombre)}
+                  </div>
+                  <div className={styles.insightStats}>
+                    <div className={styles.insightStat}>
+                      <strong>{moreActive.total_propuestas}</strong>
+                      <span>proyectos presentados</span>
+                    </div>
+                    <div className={styles.insightStatDivider} />
+                    <div className={styles.insightStat}>
+                      <strong style={{ color: '#22c55e' }}>{moreActive.leyes_aprobadas}</strong>
+                      <span>leyes aprobadas</span>
+                    </div>
+                    <div className={styles.insightStatDivider} />
+                    <div className={styles.insightStat}>
+                      <strong style={{ color: 'var(--accent)' }}>{moreActive.tasa_aprobacion}%</strong>
+                      <span>de eficacia</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+          {topByApproval && (() => {
+            const paleta = getPaletaPartido(topByApproval.codigo)
+            return (
+              <div className={styles.insightCard} style={{ borderLeftColor: '#22c55e' }}>
+                <div className={styles.insightBody}>
+                  <div className={styles.insightKicker}>Mayor tasa de aprobación</div>
+                  <div className={styles.insightName} style={{ color: paleta.bg }}>
+                    {formatTitle(topByApproval.nombre.length > 36 ? topByApproval.nombre.slice(0, 34) + '…' : topByApproval.nombre)}
+                  </div>
+                  <div className={styles.insightStats}>
+                    <div className={styles.insightStat}>
+                      <strong style={{ color: '#22c55e', fontSize: '22px' }}>{topByApproval.tasa_aprobacion}%</strong>
+                      <span>de sus propuestas se aprobaron</span>
+                    </div>
+                    <div className={styles.insightStatDivider} />
+                    <div className={styles.insightStat}>
+                      <strong style={{ color: '#22c55e' }}>{topByApproval.leyes_aprobadas}</strong>
+                      <span>leyes de {topByApproval.total_propuestas} propuestas</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
 
     </div>
   )
