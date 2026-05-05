@@ -23,18 +23,18 @@
 }
 
 .md {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  font-size: 18px;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  font-size: 24px;
 }
 
 .lg {
-  width: 88px;
-  height: 88px;
-  border-radius: 22px;
-  font-size: 32px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 24px rgba(0, 0, 0, 0.35);
+  width: 136px;
+  height: 136px;
+  border-radius: 28px;
+  font-size: 48px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Foto encima de las iniciales ── */
@@ -57,9 +57,16 @@
   }
 
   .md {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    font-size: 14px;
+    width: 52px;
+    height: 52px;
+    border-radius: 13px;
+    font-size: 18px;
+  }
+
+  .lg {
+    width: 100px;
+    height: 100px;
+    border-radius: 22px;
+    font-size: 36px;
   }
 }

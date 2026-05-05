@@ -56,7 +56,7 @@
   padding: 0 40px;
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 36px;
 }
 
 .avatar {
@@ -991,12 +991,10 @@
   .heroInner {
     flex-direction: column;
     text-align: center;
-    gap: 16px;
+    gap: 20px;
   }
 
   .heroText { display: flex; flex-direction: column; align-items: center; }
-
-  .avatar { width: 64px; height: 64px; font-size: 22px; }
 
   .statGrid {
     grid-template-columns: repeat(2, 1fr);

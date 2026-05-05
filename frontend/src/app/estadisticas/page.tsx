@@ -9,6 +9,8 @@ import { useLegislativePeriods, getPeriodos } from '@/lib/periodos'
 import { formatTitle, formatDiputadoName } from '@/lib/utils'
 import { useT } from '@/i18n/LanguageProvider'
 import styles from './estadisticas.module.css'
+import { DiputadoAvatar } from '@/components/ui/DiputadoAvatar'
+import { getPaletaPartido } from '@/lib/partidos'
 import FilterPill from '@/components/ui/FilterPill'
 import CountUp from '@/components/shared/CountUp'
 import { Button } from '@/components/ui/Button'
@@ -499,6 +501,11 @@ export default function EstadisticasPage() {
                             className={styles.dipRow}
                           >
                             <span className={`${styles.dipRank} ${medal}`}>{i + 1}</span>
+                            <DiputadoAvatar
+                              nombreCompleto={d.nombre_completo}
+                              size="sm"
+                              partyColor={d.partido_codigo ? getPaletaPartido(d.partido_codigo).bg : undefined}
+                            />
                             <div className={styles.dipBody}>
                               {/* Nombre del diputado — no se traduce */}
                               <div className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</div>
@@ -534,6 +541,11 @@ export default function EstadisticasPage() {
                             className={`${styles.dipRow} ${styles.dipRowGreen}`}
                           >
                             <span className={`${styles.dipRank} ${styles.medalGreen}`}>{i + 1}</span>
+                            <DiputadoAvatar
+                              nombreCompleto={d.nombre_completo}
+                              size="sm"
+                              partyColor={d.partido_codigo ? getPaletaPartido(d.partido_codigo).bg : undefined}
+                            />
                             <div className={styles.dipBody}>
                               <div className={styles.dipName}>{formatDiputadoName(d.nombre_completo)}</div>
                               <div className={styles.dipBar}>

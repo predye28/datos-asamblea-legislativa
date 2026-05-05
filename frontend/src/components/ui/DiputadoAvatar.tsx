@@ -44,6 +44,8 @@ export function DiputadoAvatar({ nombreCompleto, size = 'md', partyColor, hue = 
           src={fotoUrl}
           alt=""
           className={styles.photo}
+          loading="lazy"
+          decoding="async"
           onError={() => setPhotoFailed(true)}
           aria-hidden
         />

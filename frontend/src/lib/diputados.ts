@@ -8,5 +8,5 @@ function toFotoSlug(nombreCompleto: string): string {
 
 export function getFotoUrl(nombreCompleto: string): string {
   if (!nombreCompleto) return ''
-  return `/diputados/fotos/${toFotoSlug(nombreCompleto)}.png`
+  return `/diputados/fotos/${toFotoSlug(nombreCompleto)}.jpg`
 }

@@ -1240,7 +1240,7 @@
 .dipList { display: flex; flex-direction: column; }
 .dipRow {
   display: grid;
-  grid-template-columns: 36px 1fr auto;
+  grid-template-columns: 36px 44px 1fr auto;
   align-items: center;
   gap: 14px;
   padding: 12px 4px;
@@ -1804,7 +1804,7 @@
   .anatomiaPanel { padding: 22px 18px; }
   .anatomiaBajada { grid-template-columns: 1fr; gap: 12px; padding-bottom: 18px; margin-bottom: 18px; }
 
-  .dipRow { grid-template-columns: 30px 1fr auto; gap: 12px; }
+  .dipRow { grid-template-columns: 30px 34px 1fr auto; gap: 10px; }
   .dipRank { width: 28px; height: 28px; font-size: 12px; }
   .dipName { font-size: 14px; }
   .dipMeta strong { font-size: 16px; }
