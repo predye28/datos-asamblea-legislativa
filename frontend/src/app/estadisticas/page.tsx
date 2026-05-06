@@ -503,7 +503,7 @@ export default function EstadisticasPage() {
                             <span className={`${styles.dipRank} ${medal}`}>{i + 1}</span>
                             <DiputadoAvatar
                               nombreCompleto={d.nombre_completo}
-                              size="sm"
+                              size="md"
                               partyColor={d.partido_codigo ? getPaletaPartido(d.partido_codigo).bg : undefined}
                             />
                             <div className={styles.dipBody}>
@@ -543,7 +543,7 @@ export default function EstadisticasPage() {
                             <span className={`${styles.dipRank} ${styles.medalGreen}`}>{i + 1}</span>
                             <DiputadoAvatar
                               nombreCompleto={d.nombre_completo}
-                              size="sm"
+                              size="md"
                               partyColor={d.partido_codigo ? getPaletaPartido(d.partido_codigo).bg : undefined}
                             />
                             <div className={styles.dipBody}>

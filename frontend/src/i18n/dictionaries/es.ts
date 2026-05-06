@@ -164,6 +164,8 @@ export const es = {
     enviarCorreoAria: 'Enviar correo',
     copyrightSuffix: 'La Asamblea al Día · Costa Rica',
     madeBy: 'Hecho por',
+    photoCredit: 'Fotos: Asamblea Legislativa de Costa Rica',
+    photoCreditLicense: 'CC BY-SA 4.0',
   },
 
   proyectos: {

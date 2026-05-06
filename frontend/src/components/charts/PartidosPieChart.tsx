@@ -52,7 +52,7 @@ const arcLabelsPlugin = {
   },
 }
 
-type Vista = 'propuestas' | 'leyes'
+type Vista = 'propuestas' | 'leyes' | 'hemiciclo'
 
 interface Props {
   datos: EstadisticaPartido[]
@@ -60,10 +60,135 @@ interface Props {
   periodo: string
 }
 
+// ── Hemiciclo (parliament chart) ─────────────────────────────────────────────
+
+function buildHemicicloSeats(totalDip: number): { seatsPerRow: number[]; radii: number[] } {
+  const ROWS = 4
+  const INNER_R = 100
+  const ROW_GAP = 36
+  const radii = Array.from({ length: ROWS }, (_, i) => INNER_R + i * ROW_GAP)
+  const totalC = radii.reduce((s, r) => s + r, 0)
+  const seatsPerRow = radii.map(r => Math.round(totalDip * r / totalC))
+  const diff = totalDip - seatsPerRow.reduce((s, n) => s + n, 0)
+  if (diff !== 0) {
+    seatsPerRow[seatsPerRow.indexOf(Math.max(...seatsPerRow))] += diff
+  }
+  return { seatsPerRow, radii }
+}
+
+function HemicicloChart({ datos, periodo }: { datos: EstadisticaPartido[]; periodo: string }) {
+  const totalDip = datos.reduce((s, p) => s + p.total_diputados, 0)
+
+  if (totalDip === 0) {
+    return (
+      <div className={styles.hemicicloEmpty}>
+        No hay datos de composición de diputados para este período.
+      </div>
+    )
+  }
+
+  const partiesWithDip = [...datos]
+    .filter(p => p.total_diputados > 0)
+    .sort((a, b) => b.total_diputados - a.total_diputados)
+
+  const seatColors: string[] = []
+  partiesWithDip.forEach(p => {
+    const color = getPaletaPartido(p.codigo).bg
+    for (let i = 0; i < p.total_diputados; i++) seatColors.push(color)
+  })
+
+  const CX = 270
+  const CY = 238
+  const SEAT_R = 7
+  const { seatsPerRow, radii } = buildHemicicloSeats(totalDip)
+
+  const seats: { x: number; y: number }[] = []
+  seatsPerRow.forEach((n, row) => {
+    const r = radii[row]
+    for (let j = 0; j < n; j++) {
+      const angle = Math.PI - (n === 1 ? Math.PI / 2 : (j / (n - 1)) * Math.PI)
+      seats.push({ x: CX + r * Math.cos(angle), y: CY - r * Math.sin(angle) })
+    }
+  })
+
+  return (
+    <div className={styles.hemicicloWrap}>
+      <svg
+        viewBox="0 0 540 300"
+        className={styles.hemicicloSvg}
+        aria-label={`Composición de la Asamblea - ${periodo}`}
+        role="img"
+      >
+        {seats.map((seat, i) => (
+          <circle
+            key={i}
+            cx={seat.x}
+            cy={seat.y}
+            r={SEAT_R}
+            fill={seatColors[i] ?? '#6c757d'}
+            className={styles.hemicicloSeat}
+            style={{ animationDelay: `${i * 12}ms` }}
+          />
+        ))}
+        <text
+          x={CX}
+          y={CY + 22}
+          textAnchor="middle"
+          style={{ fill: 'var(--ink)', fontFamily: 'var(--serif, Georgia, serif)', fontSize: '36px', fontWeight: 900 }}
+        >
+          {totalDip}
+        </text>
+        <text
+          x={CX}
+          y={CY + 40}
+          textAnchor="middle"
+          style={{ fill: 'var(--ink-muted, #94a3b8)', fontFamily: 'var(--label, sans-serif)', fontSize: '11px', fontWeight: 700, letterSpacing: '2px' }}
+        >
+          DIPUTADOS
+        </text>
+        <text
+          x={CX}
+          y={CY + 58}
+          textAnchor="middle"
+          style={{ fill: 'var(--ink-faint, #64748b)', fontFamily: 'var(--body, sans-serif)', fontSize: '11px' }}
+        >
+          {periodo}
+        </text>
+      </svg>
+
+      <div className={styles.hemicicloLegend}>
+        {partiesWithDip.map(p => {
+          const paleta = getPaletaPartido(p.codigo)
+          const sigla = getSiglasPopulares(p.codigo)
+          return (
+            <Link
+              key={p.codigo}
+              href={`/partidos/${p.codigo}`}
+              className={styles.hemicicloLegendItem}
+            >
+              <span className={styles.hemicicloLegendDot} style={{ background: paleta.bg }} />
+              <span className={styles.hemicicloLegendCount}>{p.total_diputados}</span>
+              <span className={styles.hemicicloLegendCode}>{sigla}</span>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 const TOP_N = 9
 
 export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
   const [vista, setVista] = useState<Vista>('propuestas')
+  const [hemicicloKey, setHemicicloKey] = useState(0)
+
+  const showHemiciclo = () => {
+    setVista('hemiciclo')
+    setHemicicloKey(k => k + 1)
+  }
 
   const sorted =
     vista === 'propuestas'
@@ -193,155 +318,173 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
             </svg>
             Leyes aprobadas
           </button>
+          <button
+            className={`${styles.tab} ${vista === 'hemiciclo' ? styles.tabActiveHemiciclo : ''}`}
+            onClick={showHemiciclo}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Composición
+          </button>
         </div>
       </div>
 
-      {/* Main: donut izquierda + ranking derecha */}
-      <div className={styles.grid}>
+      {vista === 'hemiciclo' ? (
+        <HemicicloChart key={hemicicloKey} datos={datos} periodo={periodo} />
+      ) : (
+        <>
+          {/* Main: donut izquierda + ranking derecha */}
+          <div className={styles.grid}>
 
-        {/* Donut Chart.js */}
-        <div className={styles.chartArea}>
-          <div className={styles.chartWrapper}>
-            <Doughnut data={chartJsData} options={chartOptions} plugins={[arcLabelsPlugin]} />
-            {/* Center label */}
-            <div className={styles.center}>
-              <div className={styles.centerNum}>{total.toLocaleString('es-CR')}</div>
-              <div className={styles.centerLabel}>
-                {vista === 'propuestas' ? 'propuestas' : 'leyes aprobadas'}
+            {/* Donut Chart.js */}
+            <div className={styles.chartArea}>
+              <div className={styles.chartWrapper}>
+                <Doughnut data={chartJsData} options={chartOptions} plugins={[arcLabelsPlugin]} />
+                {/* Center label */}
+                <div className={styles.center}>
+                  <div className={styles.centerNum}>{total.toLocaleString('es-CR')}</div>
+                  <div className={styles.centerLabel}>
+                    {vista === 'propuestas' ? 'propuestas' : 'leyes aprobadas'}
+                  </div>
+                  <div className={styles.centerPeriodo}>{periodo}</div>
+                </div>
               </div>
-              <div className={styles.centerPeriodo}>{periodo}</div>
+            </div>
+
+            {/* Ranking */}
+            <div className={styles.ranking}>
+              {top.slice(0, 8).map((p, i) => {
+                const paleta = getPaletaPartido(p.codigo)
+                const value = vista === 'propuestas' ? p.total_propuestas : p.leyes_aprobadas
+                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
+                const barW = maxRankValue > 0 ? (value / maxRankValue) * 100 : 0
+                return (
+                  <Link key={p.partido_id} href={`/partidos/${p.codigo}`} className={styles.rankRow} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <span className={styles.rankNum}>{i + 1}</span>
+                    {getBanderaUrl(p.codigo)
+                      ? <img src={getBanderaUrl(p.codigo)!} alt="" className={styles.flagBandera} aria-hidden />
+                      : <span className={styles.flagSwatch} style={{ background: paleta.bg }} />
+                    }
+                    <div className={styles.rankBody}>
+                      <div className={styles.rankTop}>
+                        <span className={styles.rankName}>
+                          {formatTitle(p.nombre.length > 32 ? p.nombre.slice(0, 30) + '…' : p.nombre)}
+                        </span>
+                        <span className={styles.rankStats}>
+                          <strong>{value.toLocaleString('es-CR')}</strong>
+                          <span className={styles.rankPct}>{pct}% del total</span>
+                        </span>
+                      </div>
+                      <div className={styles.rankBarTrack}>
+                        <div
+                          className={styles.rankBarFill}
+                          style={{ width: `${barW}%`, background: paleta.bg }}
+                        />
+                      </div>
+                      <div className={styles.rankMeta}>
+                        {vista === 'propuestas' ? (
+                          <div className={styles.rankMetaRow}>
+                            <div className={styles.rankMetaItem}>
+                              <span className={styles.rankMetaVal}>{p.total_diputados}</span>
+                              <span className={styles.rankMetaLbl}>dip.</span>
+                            </div>
+                            <div className={styles.rankMetaItem}>
+                              <span className={`${styles.rankMetaVal} ${styles.valGreen}`}>{p.leyes_aprobadas}</span>
+                              <span className={styles.rankMetaLbl}>leyes</span>
+                            </div>
+                            <div className={styles.rankMetaItem}>
+                              <span className={`${styles.rankMetaVal} ${styles.valAccent}`}>{p.tasa_aprobacion}%</span>
+                              <span className={styles.rankMetaLbl}>eficacia</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={styles.rankMetaRow}>
+                            <div className={styles.rankMetaItem}>
+                              <span className={`${styles.rankMetaVal} ${styles.valAccent}`}>{p.tasa_aprobacion}%</span>
+                              <span className={styles.rankMetaLbl}>aprob.</span>
+                            </div>
+                            <div className={styles.rankMetaItem}>
+                              <span className={`${styles.rankMetaVal} ${styles.valGreen}`}>{p.leyes_aprobadas}</span>
+                              <span className={styles.rankMetaLbl}>leyes</span>
+                            </div>
+                            <div className={styles.rankMetaItem}>
+                              <span className={styles.rankMetaVal}>{p.total_propuestas}</span>
+                              <span className={styles.rankMetaLbl}>prop.</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Ranking */}
-        <div className={styles.ranking}>
-          {top.slice(0, 8).map((p, i) => {
-            const paleta = getPaletaPartido(p.codigo)
-            const value = vista === 'propuestas' ? p.total_propuestas : p.leyes_aprobadas
-            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
-            const barW = maxRankValue > 0 ? (value / maxRankValue) * 100 : 0
-            return (
-              <Link key={p.partido_id} href={`/partidos/${p.codigo}`} className={styles.rankRow} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <span className={styles.rankNum}>{i + 1}</span>
-                {getBanderaUrl(p.codigo)
-                  ? <img src={getBanderaUrl(p.codigo)!} alt="" className={styles.flagBandera} aria-hidden />
-                  : <span className={styles.flagSwatch} style={{ background: paleta.bg }} />
-                }
-                <div className={styles.rankBody}>
-                  <div className={styles.rankTop}>
-                    <span className={styles.rankName}>
-                      {formatTitle(p.nombre.length > 32 ? p.nombre.slice(0, 30) + '…' : p.nombre)}
-                    </span>
-                    <span className={styles.rankStats}>
-                      <strong>{value.toLocaleString('es-CR')}</strong>
-                      <span className={styles.rankPct}>{pct}% del total</span>
-                    </span>
-                  </div>
-                  <div className={styles.rankBarTrack}>
-                    <div
-                      className={styles.rankBarFill}
-                      style={{ width: `${barW}%`, background: paleta.bg }}
-                    />
-                  </div>
-                  <div className={styles.rankMeta}>
-                    {vista === 'propuestas' ? (
-                      <div className={styles.rankMetaRow}>
-                        <div className={styles.rankMetaItem}>
-                          <span className={styles.rankMetaVal}>{p.total_diputados}</span>
-                          <span className={styles.rankMetaLbl}>dip.</span>
+          {/* Insights: Partido más activo + Mayor tasa — debajo del ranking */}
+          {(datos[0] || topByApproval) && (
+            <div className={styles.insights}>
+              {datos[0] && (() => {
+                const paleta = getPaletaPartido(datos[0].codigo)
+                const moreActive = datos[0]
+                return (
+                  <div className={styles.insightCard} style={{ borderLeftColor: paleta.bg }}>
+                    <div className={styles.insightBody}>
+                      <div className={styles.insightKicker}>Partido más activo</div>
+                      <div className={styles.insightName} style={{ color: paleta.bg }}>
+                        {formatTitle(moreActive.nombre.length > 36 ? moreActive.nombre.slice(0, 34) + '…' : moreActive.nombre)}
+                      </div>
+                      <div className={styles.insightStats}>
+                        <div className={styles.insightStat}>
+                          <strong>{moreActive.total_propuestas}</strong>
+                          <span>proyectos presentados</span>
                         </div>
-                        <div className={styles.rankMetaItem}>
-                          <span className={`${styles.rankMetaVal} ${styles.valGreen}`}>{p.leyes_aprobadas}</span>
-                          <span className={styles.rankMetaLbl}>leyes</span>
+                        <div className={styles.insightStatDivider} />
+                        <div className={styles.insightStat}>
+                          <strong style={{ color: '#22c55e' }}>{moreActive.leyes_aprobadas}</strong>
+                          <span>leyes aprobadas</span>
                         </div>
-                        <div className={styles.rankMetaItem}>
-                          <span className={`${styles.rankMetaVal} ${styles.valAccent}`}>{p.tasa_aprobacion}%</span>
-                          <span className={styles.rankMetaLbl}>eficacia</span>
+                        <div className={styles.insightStatDivider} />
+                        <div className={styles.insightStat}>
+                          <strong style={{ color: 'var(--accent)' }}>{moreActive.tasa_aprobacion}%</strong>
+                          <span>de eficacia</span>
                         </div>
                       </div>
-                    ) : (
-                      <div className={styles.rankMetaRow}>
-                        <div className={styles.rankMetaItem}>
-                          <span className={`${styles.rankMetaVal} ${styles.valAccent}`}>{p.tasa_aprobacion}%</span>
-                          <span className={styles.rankMetaLbl}>aprob.</span>
+                    </div>
+                  </div>
+                )
+              })()}
+              {topByApproval && (() => {
+                const paleta = getPaletaPartido(topByApproval.codigo)
+                return (
+                  <div className={styles.insightCard} style={{ borderLeftColor: '#22c55e' }}>
+                    <div className={styles.insightBody}>
+                      <div className={styles.insightKicker}>Mayor tasa de aprobación</div>
+                      <div className={styles.insightName} style={{ color: paleta.bg }}>
+                        {formatTitle(topByApproval.nombre.length > 36 ? topByApproval.nombre.slice(0, 34) + '…' : topByApproval.nombre)}
+                      </div>
+                      <div className={styles.insightStats}>
+                        <div className={styles.insightStat}>
+                          <strong style={{ color: '#22c55e', fontSize: '22px' }}>{topByApproval.tasa_aprobacion}%</strong>
+                          <span>de sus propuestas se aprobaron</span>
                         </div>
-                        <div className={styles.rankMetaItem}>
-                          <span className={`${styles.rankMetaVal} ${styles.valGreen}`}>{p.leyes_aprobadas}</span>
-                          <span className={styles.rankMetaLbl}>leyes</span>
-                        </div>
-                        <div className={styles.rankMetaItem}>
-                          <span className={styles.rankMetaVal}>{p.total_propuestas}</span>
-                          <span className={styles.rankMetaLbl}>prop.</span>
+                        <div className={styles.insightStatDivider} />
+                        <div className={styles.insightStat}>
+                          <strong style={{ color: '#22c55e' }}>{topByApproval.leyes_aprobadas}</strong>
+                          <span>leyes de {topByApproval.total_propuestas} propuestas</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Insights: Partido más activo + Mayor tasa — debajo del ranking */}
-      {(datos[0] || topByApproval) && (
-        <div className={styles.insights}>
-          {datos[0] && (() => {
-            const paleta = getPaletaPartido(datos[0].codigo)
-            const moreActive = datos[0]
-            return (
-              <div className={styles.insightCard} style={{ borderLeftColor: paleta.bg }}>
-                <div className={styles.insightBody}>
-                  <div className={styles.insightKicker}>Partido más activo</div>
-                  <div className={styles.insightName} style={{ color: paleta.bg }}>
-                    {formatTitle(moreActive.nombre.length > 36 ? moreActive.nombre.slice(0, 34) + '…' : moreActive.nombre)}
-                  </div>
-                  <div className={styles.insightStats}>
-                    <div className={styles.insightStat}>
-                      <strong>{moreActive.total_propuestas}</strong>
-                      <span>proyectos presentados</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e' }}>{moreActive.leyes_aprobadas}</strong>
-                      <span>leyes aprobadas</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: 'var(--accent)' }}>{moreActive.tasa_aprobacion}%</strong>
-                      <span>de eficacia</span>
                     </div>
                   </div>
-                </div>
-              </div>
-            )
-          })()}
-          {topByApproval && (() => {
-            const paleta = getPaletaPartido(topByApproval.codigo)
-            return (
-              <div className={styles.insightCard} style={{ borderLeftColor: '#22c55e' }}>
-                <div className={styles.insightBody}>
-                  <div className={styles.insightKicker}>Mayor tasa de aprobación</div>
-                  <div className={styles.insightName} style={{ color: paleta.bg }}>
-                    {formatTitle(topByApproval.nombre.length > 36 ? topByApproval.nombre.slice(0, 34) + '…' : topByApproval.nombre)}
-                  </div>
-                  <div className={styles.insightStats}>
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e', fontSize: '22px' }}>{topByApproval.tasa_aprobacion}%</strong>
-                      <span>de sus propuestas se aprobaron</span>
-                    </div>
-                    <div className={styles.insightStatDivider} />
-                    <div className={styles.insightStat}>
-                      <strong style={{ color: '#22c55e' }}>{topByApproval.leyes_aprobadas}</strong>
-                      <span>leyes de {topByApproval.total_propuestas} propuestas</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </div>
+                )
+              })()}
+            </div>
+          )}
+        </>
       )}
 
     </div>

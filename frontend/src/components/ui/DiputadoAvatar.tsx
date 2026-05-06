@@ -1,11 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { getFotoUrl } from '@/lib/diputados'
 import { cleanText } from '@/lib/utils'
 import styles from './DiputadoAvatar.module.css'
 
 type Size = 'sm' | 'md' | 'lg'
+
+// Hints al navegador del tamaño real de display para servir la imagen correcta
+// en pantallas normales y Retina (2x) sin descargar más de lo necesario.
+const SIZES: Record<Size, string> = {
+  sm: '(max-width: 640px) 44px, 52px',
+  md: '(max-width: 640px) 68px, 86px',
+  lg: '(max-width: 640px) 132px, 168px',
+}
 
 interface Props {
   nombreCompleto: string
@@ -40,14 +49,15 @@ export function DiputadoAvatar({ nombreCompleto, size = 'md', partyColor, hue = 
     >
       {initials}
       {!photoFailed && (
-        <img
+        <Image
           src={fotoUrl}
           alt=""
+          fill
+          sizes={SIZES[size]}
+          quality={90}
           className={styles.photo}
-          loading="lazy"
-          decoding="async"
+          style={{ objectPosition: 'center top' }}
           onError={() => setPhotoFailed(true)}
-          aria-hidden
         />
       )}
     </div>

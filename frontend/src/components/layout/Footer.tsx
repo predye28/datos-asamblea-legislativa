@@ -107,6 +107,17 @@ export default function Footer() {
           <span className={styles.copy}>
             © {new Date().getFullYear()} {dict.footer.copyrightSuffix}
           </span>
+          <span className={styles.source}>
+            {dict.footer.photoCredit} ·{' '}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.sourceLink}
+            >
+              {dict.footer.photoCreditLicense}
+            </a>
+          </span>
           <span className={styles.madeBy}>
             {dict.footer.madeBy} <span className={styles.author}>Omar Madrigal</span>
           </span>

@@ -163,6 +163,8 @@ export const en: Dictionary = {
     enviarCorreoAria: 'Send email',
     copyrightSuffix: 'La Asamblea al Día · Costa Rica',
     madeBy: 'Made by',
+    photoCredit: 'Photos: Asamblea Legislativa de Costa Rica',
+    photoCreditLicense: 'CC BY-SA 4.0',
   },
 
   proyectos: {
