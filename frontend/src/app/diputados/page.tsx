@@ -398,6 +398,15 @@ export default function DiputadosPage() {
                   <button onClick={() => setQuery('')} aria-label={dict.diputadosPage.quitarBusqueda}><IconX /></button>
                 </span>
               )}
+              {partido && (() => {
+                const p = partidos.find(pt => String(pt.id) === partido)
+                return (
+                  <span className={styles.chip}>
+                    {p?.nombre ? p.nombre.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Partido'}
+                    <button onClick={() => onPartidoChange('')} aria-label="Quitar partido"><IconX /></button>
+                  </span>
+                )
+              })()}
               {orden !== 'proyectos' && (
                 <span className={styles.chip}>
                   {orden === 'az' ? dict.diputadosPage.az : dict.diputadosPage.za}

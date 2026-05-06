@@ -526,10 +526,9 @@ function ProyectosContent() {
                 )}
                 {partido && (() => {
                   const p = partidos.find(pt => String(pt.id) === partido)
-                  const paleta = p ? getPaletaPartido(p.codigo) : null
                   return (
-                    <span className={styles.chip} style={paleta ? { background: paleta.soft, borderColor: paleta.border, color: paleta.bg } : undefined}>
-                      {p?.nombre ?? 'Partido'}
+                    <span className={styles.chip}>
+                      {p?.nombre ? p.nombre.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Partido'}
                       <button onClick={() => onPartidoChange('')} aria-label="Quitar partido"><IconX /></button>
                     </span>
                   )
