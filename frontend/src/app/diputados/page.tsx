@@ -6,7 +6,7 @@ import { api } from '@/lib/api'
 import type { DiputadoRanking, PartidoResumen } from '@/lib/api'
 import { getPaletaPartido, getBanderaUrl } from '@/lib/partidos'
 import { useLegislativePeriods, getPeriodos, getDefaultLegislativePeriodLabel } from '@/lib/periodos'
-import { formatDiputadoName } from '@/lib/utils'
+import { formatDiputadoName, formatName } from '@/lib/utils'
 import { DiputadoAvatar } from '@/components/ui/DiputadoAvatar'
 import { useT } from '@/i18n/LanguageProvider'
 import styles from './diputados.module.css'
@@ -214,7 +214,7 @@ export default function DiputadosPage() {
     { value: '', label: 'Todos los partidos' },
     ...partidos.map(p => {
       const paleta = getPaletaPartido(p.codigo)
-      return { value: String(p.id), label: p.nombre, color: paleta.bg }
+      return { value: String(p.id), label: formatName(p.nombre), color: paleta.bg }
     }),
   ], [partidos])
 
@@ -402,7 +402,7 @@ export default function DiputadosPage() {
                 const p = partidos.find(pt => String(pt.id) === partido)
                 return (
                   <span className={styles.chip}>
-                    {p?.nombre ? p.nombre.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Partido'}
+                    {p?.nombre ? formatName(p.nombre) : 'Partido'}
                     <button onClick={() => onPartidoChange('')} aria-label="Quitar partido"><IconX /></button>
                   </span>
                 )

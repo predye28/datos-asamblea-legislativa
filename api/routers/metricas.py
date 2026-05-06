@@ -787,16 +787,11 @@ def metricas_partidos(
                     ELSE p.codigo
                 END AS codigo,
                 COUNT(*) AS total_diputados
-            FROM (
-                SELECT DISTINCT ON (TRIM(h.apellidos || ' ' || h.nombre))
-                    h.partido_id
-                FROM historial_diputados h
-                WHERE h.administracion = %(adm)s
-                ORDER BY TRIM(h.apellidos || ' ' || h.nombre),
-                         COALESCE(h.fecha_hasta, '9999-12-31') DESC,
-                         h.id DESC
-            ) latest
-            JOIN partidos p ON p.id = latest.partido_id
+            FROM historial_diputados h
+            JOIN partidos p ON p.id = h.partido_id
+            WHERE h.administracion = %(adm)s
+              AND h.fecha_desde <= MAKE_DATE(SUBSTRING(%(adm)s FROM 1 FOR 4)::integer, 5, 1)
+              AND (h.fecha_hasta IS NULL OR h.fecha_hasta >= MAKE_DATE(SUBSTRING(%(adm)s FROM 1 FOR 4)::integer, 5, 1))
             GROUP BY 1
         )
         SELECT

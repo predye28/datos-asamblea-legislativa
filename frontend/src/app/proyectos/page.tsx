@@ -198,17 +198,26 @@ function ProyectosContent() {
     return () => { cancelled = true }
   }, [])
 
-  // Carga todos los partidos al montar
+  // Cargar partidos disponibles según el período seleccionado
   useEffect(() => {
     let cancelled = false
+    const legPeriod = legislativePeriods.find(p => p.label === periodo)
+    const administracion = legPeriod ? periodo : undefined
     queueMicrotask(async () => {
       try {
-        const r = await api.partidos.listar()
-        if (!cancelled) setPartidos(r.datos)
+        const r = await api.partidos.listar(administracion)
+        if (!cancelled) {
+          setPartidos(r.datos)
+          // Si el partido seleccionado no existe en el nuevo período, lo limpiamos
+          if (partido && !r.datos.some(p => String(p.id) === partido)) {
+            setPartido('')
+            setPagina(1)
+          }
+        }
       } catch { /* noop */ }
     })
     return () => { cancelled = true }
-  }, [])
+  }, [periodo, legislativePeriods, partido])
 
   useEffect(() => {
     const qs = new URLSearchParams()
@@ -290,7 +299,7 @@ function ProyectosContent() {
 
   const onQueryChange = (v: string) => { setPagina(1); setQuery(v) }
   const onCategoriaChange = (v: string) => { setPagina(1); setCategoria(v) }
-  const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v); setPartido('') }
+  const onPeriodoChange = (v: string) => { setPagina(1); setPeriodo(v) }
   const onOrdenChange = (v: string) => { setPagina(1); setOrden(v) }
   const onEstadoChange = (v: string) => { setPagina(1); setEstado(v) }
   const onPartidoChange = (v: string) => { setPagina(1); setPartido(v) }
@@ -528,7 +537,7 @@ function ProyectosContent() {
                   const p = partidos.find(pt => String(pt.id) === partido)
                   return (
                     <span className={styles.chip}>
-                      {p?.nombre ? p.nombre.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Partido'}
+                      {p?.nombre ? formatName(p.nombre) : 'Partido'}
                       <button onClick={() => onPartidoChange('')} aria-label="Quitar partido"><IconX /></button>
                     </span>
                   )
