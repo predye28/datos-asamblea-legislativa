@@ -786,10 +786,17 @@ def metricas_partidos(
                     WHEN p.nombre ILIKE 'DIPUTAD%%INDEPENDIENTE%%' THEN 'IND'
                     ELSE p.codigo
                 END AS codigo,
-                COUNT(DISTINCT h.id) AS total_diputados
-            FROM historial_diputados h
-            JOIN partidos p ON p.id = h.partido_id
-            WHERE h.administracion = %(adm)s
+                COUNT(*) AS total_diputados
+            FROM (
+                SELECT DISTINCT ON (TRIM(h.apellidos || ' ' || h.nombre))
+                    h.partido_id
+                FROM historial_diputados h
+                WHERE h.administracion = %(adm)s
+                ORDER BY TRIM(h.apellidos || ' ' || h.nombre),
+                         COALESCE(h.fecha_hasta, '9999-12-31') DESC,
+                         h.id DESC
+            ) latest
+            JOIN partidos p ON p.id = latest.partido_id
             GROUP BY 1
         )
         SELECT

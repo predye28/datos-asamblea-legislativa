@@ -135,6 +135,7 @@ class DiputadoEficacia(BaseModel):
     total_proyectos: int
     leyes_aprobadas: int
     tasa_aprobacion: float
+    partido_codigo: Optional[str] = None
 
 
 class MetricasResponse(BaseModel):

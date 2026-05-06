@@ -70,10 +70,17 @@ def listar_partidos(
                 p.id,
                 p.codigo,
                 p.nombre,
-                COUNT(DISTINCT h.id) AS total_diputados
+                COUNT(*) AS total_diputados
             FROM partidos p
-            JOIN historial_diputados h ON h.partido_id = p.id
-            WHERE h.administracion = %s
+            JOIN (
+                SELECT DISTINCT ON (TRIM(h.apellidos || ' ' || h.nombre))
+                    h.partido_id
+                FROM historial_diputados h
+                WHERE h.administracion = %s
+                ORDER BY TRIM(h.apellidos || ' ' || h.nombre),
+                         COALESCE(h.fecha_hasta, '9999-12-31') DESC,
+                         h.id DESC
+            ) latest ON latest.partido_id = p.id
             GROUP BY p.id, p.codigo, p.nombre
             ORDER BY total_diputados DESC, p.nombre
             """,
@@ -86,7 +93,7 @@ def listar_partidos(
                 p.id,
                 p.codigo,
                 p.nombre,
-                COUNT(DISTINCT h.id) AS total_diputados
+                COUNT(DISTINCT TRIM(h.apellidos || ' ' || h.nombre)) AS total_diputados
             FROM partidos p
             JOIN historial_diputados h ON h.partido_id = p.id
             GROUP BY p.id, p.codigo, p.nombre

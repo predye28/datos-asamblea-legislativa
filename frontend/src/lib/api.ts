@@ -95,6 +95,7 @@ export interface DiputadoEficacia {
   total_proyectos: number
   leyes_aprobadas: number
   tasa_aprobacion: number
+  partido_codigo?: string | null
 }
 
 export interface HistorialPartido {
