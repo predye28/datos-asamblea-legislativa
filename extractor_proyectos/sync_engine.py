@@ -166,43 +166,56 @@ def crear_tablas():
 
 
 # ══════════════════════════════════════════════════════════════════════
-# CHECKPOINT — FASE 2
+# CHECKPOINT — GENÉRICO (soporta fase2, fase3, etc.)
 # ══════════════════════════════════════════════════════════════════════
 
-PAGINA_INICIO_FASE2 = 4   # Fase 1 cubre páginas 1-3
+PAGINA_INICIO_FASE2 = 26  # Fase 1 cubre páginas 1-25
+PAGINA_INICIO_FASE3 = 25  # Monitor continuo arranca desde pág 25
+
+# Página por defecto según fase
+_DEFAULTS_POR_FASE = {
+    'fase2': PAGINA_INICIO_FASE2,
+    'fase3': PAGINA_INICIO_FASE3,
+}
 
 
-def leer_checkpoint_db() -> int:
+def leer_checkpoint_db(fase: str = 'fase2') -> int:
     """
-    Lee la página actual del checkpoint de Fase 2 desde la DB.
-    Si no existe un registro todavía, retorna PAGINA_INICIO_FASE2.
+    Lee la página actual del checkpoint de la fase indicada desde la DB.
+    Si no existe un registro, retorna la página de inicio por defecto.
+
+    Args:
+        fase: nombre de la fase ('fase2' o 'fase3')
     """
+    default = _DEFAULTS_POR_FASE.get(fase, PAGINA_INICIO_FASE2)
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT pagina_actual FROM scraper_estado WHERE fase = 'fase2'"
+                    "SELECT pagina_actual FROM scraper_estado WHERE fase = %s",
+                    (fase,)
                 )
                 row = cur.fetchone()
                 if row:
                     pagina = row[0]
-                    print(f"Checkpoint leído de DB: página {pagina}.")
+                    print(f"[{fase}] Checkpoint leído de DB: página {pagina}.")
                     return pagina
                 else:
-                    print(f"Sin checkpoint previo. Iniciando desde página {PAGINA_INICIO_FASE2}.")
-                    return PAGINA_INICIO_FASE2
+                    print(f"[{fase}] Sin checkpoint previo. Iniciando desde página {default}.")
+                    return default
     except Exception as e:
-        print(f"Error leyendo checkpoint de DB: {e}. Usando página {PAGINA_INICIO_FASE2}.")
-        return PAGINA_INICIO_FASE2
+        print(f"[{fase}] Error leyendo checkpoint de DB: {e}. Usando página {default}.")
+        return default
 
 
-def guardar_checkpoint_db(pagina: int):
+def guardar_checkpoint_db(pagina: int, fase: str = 'fase2'):
     """
-    Guarda (o actualiza) el checkpoint de Fase 2 en la DB.
+    Guarda (o actualiza) el checkpoint de la fase indicada en la DB.
     Usa INSERT ... ON CONFLICT para hacer upsert.
 
     Args:
         pagina: próxima página a procesar en el siguiente run.
+        fase:   nombre de la fase ('fase2' o 'fase3')
     """
     try:
         with get_connection() as conn:
@@ -210,17 +223,17 @@ def guardar_checkpoint_db(pagina: int):
                 cur.execute(
                     """
                     INSERT INTO scraper_estado (fase, pagina_actual, ultima_ejecucion)
-                    VALUES ('fase2', %s, NOW())
+                    VALUES (%s, %s, NOW())
                     ON CONFLICT (fase) DO UPDATE SET
                         pagina_actual    = EXCLUDED.pagina_actual,
                         ultima_ejecucion = EXCLUDED.ultima_ejecucion
                     """,
-                    (pagina,)
+                    (fase, pagina)
                 )
             conn.commit()
-        print(f"Checkpoint guardado en DB: página {pagina}.")
+        print(f"[{fase}] Checkpoint guardado en DB: página {pagina}.")
     except Exception as e:
-        print(f"ERROR guardando checkpoint en DB: {e}")
+        print(f"[{fase}] ERROR guardando checkpoint en DB: {e}")
         print(f"  (La página {pagina} se perdió — el próximo run puede repetir trabajo)")
 
 

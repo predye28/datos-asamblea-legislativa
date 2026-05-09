@@ -139,6 +139,7 @@ export interface EstadisticaPartido {
   codigo: string
   nombre: string
   total_diputados: number
+  diputados_activos: number
   total_propuestas: number
   leyes_aprobadas: number
   tasa_aprobacion: number

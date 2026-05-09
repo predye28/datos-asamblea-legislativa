@@ -5,7 +5,7 @@ import styles from './Hero.module.css'
 
 function IconBuilding() {
   return (
-    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <svg className={styles.badgeIcon} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
       <rect x="21" y="1" width="2" height="5" rx="1" fill="rgba(255,255,255,0.85)" />
       <path d="M23 1.5 L30 4 L23 6Z" fill="rgba(255,255,255,0.6)" />
       <path d="M10 19 C10 11.5 15 6 22 6 C29 6 34 11.5 34 19Z" fill="rgba(255,255,255,0.95)" />
@@ -36,6 +36,7 @@ export default function Hero() {
         <div className={styles.badgeWrapper}>
           <div className={styles.ambientGlow} aria-hidden />
           <div className={styles.badge}>
+            <div className={styles.shimmer} aria-hidden />
             <IconBuilding />
           </div>
         </div>

@@ -49,7 +49,7 @@ export const es = {
 
   hero: {
     description:
-      'Plataforma independiente para dar seguimiento a la actividad legislativa de Costa Rica. Proyectos de ley, diputados y estadísticas del SIL, en un solo lugar.',
+      'Plataforma ciudadana independiente para dar seguimiento a la actividad legislativa de Costa Rica. Proyectos de ley, perfiles de diputados y estadísticas oficiales del SIL, todo en un solo lugar y fácil de entender.',
   },
 
   featureBlocks: {
@@ -57,7 +57,7 @@ export const es = {
     proyectos: {
       title: 'Proyectos',
       promise:
-        'Buscá, filtrá y leé cualquier iniciativa legislativa presentada en la Asamblea.',
+        'Buscá, filtrá y conocé el detalle de cualquier iniciativa de ley presentada en la Asamblea.',
       cta: 'Explorar proyectos',
       labelRegistrados: 'proyectos registrados',
       labelEsteAnio: 'presentados este año',
@@ -66,7 +66,7 @@ export const es = {
     diputados: {
       title: 'Diputados',
       promise:
-        'Perfil completo, proyectos presentados y eficacia legislativa de cada diputado.',
+        'Conocé el perfil completo, las propuestas que impulsan y la eficacia legislativa de cada representante.',
       cta: 'Ver diputados',
       labelHistoricos: 'diputados registrados históricamente',
       labelMasActivoFallback: 'diputado más activo',
@@ -77,7 +77,7 @@ export const es = {
     partidos: {
       title: 'Partidos',
       promise:
-        'Conocé el peso legislativo de cada partido: propuestas, leyes aprobadas y eficacia.',
+        'Descubrí el peso político de cada fracción: volumen de propuestas, leyes aprobadas y su porcentaje de éxito.',
       cta: 'Ver partidos',
       labelPartidosFallback: 'partidos con actividad legislativa',
       labelMasActivoPrefix: 'propuestas del partido más activo',
@@ -86,7 +86,7 @@ export const es = {
     estadisticas: {
       title: 'Estadísticas',
       promise:
-        'Gráficos y tendencias que muestran cómo trabaja la Asamblea en el tiempo.',
+        'Explorá gráficos y métricas que resumen el ritmo de trabajo y las tendencias de la Asamblea a lo largo del tiempo.',
       cta: 'Ver estadísticas',
       labelNuncaLey: 'de los proyectos nunca llegan a convertirse en ley',
       labelTramites: 'trámites recorre en promedio un proyecto antes de aprobarse',
@@ -104,22 +104,22 @@ export const es = {
       {
         heading: 'Transparencia',
         subtitle: 'Los datos públicos, en un formato que cualquiera entiende',
-        body: 'La Asamblea Legislativa publica toda su actividad en el Sistema de Información Legislativa (SIL). Nosotros tomamos esos datos y los convertimos en una experiencia visual, clara y navegable para cualquier ciudadano.',
+        body: 'Organizamos los datos oficiales del Sistema de Información Legislativa (SIL) para crear una experiencia visual, clara y navegable para toda la ciudadanía.',
       },
       {
         heading: 'Independencia',
-        subtitle: 'Sin agenda política. Sin intereses comerciales. Solo datos',
-        body: 'No apoyamos ni criticamos a ningún partido ni diputado. Presentamos la información tal como la Asamblea la publica. No somos voceros de nadie. El análisis y las conclusiones son únicamente tuyas.',
+        subtitle: 'Sin agenda política ni intereses comerciales. Solo datos',
+        body: 'No apoyamos ni criticamos a ninguna figura. Presentamos la información tal como se publica oficialmente. El análisis y las conclusiones te corresponden a vos.',
       },
       {
         heading: 'Participación',
         subtitle: 'Una ciudadanía informada es una ciudadanía activa',
-        body: 'Al simplificar el acceso a los proyectos de ley y los perfiles de los diputados, damos herramientas para que cada costarricense pueda conocer a sus representantes, dar seguimiento a lo que se vota y exigir cuentas.',
+        body: 'Facilitamos el acceso a la información legislativa. Te damos las herramientas para conocer el trabajo de tus representantes y dar seguimiento a las propuestas con datos reales.',
       },
       {
         heading: 'Accesible',
         subtitle: 'Diseñado para cualquier persona, no solo para expertos',
-        body: 'Transformamos datos técnicos y lenguaje jurídico en información comprensible. No hace falta ser abogado ni politólogo para entender qué está pasando en la Asamblea. Está hecho para vos.',
+        body: 'Presentamos los datos técnicos en un formato organizado y amigable. Nuestro objetivo es que cualquier persona pueda informarse fácilmente sobre lo que está pasando en la Asamblea Legislativa. Está hecho para vos.',
       },
     ],
     principlesEyebrow: 'Nuestros compromisos',
@@ -127,19 +127,19 @@ export const es = {
     principles: [
       {
         label: 'Datos oficiales del SIL',
-        quote: 'La información viene directamente del Sistema de Información Legislativa, la fuente oficial y pública de la Asamblea.',
+        quote: 'Toda la información se extrae directamente del sistema público de la Asamblea Legislativa, la única fuente oficial.',
       },
       {
         label: 'Sin editoriales',
-        quote: 'Mostramos los datos tal como se publican. No editamos ni opinamos: las conclusiones las sacás vos.',
+        quote: 'Mostramos los datos tal cual se registran. No damos opiniones ni sesgamos la información.',
       },
       {
         label: 'Código abierto',
-        quote: 'El scraper, la API y este portal son públicos. Cualquiera puede revisarlos, mejorarlos o construir sobre ellos.',
+        quote: 'El código detrás de este proyecto es transparente y de libre acceso. Cualquiera puede revisar cómo funciona o contribuir a mejorarlo.',
       },
       {
         label: 'Sin fines de lucro',
-        quote: 'Sin intereses comerciales ni políticos. Es un aporte ciudadano al acceso a la información pública de Costa Rica.',
+        quote: 'Un proyecto voluntario para facilitar el acceso a la información pública, sin intención comercial.',
       },
     ],
   },
@@ -162,6 +162,7 @@ export const es = {
     repositorio: 'Repositorio',
     repositorioAria: 'Repositorio en GitHub',
     enviarCorreoAria: 'Enviar correo',
+    correoOficial: 'Correo oficial',
     copyrightSuffix: 'La Asamblea al Día · Costa Rica',
     madeBy: 'Hecho por',
     photoCredit: 'Fotos: Asamblea Legislativa de Costa Rica',
@@ -312,7 +313,7 @@ export const es = {
     propositoTitle: 'Nuestro Propósito',
     propositoSubtitle: 'Democratizar el acceso a la información',
     propositoQuote: 'Facilitamos el acceso a la información pública que la Asamblea ya comparte, para que llegue a más personas.',
-    propositoP1: 'La Asamblea Legislativa de Costa Rica mantiene un compromiso ejemplar con la transparencia al publicar toda su actividad a través del Sistema de Información Legislativa (SIL): expedientes, firmas de diputaciones, avance por comisiones y mucho más.',
+    propositoP1: 'La Asamblea Legislativa de Costa Rica mantiene un compromiso ejemplar con la transparencia al publicar toda su actividad a través del Sistema de Información Legislativa (SIL): expedientes de ley, historial de trámites, proponentes y mucho más.',
     propositoP2: 'Nuestro proyecto existe para amplificar ese esfuerzo. Tomamos esos mismos datos públicos y los presentamos de forma visual e intuitiva, para que cualquier persona, independientemente de su formación, pueda explorar y comprender el trabajo legislativo del país.',
 
     compromisoTitle: 'Nuestro Compromiso',
@@ -325,7 +326,7 @@ export const es = {
     principios: [
       ['Datos oficiales del SIL', 'Toda la información proviene directamente del sistema público de la Asamblea Legislativa de Costa Rica.'],
       ['Datos presentados tal cual', 'Mostramos la información como la Asamblea la publica. Las conclusiones son tuyas.'],
-      ['Código abierto', 'El scraper, la API y el portal están disponibles públicamente para quien quiera revisarlos o mejorarlos.'],
+      ['Código abierto', 'El programa que extrae los datos, los sistemas que los procesan y esta página web están disponibles públicamente para quien quiera revisarlos o mejorarlos.'],
       ['Aporte ciudadano', 'Este proyecto es un esfuerzo voluntario y colaborativo, abierto a toda la comunidad.'],
     ] as [string, string][],
 
@@ -352,8 +353,8 @@ export const es = {
     soporteFuenteLink: 'Ir al SIL oficial →',
     soporteErrorTitle: '¿Encontraste un error?',
     soporteErrorText: 'Si notás alguna inconsistencia o detalle por mejorar, nos encantaría saberlo para mantener la calidad de la información.',
-    soporteCodigoTitle: 'Código fuente',
-    soporteCodigoText: 'Todo el proyecto es de código abierto. Podés revisar cómo funciona, reportar errores o contribuir directamente.',
+    soporteCodigoTitle: 'Código abierto',
+    soporteCodigoText: 'Todo el código detrás de la plataforma es de acceso libre y transparente (Open Source). Podés revisar exactamente cómo extraemos y presentamos la información, reportar errores o contribuir a mejorarlo.',
     soporteCodigoLink: 'Ver en GitHub →',
   },
 
@@ -423,8 +424,8 @@ export const es = {
     insightProyectos: 'proyectos',
     insightPero: ', pero',
     insightTemaEficacia: 'tiene la mayor efectividad (',
-    insightLlegaALeyClose: ' llega a ley)',
-    insightLlegaALey: 'llega a ley',
+    insightLlegaALeyClose: ' llega a ser ley)',
+    insightLlegaALey: 'llega a ser ley',
 
     section02Kicker: 'Diputados',
     section02Title: 'Quiénes proponen · quiénes aprueban',

@@ -195,6 +195,7 @@ class EstadisticaPartido(BaseModel):
     codigo:           str
     nombre:           str
     total_diputados:  int = 0
+    diputados_activos: int = 0
     total_propuestas: int
     leyes_aprobadas:  int
     tasa_aprobacion:  float

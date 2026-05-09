@@ -295,7 +295,19 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
 
       {/* Tab selector */}
       <div className={styles.tabGroup}>
-        <span className={styles.tabGroupLabel}>Ver estadísticas de:</span>
+        <div className={styles.tabHeader}>
+          <span className={styles.tabGroupLabel}>Ver estadísticas de:</span>
+          {vista === 'hemiciclo' && (
+            <div className={styles.tabHintWrap}>
+              <span className={styles.tabHint} tabIndex={0} role="button">
+                ?
+                <span className={styles.tabHintTooltip} role="tooltip">
+                  La composición refleja los asientos al iniciar el período. Durante el cuatrienio, algunos diputados pudieron separarse o cambiar de partido.
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
         <div className={styles.tabBar}>
           <button
             className={`${styles.tab} ${vista === 'propuestas' ? styles.tabActive : ''}`}
@@ -389,7 +401,7 @@ export function PartidosPieChart({ datos, total_propuestas, periodo }: Props) {
                         {vista === 'propuestas' ? (
                           <div className={styles.rankMetaRow}>
                             <div className={styles.rankMetaItem}>
-                              <span className={styles.rankMetaVal}>{p.total_diputados}</span>
+                              <span className={styles.rankMetaVal}>{p.diputados_activos}</span>
                               <span className={styles.rankMetaLbl}>dip.</span>
                             </div>
                             <div className={styles.rankMetaItem}>

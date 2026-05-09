@@ -133,11 +133,11 @@ export default function AcercaPage() {
                 <div className={styles.infoCardAccent} />
                 <div className={styles.infoTitle}>{t.soporteErrorTitle}</div>
                 <p className={styles.infoText}>{t.soporteErrorText}</p>
-                <a href="mailto:omarmr14.02@gmail.com" className={styles.infoMailLink}>
+                <a href="mailto:contacto@la-asamblea-al-dia.org" className={styles.infoLink}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <rect x="2" y="4" width="20" height="16" rx="2"/>
                     <path d="m22 7-10 7L2 7"/>
-                  </svg> omarmr14.02@gmail.com
+                  </svg> contacto@la-asamblea-al-dia.org
                 </a>
               </div>
 

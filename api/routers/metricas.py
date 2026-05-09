@@ -768,7 +768,8 @@ def metricas_partidos(
                     ELSE p.nombre
                 END                                                                      AS nombre,
                 COUNT(DISTINCT pr.proyecto_id)                                           AS total_propuestas,
-                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas,
+                COUNT(DISTINCT TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, ''))) AS diputados_activos
             FROM proponentes pr
             JOIN proyectos proy ON proy.id = pr.proyecto_id
             JOIN historial_diputados h ON
@@ -799,6 +800,7 @@ def metricas_partidos(
             pr.codigo,
             pr.nombre,
             COALESCE(dc.total_diputados, 0) AS total_diputados,
+            pr.diputados_activos,
             pr.total_propuestas,
             pr.leyes_aprobadas
         FROM propuestas pr
@@ -816,6 +818,7 @@ def metricas_partidos(
             codigo=r["codigo"],
             nombre=r["nombre"],
             total_diputados=r["total_diputados"],
+            diputados_activos=r["diputados_activos"],
             total_propuestas=r["total_propuestas"],
             leyes_aprobadas=r["leyes_aprobadas"],
             tasa_aprobacion=round(
@@ -862,7 +865,8 @@ def metricas_partidos_resumen():
                 p.codigo,
                 p.nombre,
                 COUNT(DISTINCT pr.proyecto_id)                                           AS total_propuestas,
-                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas
+                COUNT(DISTINCT CASE WHEN proy.numero_ley IS NOT NULL THEN pr.proyecto_id END) AS leyes_aprobadas,
+                COUNT(DISTINCT TRIM(COALESCE(pr.apellidos, '') || ' ' || COALESCE(pr.nombre, ''))) AS diputados_activos
             FROM proponentes pr
             JOIN proyectos proy ON proy.id = pr.proyecto_id
             JOIN historial_diputados h ON
@@ -881,6 +885,7 @@ def metricas_partidos_resumen():
         )
         SELECT pr.partido_id, pr.codigo, pr.nombre,
                COALESCE(d.total_diputados, 0) AS total_diputados,
+               pr.diputados_activos,
                pr.total_propuestas, pr.leyes_aprobadas
         FROM propuestas pr
         LEFT JOIN diputados_count d ON d.partido_id = pr.partido_id
@@ -896,6 +901,7 @@ def metricas_partidos_resumen():
             codigo=r["codigo"],
             nombre=r["nombre"],
             total_diputados=r["total_diputados"],
+            diputados_activos=r["diputados_activos"],
             total_propuestas=r["total_propuestas"],
             leyes_aprobadas=r["leyes_aprobadas"],
             tasa_aprobacion=round(

@@ -17,8 +17,8 @@
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  border: 1px solid rgba(2, 158, 185, 0.1);
-  background: radial-gradient(circle at center, rgba(2, 158, 185, 0.04) 0%, transparent 70%);
+  border: 1px solid rgba(6, 182, 212, 0.08);
+  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.02) 0%, transparent 70%);
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.2s;
@@ -32,8 +32,8 @@
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  border: 1px solid rgba(6, 182, 212, 0.09);
-  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.04) 0%, transparent 70%);
+  border: 1px solid rgba(6, 182, 212, 0.08);
+  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.02) 0%, transparent 70%);
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.35s;
@@ -47,8 +47,8 @@
   width: 440px;
   height: 440px;
   border-radius: 50%;
-  border: 1px solid rgba(6, 182, 212, 0.07);
-  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.03) 0%, transparent 70%);
+  border: 1px solid rgba(6, 182, 212, 0.08);
+  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.02) 0%, transparent 70%);
   pointer-events: none;
   animation: decReveal 1.6s ease both;
   animation-delay: 0.5s;
@@ -95,6 +95,7 @@
   justify-content: center;
   margin-bottom: 80px;
   animation: badgeIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  will-change: transform, opacity;
 }
 
 .ambientGlow {
@@ -108,10 +109,10 @@
 
 .badge {
   position: relative;
-  width: 78px;
-  height: 78px;
+  width: clamp(64px, 8vw, 84px);
+  height: clamp(64px, 8vw, 84px);
   background: linear-gradient(145deg, #06B6D4 0%, #029fbb 100%);
-  border-radius: 20px;
+  border-radius: clamp(16px, 2vw, 22px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,6 +120,34 @@
     0 0 0 1px rgba(6, 182, 212, 0.25),
     0 28px 56px rgba(6, 182, 212, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  will-change: transform;
+}
+
+.badgeIcon {
+  width: 68.75%;
+  height: 68.75%;
+  flex-shrink: 0;
+}
+
+.shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.3) 50%, transparent 80%);
+  animation: shimmerSweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
 }
 
 /* Pulse rings */
@@ -126,20 +155,22 @@
 .badge::after {
   content: '';
   position: absolute;
-  border: 1px solid rgba(6, 182, 212, 0.25);
+  border: 1.5px solid rgba(6, 182, 212, 0.3);
   border-radius: 38px;
-  animation: pulseRing 2.4s ease-out 1s infinite;
+  animation: pulseRing 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation-fill-mode: both;
   pointer-events: none;
 }
 
 .badge::before {
   inset: -14px;
+  animation-delay: 1s;
 }
 
 .badge::after {
   inset: -30px;
   border-radius: 52px;
-  animation-delay: 1.3s;
+  animation-delay: 2.3s;
   border-color: rgba(6, 182, 212, 0.12);
 }
 
@@ -242,13 +273,29 @@
 
 @keyframes pulseRing {
   0% {
-    transform: scale(1);
-    opacity: 0.65;
+    transform: scale(0.9);
+    opacity: 0;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0);
+  }
+
+  10% {
+    opacity: 0.8;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
   }
 
   100% {
-    transform: scale(1.7);
+    transform: scale(1.6);
     opacity: 0;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0);
+  }
+}
+
+@keyframes shimmerSweep {
+  0%, 15% {
+    transform: translateX(0);
+  }
+  35%, 100% {
+    transform: translateX(300%);
   }
 }
 
@@ -290,7 +337,7 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding: 40px 0 12px;
+    padding: 80px 0 24px;
   }
   .title {
     font-size: 38px;
@@ -304,12 +351,6 @@
     padding: 0 20px;
   }
 
-  .badge {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-  }
-
   .badgeWrapper {
     margin-bottom: 48px;
   }
@@ -319,11 +360,24 @@
     margin-bottom: 28px;
   }
 
-  /* Hide heavy decorative circles on mobile — they cause jank on low-end Android. */
-  .decTopLeft,
-  .decTopRight,
+  /* Scale decorative circles on mobile instead of hiding */
+  .decTopLeft {
+    width: 160px;
+    height: 160px;
+    top: -20px;
+    left: -60px;
+  }
+  .decTopRight {
+    width: 180px;
+    height: 180px;
+    top: 40px;
+    right: -80px;
+  }
   .decBotLeft {
-    display: none;
+    width: 140px;
+    height: 140px;
+    bottom: -40px;
+    left: -40px;
   }
 
   .centerGlow {
@@ -335,12 +389,6 @@
 
   .ambientGlow {
     animation: none;
-  }
-
-  .badge::before,
-  .badge::after {
-    animation: none;
-    opacity: 0.25;
   }
 }
 

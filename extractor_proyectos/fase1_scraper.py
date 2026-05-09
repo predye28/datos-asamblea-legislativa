@@ -37,7 +37,7 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA = "Expedientes Legislativos - Consulta"
-PAGINAS_A_EXTRAER   = 10      # Siempre páginas 1, 2 y 3
+PAGINAS_A_EXTRAER   = 25      # Páginas 1-25 = 250 expedientes más recientes
 REGISTROS_POR_PAG   = "10"   # Valor del dropdown de la grilla
 
 # Tiempos de espera (ms) — ajustados para ser conservadores
@@ -739,3 +739,15 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+# ──────────────────────────────────────────────────────────────────────
+# ENTRY POINT para el orquestador (llamada directa, no subprocess)
+# ──────────────────────────────────────────────────────────────────────
+
+async def run_fase1():
+    """
+    Punto de entrada para el orquestador.py.
+    Equivalente a correr el script directamente pero sin sys.exit().
+    """
+    await main()

@@ -63,9 +63,6 @@ export default function Navbar() {
     }
   }, [menuOpen])
 
-  // El botón muestra el idioma al que cambiará (UX más clara que mostrar el actual).
-  const otherLangLabel = lang === 'es' ? 'EN' : 'ES'
-
   return (
     <>
       <header className={`${styles.header} ${menuOpen ? styles.headerFixed : ''}`}>
@@ -103,14 +100,6 @@ export default function Navbar() {
           </nav>
 
           <div className={styles.rightZone}>
-            <button
-              className={styles.langPill}
-              onClick={toggleLang}
-              aria-label={dict.navbar.langAria}
-              title={dict.navbar.langAria}
-            >
-              {otherLangLabel}
-            </button>
             {currentDate && (
               <span className={styles.dateDisplay}>{currentDate}</span>
             )}

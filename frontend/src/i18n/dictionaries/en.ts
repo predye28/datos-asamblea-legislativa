@@ -161,6 +161,7 @@ export const en: Dictionary = {
     repositorio: 'Repository',
     repositorioAria: 'GitHub repository',
     enviarCorreoAria: 'Send email',
+    correoOficial: 'Official email',
     copyrightSuffix: 'La Asamblea al Día · Costa Rica',
     madeBy: 'Made by',
     photoCredit: 'Photos: Asamblea Legislativa de Costa Rica',

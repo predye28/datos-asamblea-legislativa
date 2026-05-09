@@ -3,17 +3,22 @@ import styles from './estadisticas.module.css'
 export default function Loading() {
   return (
     <div className={styles.page} aria-busy="true" aria-live="polite">
-      <section className={styles.heroData}>
+      <section className={styles.hero}>
         <div className={styles.heroDots} aria-hidden />
-        <div className={styles.heroDataInner}>
-          <div className={styles.heroDataHead}>
-            <h1 className={styles.heroDataTitle}>
-              La Asamblea, <span className={styles.heroDataTitleAccent}>en cifras.</span>
-            </h1>
-            <p className={styles.heroDataDeck}>Cargando estadísticas…</p>
+        <div className={styles.heroInner}>
+          <div className={styles.heroText}>
+            <span className={styles.heroEyebrow}>Datos de la Asamblea</span>
+            <h1 className={styles.heroTitle}>Estadísticas</h1>
+            <p className={styles.heroDesc}>Cargando estadísticas…</p>
           </div>
         </div>
       </section>
+
+      <div className={styles.filtersBar}>
+        <div className={styles.filtersInner}>
+          <div className={styles.skLine} style={{ width: '120px', height: '24px' }} />
+        </div>
+      </div>
       <div className={styles.main}>
         <div className={styles.container}>
           <div className={styles.skKpiGrid}>
