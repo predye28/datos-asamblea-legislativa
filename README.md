@@ -256,17 +256,6 @@ Documentación interactiva completa en `/docs` (Swagger UI).
 
 Los datos provienen del **[Sistema de Información Legislativa (SIL)](https://www.asamblea.go.cr/SIL)** de la Asamblea Legislativa de Costa Rica, de acceso público. Este proyecto no redistribuye datos originales — los transforma en una forma más accesible para el ciudadano, sin modificarlos.
 
----
-
-## Despliegue en producción
-
-Ver [`DESPLIEGUE.md`](DESPLIEGUE.md) — tutorial paso a paso para desplegar en **Hostinger VPS + Cloudflare + Neon**, pensado para quien lo hace por primera vez.
-
----
-
-## Contribuir
-
-¡Las contribuciones son bienvenidas! Este es un proyecto ciudadano de código abierto. Lee [`CONTRIBUTING.md`](CONTRIBUTING.md) para el flujo de trabajo, convenciones y cómo configurar el entorno local.
 
 ---
 
