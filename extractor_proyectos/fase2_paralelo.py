@@ -42,7 +42,7 @@ from sync_engine import crear_tablas, sync_proyectos, leer_checkpoint_db, guarda
 # ⚙️  CONFIGURACIÓN — MODIFICA ESTAS VARIABLES
 # ══════════════════════════════════════════════════════════════════════
 
-TOTAL_PAGINAS_POR_RUN = 10   # Total de páginas a procesar en este run
+TOTAL_PAGINAS_POR_RUN = 20   # Total de páginas a procesar en este run
 N_WORKERS             = 1  # Número de browsers en paralelo
 
 # ══════════════════════════════════════════════════════════════════════
@@ -65,8 +65,8 @@ SLEEP_AT_CYCLE_END    = 3600  # segundos de espera al completar un ciclo complet
 
 # Costa Rica = UTC-6, sin horario de verano
 CR_TZ                 = timezone(timedelta(hours=-6))
-FASE1_HORA_INICIO     = 1   # 1am hora CR
-FASE1_HORA_FIN        = 2   # 2am hora CR
+FASE1_HORA_INICIO     = 0   # medianoche hora CR
+FASE1_HORA_FIN        = 1   # 1am hora CR
 
 _fase1_ejecutada_fecha: date | None = None
 

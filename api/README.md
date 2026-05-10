@@ -1,18 +1,17 @@
-# API Ciudadana — Asamblea Legislativa CR
+# API — La Asamblea al Día
 
-Backend de la plataforma de transparencia legislativa de Costa Rica.  
-Expone los proyectos de ley de forma accesible para cualquier ciudadano.
+Backend REST de la plataforma de transparencia legislativa de Costa Rica. Expone +21 000 proyectos de ley con búsqueda full-text, caché en memoria y documentación interactiva automática.
 
 ---
 
 ## Stack
 
-| Pieza       | Tecnología             |
-|-------------|------------------------|
-| Framework   | FastAPI 0.115          |
-| Base de datos | PostgreSQL (Neon)    |
-| Deploy      | Railway / Render       |
-| ORM         | psycopg2 (SQL directo) |
+| Pieza | Tecnología |
+|---|---|
+| Framework | FastAPI 0.115 |
+| Base de datos | PostgreSQL via Neon |
+| Driver BD | psycopg2 (SQL directo, sin ORM) |
+| Deploy | Docker Compose (ver raíz del repo) |
 
 ---
 
@@ -20,15 +19,24 @@ Expone los proyectos de ley de forma accesible para cualquier ciudadano.
 
 ```
 api/
-├── main.py              ← app FastAPI + CORS
-├── database.py          ← conexión y helpers de consulta
-├── models.py            ← schemas Pydantic de respuesta
 ├── routers/
-│   ├── proyectos.py     ← listar, buscar, detalle
-│   └── metricas.py      ← estadísticas ciudadanas
+│   ├── proyectos.py           # GET /proyectos, /proyectos/{id}
+│   ├── metricas.py            # Estadísticas ciudadanas (caché LRU)
+│   ├── categorias.py          # Tipos de expediente
+│   ├── periodos.py            # Períodos legislativos
+│   └── partidos.py            # Partidos políticos
+├── main.py                    # App FastAPI + CORS + registro de routers
+├── database.py                # Conexión a BD con reintentos (Neon auto-suspend)
+├── models.py                  # Schemas Pydantic de respuesta
+├── constants.py               # Constantes (meses en español, etc.)
+├── add_indexes.py             # [setup] Crea índices en la BD
+├── enable_unaccent.py         # [setup] Habilita extensión unaccent
+├── migrate_estado.py          # [migración] Columnas estado_actual/estado_grupo
+├── migrate_drop_documentos.py # [migración] Elimina tabla documentos vacía
+├── migrate_fix_fechas_2079.py # [migración] Corrige typos de fechas 1979→2079
+├── Dockerfile
 ├── requirements.txt
-├── railway.toml         ← config de deploy en Railway
-└── render.yaml          ← config de deploy en Render
+└── .env.example
 ```
 
 ---
@@ -36,82 +44,100 @@ api/
 ## Correr localmente
 
 ```bash
-# 1. Crear entorno virtual
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-
-# 2. Instalar dependencias
 pip install -r requirements.txt
+cp .env.example .env        # Agregar DATABASE_URL
 
-# 3. Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tu DATABASE_URL de Neon
+# Setup inicial de la BD (solo la primera vez)
+python enable_unaccent.py   # búsqueda sin tildes
+python add_indexes.py       # índices de performance
 
-# 4. Levantar el servidor
 uvicorn main:app --reload --port 8000
+# Documentación interactiva: http://localhost:8000/docs
 ```
-
-Documentación interactiva disponible en: http://localhost:8000/docs
 
 ---
 
-## Endpoints principales
+## Endpoints
 
 ### Proyectos
 
 | Método | Ruta | Descripción |
-|--------|------|-------------|
+|---|---|---|
 | GET | `/api/v1/proyectos` | Listado paginado con filtros |
-| GET | `/api/v1/proyectos/{numero_expediente}` | Detalle completo |
-| GET | `/api/v1/proyectos/buscar?q=texto` | Búsqueda por texto o diputado |
-| GET | `/api/v1/proyectos-tipos` | Tipos de expediente disponibles |
+| GET | `/api/v1/proyectos/{expediente}` | Detalle completo de un proyecto |
 
-#### Filtros disponibles para listado
+**Parámetros de filtro disponibles:**
 
-| Parámetro   | Tipo    | Ejemplo | Descripción |
-|-------------|---------|---------|-------------|
-| `pagina`    | int     | `2` | Página actual |
-| `por_pagina`| int     | `20` | Resultados por página (máx. 100) |
-| `tipo`      | string  | `"Proyecto de Ley"` | Tipo de expediente |
-| `anio`      | int     | `2024` | Año de inicio |
-| `solo_leyes`| bool    | `true` | Solo proyectos convertidos en ley |
-| `orden`     | string  | `reciente` | `reciente`, `antiguo`, `expediente` |
-
----
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `pagina` | int | Página actual (default: 1) |
+| `por_pagina` | int | Resultados por página (máx. 100) |
+| `q` | string | Búsqueda full-text (título, diputado) |
+| `tipo` | string | Tipo de expediente |
+| `anio` | int | Año de inicio |
+| `solo_leyes` | bool | Solo proyectos convertidos en ley |
+| `partido` | string | Código del partido |
+| `orden` | string | `reciente`, `antiguo`, `expediente` |
 
 ### Métricas
 
 | Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/v1/metricas` | Resumen completo ciudadano |
-| GET | `/api/v1/metricas/actividad-semanal` | Movimientos de esta semana |
+|---|---|---|
+| GET | `/api/v1/metricas` | Resumen ciudadano completo |
 | GET | `/api/v1/metricas/proximos-vencer` | Proyectos por vencer en 90 días |
+| GET | `/api/v1/metricas/diputados` | Ranking de actividad legislativa |
 | GET | `/api/v1/metricas/linea-tiempo` | Leyes aprobadas por año |
 
----
+### Catálogos
 
-## Deploy en Railway
-
-1. Crear cuenta en [railway.app](https://railway.app)
-2. "New Project" → "Deploy from GitHub repo"
-3. Seleccionar este repositorio (o la carpeta `api/`)
-4. Agregar variable de entorno `DATABASE_URL` en Settings → Variables
-5. Railway detecta `railway.toml` y lanza automáticamente
-
-## Deploy en Render
-
-1. Crear cuenta en [render.com](https://render.com)
-2. "New" → "Web Service" → conectar repositorio
-3. Render detecta `render.yaml` automáticamente
-4. Agregar `DATABASE_URL` en Environment Variables
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/categorias` | Tipos de expediente disponibles |
+| GET | `/api/v1/periodos` | Períodos legislativos |
+| GET | `/api/v1/partidos` | Partidos políticos activos |
 
 ---
 
-## CORS
+## Scripts de setup y migraciones
 
-En desarrollo está abierto a todos los orígenes (`*`).  
-En producción, editar `main.py` y restringir a tu dominio:
+Todos los scripts son **idempotentes** — correrlos más de una vez no rompe nada.
 
-```python
-allow_origins=["https://tu-portal-ciudadano.cr"]
+### Setup inicial (correr una sola vez al configurar el entorno)
+
+```bash
+python enable_unaccent.py   # Habilita búsqueda sin tildes — obligatorio
+python add_indexes.py       # Crea índices de performance — obligatorio
 ```
+
+### Migraciones históricas
+
+Registran cambios de schema aplicados en producción. Si configuras el entorno desde cero, el scraper crea el schema completo automáticamente y no necesitas correrlas.
+
+| Script | Qué hace |
+|---|---|
+| `migrate_estado.py` | Agrega columnas `estado_actual` y `estado_grupo` a `proyectos` |
+| `migrate_drop_documentos.py` | Elimina la tabla `documentos` (estaba vacía, se deprecó) |
+| `migrate_fix_fechas_2079.py` | Corrige dos proyectos con fechas 2079 que debían ser 1979 |
+
+---
+
+## Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión PostgreSQL |
+| `CORS_ORIGINS` | Orígenes permitidos — `*` en dev, `https://tudominio.com` en producción |
+
+---
+
+## Deploy
+
+El deploy se hace con Docker Compose desde la raíz del repositorio:
+
+```bash
+docker compose up -d --build
+```
+
+Ver [`DESPLIEGUE.md`](../DESPLIEGUE.md) para el tutorial completo de producción.

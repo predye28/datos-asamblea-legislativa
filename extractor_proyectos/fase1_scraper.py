@@ -1,31 +1,34 @@
 """
 fase1_scraper.py
 ──────────────────────────────────────────────────────────────────────
-Fase 1 — Datos urgentes del día.
+Fase 1 — Sincronización diaria completa.
 
-Responsabilidad única: extraer las primeras 3 páginas del SIL de la
-Asamblea Legislativa de Costa Rica y sincronizarlas contra PostgreSQL.
+Recorre el SIL desde la página 1 hasta encontrar un expediente cuyo
+vencimiento cuatrienal ya expiró: a partir de ese punto, ningún cambio
+legislativo puede ocurrir, por lo que el resto de la lista es estable.
 
-Diseñado para correr en GitHub Actions todos los días (~10-15 min).
-Si el portal falla en cualquier punto → se detiene limpiamente y sale
-con código 0 (no falla el workflow, solo no hay datos ese día).
+Corre en paralelo con N_WORKERS instancias de Chromium para reducir
+el tiempo total. Se programa a medianoche hora Costa Rica (06:00 UTC)
+mediante GitHub Actions.
 
-Flujo:
-  1. Navegar al portal y encontrar la grilla
-  2. Para cada página 1-3:
-     a. Leer filas
-     b. Para cada fila → extraer General, Tramitación, Proponentes
-  3. Sync contra PostgreSQL via sync_engine.py
+Flujo por worker:
+  1. Lanzar browser propio → navegar al portal → encontrar grilla
+  2. Tomar un número de página de la cola compartida
+  3. Saltar a esa página con el input de paginación
+  4. Extraer General, Tramitación, Proponentes de cada fila
+  5. Si algún expediente tiene vencimiento cuatrienal expirado → señalar
+     parada global y terminar
+  6. Repetir hasta que la cola se vacíe o la señal de parada esté activa
 """
 
 import asyncio
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from playwright.async_api import async_playwright, Page
 
-from sync_engine import crear_tablas, sync_proyectos
+from sync_engine import crear_tablas, sync_proyectos, parsear_fecha
 
 # ──────────────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
@@ -37,8 +40,9 @@ URL_BASE = (
 )
 
 TEXTO_BOTON_ENTRADA = "Expedientes Legislativos - Consulta"
-PAGINAS_A_EXTRAER   = 25      # Páginas 1-25 = 250 expedientes más recientes
-REGISTROS_POR_PAG   = "10"   # Valor del dropdown de la grilla
+REGISTROS_POR_PAG   = "10"
+N_WORKERS           = 4     # Browsers en paralelo
+MAX_PAGINAS         = 300   # Límite de seguridad (3 000 expedientes máx.)
 
 # Tiempos de espera (ms) — ajustados para ser conservadores
 ESPERA_CARGA_GRILLA = 5_000
@@ -58,7 +62,7 @@ def limpiar(v):
     if not isinstance(v, str):
         return v
     v = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', v)
-    v = re.sub(r'[\u2400-\u243F]', '-', v)
+    v = re.sub(r'[␀-␿]', '-', v)
     return v.strip()
 
 
@@ -66,6 +70,23 @@ def log(msg: str):
     """Print con timestamp."""
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"[{ts}] {msg}", flush=True)
+
+
+def cuatrienal_vencido(general: dict) -> bool:
+    """
+    Retorna True si el vencimiento cuatrienal del expediente ya pasó.
+    Cuando esto ocurre, el expediente no puede recibir más cambios
+    legislativos, así que podemos dejar de raspar.
+    """
+    raw = (
+        general.get("Fecha de vencimiento cuatrienal")
+        or general.get("Vencimiento Cuatrienal")
+        or ""
+    )
+    venc = parsear_fecha(raw)
+    if venc is None:
+        return False
+    return venc < date.today()
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -465,93 +486,24 @@ async def extraer_tab_proponentes(frame, page: Page) -> list:
 # PAGINACIÓN
 # ──────────────────────────────────────────────────────────────────────
 
-async def ir_a_pagina_1(frame, page: Page) -> bool:
-    """Navega directamente a la página 1 usando el input de paginación."""
+async def ir_a_pagina(frame, page: Page, num_pagina: int) -> bool:
+    """
+    Navega directamente a una página específica usando el input de paginación.
+    Funciona para cualquier número de página, no solo la 1.
+    """
     try:
         inp = await frame.query_selector("input.ctrl-tabla-ira") or \
               await frame.query_selector("input[title='Página actual']")
         if not inp:
             return False
         await inp.click(click_count=3)
-        await inp.fill("1")
+        await inp.fill(str(num_pagina))
         await inp.press("Enter")
         await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
         return True
     except Exception as e:
-        log(f"Error navegando a página 1: {e}")
+        log(f"Error navegando a página {num_pagina}: {e}")
         return False
-
-
-async def ir_siguiente_pagina(frame, page: Page, pagina_actual: int) -> bool:
-    """
-    Hace clic en 'Siguiente página' y verifica que el contenido cambie.
-    Retorna True si la navegación fue exitosa.
-    """
-    filas_antes = await obtener_info_filas(frame)
-    exp_antes = filas_antes[0]["expediente"] if filas_antes else None
-
-    selectores_siguiente = [
-        "div[title='Siguiente página']",
-        "input[title='Siguiente página']",
-        "div[title='Next Page']",
-        "input[title='Next Page']",
-        ".jqx-icon-arrow-right:not(.jqx-icon-arrow-right-selected)",
-    ]
-    clic_ok = False
-    for sel in selectores_siguiente:
-        try:
-            for btn in await frame.query_selector_all(sel):
-                if not await btn.is_visible():
-                    continue
-                clase    = (await btn.get_attribute("class") or "").lower()
-                disabled = await btn.get_attribute("disabled")
-                title    = (await btn.get_attribute("title") or "").lower()
-                if disabled or "disabled" in clase:
-                    continue
-                if "ltima" in title or "last" in title:
-                    continue
-                await btn.click()
-                clic_ok = True
-                break
-        except Exception:
-            continue
-        if clic_ok:
-            break
-
-    # ── Fallback: buscar por texto o título en todos los elementos ──
-    if not clic_ok:
-        try:
-            for btn in await frame.query_selector_all("div, button, a, input[type='button']"):
-                try:
-                    texto = (await btn.inner_text()).strip()
-                    title = (await btn.get_attribute("title") or "").lower()
-                    clase = (await btn.get_attribute("class") or "").lower()
-                    if (texto in [">", "»", "›"] or "siguiente" in title or "next" in title):
-                        if "disabled" not in clase and not await btn.get_attribute("disabled"):
-                            await btn.click()
-                            clic_ok = True
-                            break
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-    if not clic_ok:
-        log(f"Botón 'Siguiente página' no encontrado o deshabilitado.")
-        return False
-
-    await page.wait_for_timeout(ESPERA_CLIC_PAGINA)
-
-    for _ in range(10):
-        filas_despues = await obtener_info_filas(frame)
-        exp_despues = filas_despues[0]["expediente"] if filas_despues else None
-        if exp_despues and exp_despues != exp_antes:
-            log(f"Navegado a página {pagina_actual + 1} correctamente.")
-            return True
-        await page.wait_for_timeout(700)
-
-    log("La grilla no cambió al hacer clic en siguiente.")
-    return False
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -563,24 +515,27 @@ async def procesar_pagina(
     frame,
     num_pagina: int,
     acumulado: list,
-) -> bool:
+) -> tuple[bool, bool]:
     """
     Procesa todas las filas de una página.
-    Retorna True si fue exitoso, False si hubo un error que impide continuar.
+    Retorna (exitoso, debe_parar).
+    debe_parar=True cuando se detecta un expediente con cuatrienal vencido,
+    lo que indica que no hay más cambios posibles a partir de ahí.
     """
-    # Asegurarse de estar en el tab General antes de leer filas
     await clic_tab(frame, page, "General")
     await page.wait_for_timeout(400)
 
     filas = await obtener_info_filas(frame)
     if not filas:
         log(f"Página {num_pagina}: sin filas. El portal puede estar con problemas.")
-        return False
+        return False, False
 
     total = len(filas)
     log(f"{'─'*50}")
     log(f"PÁGINA {num_pagina} — {total} expedientes")
     log(f"{'─'*50}")
+
+    debe_parar = False
 
     for i, info in enumerate(filas):
         exp       = info["expediente"]
@@ -599,7 +554,6 @@ async def procesar_pagina(
         tramitacion = await extraer_tab_tramitacion(frame, page)
         proponentes = await extraer_tab_proponentes(frame, page)
 
-        # Volver a General para dejar el panel limpio para la siguiente fila
         await clic_tab(frame, page, "General")
         await page.wait_for_timeout(200)
 
@@ -618,7 +572,128 @@ async def procesar_pagina(
             f"Proponentes({len(proponentes)})"
         )
 
-    return True
+        if cuatrienal_vencido(general):
+            log(f"  ⚑ Cuatrienal vencido en exp. {exp} — señalando parada global.")
+            debe_parar = True
+            break
+
+    return True, debe_parar
+
+
+# ──────────────────────────────────────────────────────────────────────
+# WORKERS PARALELOS
+# ──────────────────────────────────────────────────────────────────────
+
+async def setup_worker_browser(playwright, worker_id: int):
+    """
+    Lanza un browser independiente, navega al portal y localiza la grilla.
+    Retorna (browser, page, frame) o None si falla.
+    """
+    log(f"[W{worker_id}] Iniciando browser...")
+    browser = await playwright.chromium.launch(
+        headless=IS_CI,
+        args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-blink-features=AutomationControlled",
+        ]
+    )
+    context = await browser.new_context(
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        viewport={"width": 1440, "height": 900},
+    )
+    page = await context.new_page()
+
+    log(f"[W{worker_id}] Cargando portal SIL...")
+    try:
+        await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
+    except Exception:
+        await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
+
+    await page.wait_for_timeout(8_000)
+
+    if not await navegar_a_expedientes(page):
+        log(f"[W{worker_id}] No pudo navegar al módulo. Cerrando.")
+        await browser.close()
+        return None
+
+    await page.wait_for_timeout(3_000)
+
+    frame = await encontrar_frame_con_grilla(page)
+    if not frame:
+        log(f"[W{worker_id}] Grilla no encontrada. Cerrando.")
+        await browser.close()
+        return None
+
+    await cambiar_registros_por_pagina(frame, page, REGISTROS_POR_PAG)
+    await page.wait_for_timeout(4_000)
+
+    log(f"[W{worker_id}] Listo.")
+    return browser, page, frame
+
+
+async def run_worker(
+    worker_id: int,
+    page_queue: asyncio.Queue,
+    all_results: list,
+    results_lock: asyncio.Lock,
+    stop_event: asyncio.Event,
+    playwright,
+):
+    """
+    Worker: tiene su propio browser y procesa páginas de la cola compartida
+    hasta que la cola se vacíe o stop_event esté activo.
+    """
+    setup = await setup_worker_browser(playwright, worker_id)
+    if not setup:
+        return
+
+    browser, page, frame = setup
+
+    try:
+        while not stop_event.is_set():
+            try:
+                num_pagina = page_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+            log(f"[W{worker_id}] → Página {num_pagina}")
+
+            if not await ir_a_pagina(frame, page, num_pagina):
+                log(f"[W{worker_id}] No pudo ir a página {num_pagina}. Saltando.")
+                page_queue.task_done()
+                continue
+
+            await page.wait_for_timeout(2_000)
+
+            resultados_pagina: list = []
+            exitoso, debe_parar = await procesar_pagina(
+                page, frame, num_pagina, resultados_pagina
+            )
+
+            if resultados_pagina:
+                async with results_lock:
+                    all_results.extend(resultados_pagina)
+
+            page_queue.task_done()
+
+            if debe_parar:
+                log(f"[W{worker_id}] Cuatrienal vencido — activando parada global.")
+                stop_event.set()
+                break
+
+            if not exitoso:
+                log(f"[W{worker_id}] Página {num_pagina} sin datos. Continuando.")
+
+    except Exception as exc:
+        log(f"[W{worker_id}] Error inesperado: {exc}")
+    finally:
+        await browser.close()
+        log(f"[W{worker_id}] Browser cerrado.")
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -631,85 +706,32 @@ async def main():
     log("=" * 55)
     log("FASE 1 — Extractor SIL · Asamblea Legislativa CR")
     log("=" * 55)
-    log(f"Inicio:       {inicio:%Y-%m-%d %H:%M:%S}")
-    log(f"Páginas:      1 a {PAGINAS_A_EXTRAER}")
-    log(f"Entorno CI:   {IS_CI}")
+    log(f"Inicio:      {inicio:%Y-%m-%d %H:%M:%S}")
+    log(f"Workers:     {N_WORKERS}")
+    log(f"Máx páginas: {MAX_PAGINAS}")
+    log(f"Entorno CI:  {IS_CI}")
     log("=" * 55)
 
-    proyectos = []
+    proyectos: list = []
+    results_lock = asyncio.Lock()
+    stop_event   = asyncio.Event()
+
+    # Cola con todos los números de página posibles
+    page_queue: asyncio.Queue = asyncio.Queue()
+    for n in range(1, MAX_PAGINAS + 1):
+        page_queue.put_nowait(n)
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=IS_CI,
-                args=[
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-blink-features=AutomationControlled",
-                ]
-            )
-            context = await browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                ),
-                viewport={"width": 1440, "height": 900},
-            )
-            page = await context.new_page()
-
-            # Carga inicial
-            log("Cargando portal SIL...")
-            try:
-                await page.goto(URL_BASE, wait_until="networkidle", timeout=60_000)
-            except Exception as e:
-                log(f"Advertencia en carga inicial: {e}")
-                await page.goto(URL_BASE, wait_until="domcontentloaded", timeout=30_000)
-
-            await page.wait_for_timeout(8_000)
-
-            # Navegar al módulo de expedientes
-            if not await navegar_a_expedientes(page):
-                log("ERROR: No se pudo navegar al módulo. Saliendo limpiamente.")
-                await browser.close()
-                sys.exit(0)  # Salida limpia — no falla el workflow
-
-            await page.wait_for_timeout(3_000)
-
-            # Localizar la grilla
-            frame = await encontrar_frame_con_grilla(page)
-            if not frame:
-                log("ERROR: Grilla no encontrada. Saliendo limpiamente.")
-                await browser.close()
-                sys.exit(0)
-
-            # Configurar 10 registros por página
-            await cambiar_registros_por_pagina(frame, page, REGISTROS_POR_PAG)
-            await page.wait_for_timeout(4_000)
-
-            # Asegurarse de empezar en página 1
-            log("Posicionando en página 1...")
-            await ir_a_pagina_1(frame, page)
-            await page.wait_for_timeout(2_000)
-
-            # ── Loop de páginas 1 a PAGINAS_A_EXTRAER ─────────────────
-            for num_pagina in range(1, PAGINAS_A_EXTRAER + 1):
-                exitoso = await procesar_pagina(page, frame, num_pagina, proyectos)
-
-                if not exitoso:
-                    log(f"Error en página {num_pagina}. Deteniendo Fase 1.")
-                    break
-
-                if num_pagina < PAGINAS_A_EXTRAER:
-                    log(f"Avanzando a página {num_pagina + 1}...")
-                    if not await ir_siguiente_pagina(frame, page, num_pagina):
-                        log("No se pudo avanzar de página. Deteniendo Fase 1.")
-                        break
-
-            await browser.close()
-
+            workers = [
+                asyncio.create_task(
+                    run_worker(wid + 1, page_queue, proyectos, results_lock, stop_event, p)
+                )
+                for wid in range(N_WORKERS)
+            ]
+            await asyncio.gather(*workers, return_exceptions=True)
     except Exception as e:
-        log(f"Error inesperado: {e}")
+        log(f"Error inesperado en main: {e}")
         log("Continuando con lo que se extrajo hasta ahora...")
 
     # ── Sync y exportación ─────────────────────────────────────────────
@@ -730,7 +752,7 @@ async def main():
     log("RESUMEN FASE 1")
     log("=" * 55)
     log(f"Proyectos extraídos:  {len(proyectos)}")
-    log(f"Páginas procesadas:   hasta {PAGINAS_A_EXTRAER}")
+    log(f"Workers utilizados:   {N_WORKERS}")
     log(f"DB sincronizados:     {stats.get('actualizados', 0)}")
     log(f"DB errores:           {stats.get('errores', 0)}")
     log(f"Duración total:       {str(duracion).split('.')[0]}")
@@ -750,4 +772,4 @@ async def run_fase1():
     Punto de entrada para el orquestador.py.
     Equivalente a correr el script directamente pero sin sys.exit().
     """
-    await main()
+    await main()
